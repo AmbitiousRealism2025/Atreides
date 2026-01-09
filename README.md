@@ -10,6 +10,8 @@ OmO-style orchestration for Claude Code - systematic workflows, intelligent agen
 - **Context Preservation** - Maintain state across sessions and compaction
 - **Project Templates** - Quick initialization with best practices
 - **Quality Guardrails** - Comprehensive permission controls and quality checks
+- **Muad'Dib Skills** (Claude Code 2.1+) - Specialized skills with forked context isolation
+- **Wildcard Permissions** - Flexible `Bash(npm *)` pattern matching
 
 ## Installation
 
@@ -69,17 +71,28 @@ Your project now has Muad'Dib orchestration! Claude Code will automatically:
 
 ## Generated Files
 
-After `muaddib init`, your project will have:
+After `muaddib init --full`, your project will have:
 
 ```
 your-project/
-├── CLAUDE.md              # Orchestration rules (~2400 lines)
+├── CLAUDE.md                    # Orchestration rules (~2600 lines)
 ├── .claude/
-│   ├── settings.json      # Hooks and permissions
-│   ├── context.md         # Session context
-│   └── critical-context.md # Compaction-safe context
+│   ├── settings.json            # Hooks and permissions
+│   ├── context.md               # Session context
+│   ├── critical-context.md      # Compaction-safe context
+│   ├── scripts/                 # Helper scripts for hooks
+│   │   ├── validate-bash-command.sh
+│   │   ├── pre-edit-check.sh
+│   │   ├── post-edit-log.sh
+│   │   ├── error-detector.sh
+│   │   └── notify-idle.sh
+│   └── skills/
+│       └── muaddib/             # Muad'Dib skill package
+│           ├── orchestrate.md   # Main workflow coordination
+│           ├── explore.md       # Forked context exploration
+│           └── validate.md      # Pre-completion validation
 └── .muaddib/
-    └── config.json        # Project configuration
+    └── config.json              # Project configuration
 ```
 
 ## Intent Classification
@@ -225,13 +238,52 @@ Before marking any task complete:
 5. Run tests (jest, pytest, go test, cargo test)
 6. Verify no regressions
 
+## Muad'Dib Skills (Claude Code 2.1+)
+
+Muad'Dib includes three specialized skills that can be invoked:
+
+| Skill | Context | Purpose |
+|-------|---------|---------|
+| `muaddib-orchestrate` | main | Main workflow coordination and task management |
+| `muaddib-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
+| `muaddib-validate` | main | Pre-completion quality gates and verification |
+
+### Forked Context
+
+The `muaddib-explore` skill uses **forked context**, a Claude Code 2.1 feature that runs exploration in an isolated context. Benefits:
+
+- Exploration doesn't consume main session context
+- Can read 50+ files without bloat
+- Only summarized results return to main session
+
 ## Security
+
+### Wildcard Permissions (Claude Code 2.1)
+
+Muad'Dib uses flexible wildcard patterns:
+
+```json
+{
+  "allow": [
+    "Bash(npm *)",      // All npm commands
+    "Bash(git *)",      // All git commands
+    "Bash(*--help)",    // Any help flag
+    "Bash(*--version)"  // Any version check
+  ],
+  "deny": [
+    "Bash(rm -rf *)",   // Block recursive delete
+    "Bash(sudo *)",     // Block privilege escalation
+    "Bash(curl * | sh)" // Block remote code execution
+  ]
+}
+```
 
 ### Allowed Operations
 - Git commands
 - Package managers (npm, pip, cargo, go)
 - Build tools and test runners
 - Common utilities (ls, cat, grep, find)
+- Help and version flags
 
 ### Blocked Operations
 - Destructive commands (rm -rf /, sudo)
@@ -276,10 +328,10 @@ npm run lint
 
 ### Test Suite
 
-The project includes 38 tests across 3 test files:
+The project includes 43 tests across 3 test files:
 - `template-engine.test.js` - Handlebars helpers and rendering
 - `settings-merge.test.js` - Deep merge logic for updates
-- `init.test.js` - Template generation for all project types
+- `init.test.js` - Template generation, hooks, skills, permissions
 
 ## License
 
