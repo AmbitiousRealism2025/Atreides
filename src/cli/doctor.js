@@ -17,10 +17,7 @@ import {
   getProjectPaths
 } from '../utils/paths.js';
 import {
-  validateGlobalInstallation,
-  validateProjectInit,
-  isScriptExecutable,
-  getHealthSummary
+  isScriptExecutable
 } from '../lib/validator.js';
 import {
   exists,
@@ -63,7 +60,6 @@ async function runDoctor(options) {
 
   const issues = [];
   const warnings = [];
-  const fixes = [];
 
   // ══════════════════════════════════════════════════════════════
   // Global Installation Checks

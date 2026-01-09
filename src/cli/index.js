@@ -15,6 +15,7 @@ import { installCommand } from './install.js';
 import { initCommand } from './init.js';
 import { updateCommand } from './update.js';
 import { doctorCommand } from './doctor.js';
+import { uninstallCommand } from './uninstall.js';
 
 // Get package version
 const __filename = fileURLToPath(import.meta.url);
@@ -53,6 +54,7 @@ export async function run() {
   program.addCommand(initCommand());
   program.addCommand(updateCommand());
   program.addCommand(doctorCommand());
+  program.addCommand(uninstallCommand());
 
   // Custom help formatting
   program.configureHelp({
@@ -77,7 +79,7 @@ ${chalk.bold('Examples:')}
   $ muaddib doctor
 
 ${chalk.bold('Documentation:')}
-  ${chalk.blue('https://github.com/muaddib-claude/muaddib-claude')}
+  ${chalk.blue('https://github.com/AmbitiousRealism2025/muad-dib')}
 `);
 
   // Error handling

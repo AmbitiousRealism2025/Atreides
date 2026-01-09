@@ -117,8 +117,87 @@ async function updateGlobal(options) {
 }
 
 /**
+ * Merge hook arrays by matcher, combining commands to avoid duplicate runs
+ * @param {Array} existing - Existing hook entries
+ * @param {Array} newHooks - New hook entries to merge
+ * @returns {Array} Merged hook array
+ */
+function mergeHookArrays(existing, newHooks) {
+  const result = [...existing];
+
+  for (const newHook of newHooks) {
+    if (newHook.matcher && newHook.hooks) {
+      // PreToolUse/PostToolUse style: { matcher, hooks: [{type, command}] }
+      // Find existing entry with same matcher
+      const existingIndex = result.findIndex(h => h.matcher === newHook.matcher);
+
+      if (existingIndex >= 0) {
+        // Merge hooks arrays, deduplicating by command
+        const existingHooks = result[existingIndex].hooks || [];
+        const mergedHooks = [...existingHooks];
+
+        for (const newSubHook of newHook.hooks) {
+          const subHookSig = getSubHookSignature(newSubHook);
+          const isDupe = mergedHooks.some(h => getSubHookSignature(h) === subHookSig);
+          if (!isDupe) {
+            mergedHooks.push(newSubHook);
+          }
+        }
+
+        result[existingIndex] = { ...result[existingIndex], hooks: mergedHooks };
+      } else {
+        // New matcher - add the whole entry
+        result.push(newHook);
+      }
+    } else {
+      // Simple hook style or unknown format - dedupe by full signature
+      const hookSignature = getHookSignature(newHook);
+      const isDuplicate = result.some(h => getHookSignature(h) === hookSignature);
+      if (!isDuplicate) {
+        result.push(newHook);
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Generate a signature for a sub-hook (inside hooks array)
+ * @param {object} subHook - Sub-hook like {type, command}
+ * @returns {string} Signature string
+ */
+function getSubHookSignature(subHook) {
+  if (subHook.command) {
+    return subHook.command;
+  } else if (subHook.type) {
+    return subHook.type;
+  }
+  return JSON.stringify(subHook);
+}
+
+/**
+ * Generate a signature for a hook entry for deduplication
+ * @param {object} hook - Hook configuration
+ * @returns {string} Signature string
+ */
+function getHookSignature(hook) {
+  if (hook.matcher && hook.hooks) {
+    // PreToolUse/PostToolUse style: { matcher, hooks: [{type, command}] }
+    const commands = hook.hooks.map(h => h.command || h.type).sort().join('|');
+    return `${hook.matcher}:${commands}`;
+  } else if (hook.type && hook.command) {
+    // Simple hook style: { type, command }
+    return `${hook.type}:${hook.command}`;
+  }
+  // Fallback to JSON
+  return JSON.stringify(hook);
+}
+
+/**
  * Deep merge settings with smart hook/permission handling
- * - New hook types are added (don't overwrite existing)
+ * - New hook types are added
+ * - New entries within existing hook types are merged with deduplication
  * - Existing hook customizations are preserved
  * - Permissions are merged with deduplication
  * @param {object} newSettings - New settings from template
@@ -128,15 +207,18 @@ async function updateGlobal(options) {
 function deepMergeSettings(newSettings, existingSettings) {
   const merged = { ...existingSettings };
 
-  // Merge hooks: add new hook types, preserve existing customizations
+  // Merge hooks: add new hook types AND merge entries within existing types
   if (newSettings.hooks) {
     merged.hooks = merged.hooks || {};
     for (const [hookType, hookConfig] of Object.entries(newSettings.hooks)) {
       if (!merged.hooks[hookType]) {
         // New hook type - add it
         merged.hooks[hookType] = hookConfig;
+      } else if (Array.isArray(hookConfig) && Array.isArray(merged.hooks[hookType])) {
+        // Merge hook arrays, deduplicating by command string
+        merged.hooks[hookType] = mergeHookArrays(merged.hooks[hookType], hookConfig);
       }
-      // If hook type exists, keep user's customization
+      // If hook type exists but isn't an array, keep user's customization
     }
   }
 

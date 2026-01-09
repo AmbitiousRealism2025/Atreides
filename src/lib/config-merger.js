@@ -53,8 +53,9 @@ function isObject(value) {
 }
 
 /**
- * Merge two arrays, removing duplicates for primitives
- * For objects, all are kept (no deduplication)
+ * Merge two arrays, removing duplicates
+ * For primitives: exact match deduplication
+ * For objects: deep equality check via JSON.stringify
  *
  * @param {any[]} target - Target array
  * @param {any[]} source - Source array
@@ -64,9 +65,16 @@ function mergeArrays(target, source) {
   const result = [...target];
 
   for (const item of source) {
-    if (typeof item === 'object') {
-      // For objects, always add
-      result.push(item);
+    if (typeof item === 'object' && item !== null) {
+      // For objects, check deep equality via JSON
+      const itemStr = JSON.stringify(item);
+      const isDuplicate = result.some(
+        existing => typeof existing === 'object' && existing !== null &&
+          JSON.stringify(existing) === itemStr
+      );
+      if (!isDuplicate) {
+        result.push(item);
+      }
     } else {
       // For primitives, only add if not present
       if (!result.includes(item)) {
