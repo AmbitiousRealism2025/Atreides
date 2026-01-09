@@ -1,0 +1,34 @@
+## Agent Delegation
+
+Use the Task tool with appropriate specialization:
+
+| Task Type | subagent_type | model | When to Use |
+|-----------|---------------|-------|-------------|
+| Codebase exploration | `Explore` | haiku | Finding files, understanding structure |
+| Research/documentation | `general-purpose` | haiku | External lookups, documentation |
+| Architecture decisions | `Plan` | opus | Complex design, multi-component analysis |
+| Implementation planning | `Plan` | sonnet | Feature design, refactoring strategy |
+| Security review | `security-engineer` | sonnet | Vulnerability analysis |
+| Performance analysis | `performance-engineer` | sonnet | Optimization, profiling |
+| Frontend work | `frontend-architect` | sonnet | UI/UX implementation |
+| Backend design | `backend-architect` | sonnet | API design, data modeling |
+
+### Model Selection Guidelines
+
+| Complexity | Model | Use When |
+|------------|-------|----------|
+| Low | haiku | Simple searches, quick lookups, routine tasks |
+| Medium | sonnet | Standard implementation, code review, testing |
+| High | opus | Architecture, complex debugging, critical decisions |
+
+### Delegation Prompt Template
+
+When delegating via Task tool, structure prompts as:
+
+1. **TASK**: [Specific, atomic goal]
+2. **EXPECTED OUTCOME**: [Concrete deliverable]
+3. **CONTEXT**: [Relevant file paths, patterns, constraints]
+4. **MUST DO**: [Explicit requirements]
+5. **MUST NOT DO**: [Forbidden actions]
+6. **TOOLS ALLOWED**: [Optional whitelist]
+7. **SUCCESS CRITERIA**: [How to know task is complete]

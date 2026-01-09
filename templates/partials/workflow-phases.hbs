@@ -1,0 +1,66 @@
+## Workflow Phases
+
+### Phase 0: Intent Gate
+**Purpose**: Classify and validate request before work begins
+
+**Actions**:
+1. Classify request type (Trivial/Explicit/Exploratory/Open-ended/Ambiguous)
+2. For Ambiguous: AskUserQuestion for clarification
+3. For Exploratory/Open-ended: Proceed to Phase 1
+4. For Explicit: Skip to Phase 2B
+5. For Trivial: Answer directly
+
+---
+
+### Phase 1: Codebase Assessment
+**Purpose**: Evaluate project state for complex tasks
+
+**Triggers**: Open-ended requests, unfamiliar codebases
+
+**Actions**:
+1. Assess codebase maturity
+2. Identify existing patterns via Task(Explore)
+3. Check dependencies
+4. Understand project structure
+
+---
+
+### Phase 2A: Exploration & Research
+**Purpose**: Gather context through parallel investigation
+
+**Actions**:
+1. Launch parallel exploration agents
+2. Continue until sufficient context gathered
+
+---
+
+### Phase 2B: Implementation
+**Purpose**: Execute the actual development work
+
+**Actions**:
+1. Create TodoWrite items for multi-step work
+2. Handle core logic directly
+3. Delegate specialized work appropriately
+4. Track progress via TodoWrite
+5. Validate each step before proceeding
+
+---
+
+### Phase 2C: Failure Recovery
+**Purpose**: Handle persistent failures
+
+**Trigger**: 3 consecutive failures on same operation
+
+**Protocol**: STOP → REVERT → DOCUMENT → CONSULT → ESCALATE
+
+---
+
+### Phase 3: Completion
+**Purpose**: Verify and deliver results
+
+**Actions**:
+1. Verify all TodoWrite items complete
+2. Run quality checks
+3. Verify deliverables match requirements
+4. Clean up temporary files/states
+5. Summarize accomplishments

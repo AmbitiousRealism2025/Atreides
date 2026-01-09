@@ -1,0 +1,203 @@
+/**
+ * Update Command
+ *
+ * Update Muad'Dib global or project components.
+ */
+
+import { Command } from 'commander';
+import { join } from 'path';
+import logger from '../utils/logger.js';
+import { confirm } from '../utils/prompts.js';
+import {
+  GLOBAL_MUADDIB_DIR,
+  GLOBAL_TEMPLATES_DIR,
+  GLOBAL_SCRIPTS_DIR,
+  GLOBAL_LIB_DIR,
+  PACKAGE_TEMPLATES_DIR,
+  PACKAGE_SCRIPTS_DIR,
+  PACKAGE_LIB_CORE_DIR,
+  getProjectPaths
+} from '../utils/paths.js';
+import {
+  exists,
+  copyDir,
+  listFiles,
+  makeExecutable,
+  readJson,
+  writeFile
+} from '../lib/file-manager.js';
+import { renderTemplate, getDefaultData } from '../lib/template-engine.js';
+
+/**
+ * Create the update command
+ * @returns {Command}
+ */
+export function updateCommand() {
+  const cmd = new Command('update');
+
+  cmd
+    .description("Update Muad'Dib components")
+    .option('-g, --global', 'Update global components (default)')
+    .option('-p, --project', 'Update current project files')
+    .option('--no-backup', 'Skip backup creation')
+    .action(async (options) => {
+      try {
+        if (options.project) {
+          await updateProject(options);
+        } else {
+          await updateGlobal(options);
+        }
+      } catch (error) {
+        logger.error(`Update failed: ${error.message}`);
+        logger.debug(error.stack);
+        process.exit(1);
+      }
+    });
+
+  return cmd;
+}
+
+/**
+ * Update global components
+ * @param {object} options - Command options
+ */
+async function updateGlobal(options) {
+  logger.title("Muad'Dib Global Update");
+
+  if (!await exists(GLOBAL_MUADDIB_DIR)) {
+    logger.error("Muad'Dib is not installed.");
+    logger.info('Run: muaddib install');
+    process.exit(1);
+  }
+
+  // Create backup if requested
+  if (options.backup !== false) {
+    const backupDir = `${GLOBAL_MUADDIB_DIR}.backup.${Date.now()}`;
+    logger.info(`Creating backup: ${backupDir}`);
+    await copyDir(GLOBAL_MUADDIB_DIR, backupDir);
+    logger.success('Backup created');
+  }
+
+  logger.info('Updating global components...');
+
+  // Update templates
+  if (await exists(PACKAGE_TEMPLATES_DIR)) {
+    await copyDir(PACKAGE_TEMPLATES_DIR, GLOBAL_TEMPLATES_DIR, { overwrite: true });
+    logger.success('Updated templates');
+  }
+
+  // Update scripts
+  if (await exists(PACKAGE_SCRIPTS_DIR)) {
+    await copyDir(PACKAGE_SCRIPTS_DIR, GLOBAL_SCRIPTS_DIR, { overwrite: true });
+
+    // Make scripts executable
+    const scriptFiles = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
+    for (const scriptFile of scriptFiles) {
+      await makeExecutable(scriptFile);
+    }
+    logger.success('Updated scripts');
+  }
+
+  // Update lib/core
+  if (await exists(PACKAGE_LIB_CORE_DIR)) {
+    await copyDir(PACKAGE_LIB_CORE_DIR, join(GLOBAL_LIB_DIR, 'core'), { overwrite: true });
+    logger.success('Updated lib/core');
+  }
+
+  console.log();
+  logger.success('Global update complete!');
+}
+
+/**
+ * Update project files
+ * @param {object} options - Command options
+ */
+async function updateProject(options) {
+  const paths = getProjectPaths();
+
+  logger.title("Muad'Dib Project Update");
+
+  if (!await exists(paths.claudeDir)) {
+    logger.error("No Muad'Dib project found in current directory.");
+    logger.info('Run: muaddib init');
+    process.exit(1);
+  }
+
+  // Confirm update
+  const proceed = await confirm(
+    'This will update project files. Continue?',
+    true
+  );
+
+  if (!proceed) {
+    logger.info('Update cancelled.');
+    return;
+  }
+
+  // Load existing project config
+  let projectConfig = {};
+  if (await exists(paths.projectConfig)) {
+    try {
+      projectConfig = await readJson(paths.projectConfig);
+    } catch {
+      logger.warn('Could not read project config, using defaults');
+    }
+  }
+
+  // Prepare template data
+  const templateData = {
+    ...getDefaultData(),
+    ...projectConfig,
+    updated: new Date().toISOString()
+  };
+
+  logger.info('Updating project files...');
+
+  // Update settings.json (preserving custom settings)
+  if (await exists(paths.settingsJson)) {
+    try {
+      const existingSettings = await readJson(paths.settingsJson);
+      const newSettings = await renderTemplate('settings.json', templateData);
+      const newSettingsObj = JSON.parse(newSettings);
+
+      // Merge: keep existing custom settings, update structure
+      const mergedSettings = {
+        ...newSettingsObj,
+        ...existingSettings,
+        // Ensure hooks are merged, not replaced
+        hooks: {
+          ...newSettingsObj.hooks,
+          ...existingSettings.hooks
+        }
+      };
+
+      await writeFile(paths.settingsJson, JSON.stringify(mergedSettings, null, 2), { backup: options.backup !== false });
+      logger.success('Updated: .claude/settings.json');
+    } catch (error) {
+      logger.warn(`Could not update settings.json: ${error.message}`);
+    }
+  }
+
+  // Update context.md if empty or minimal
+  if (await exists(paths.contextMd)) {
+    // Don't overwrite user's context
+    logger.dim('Skipped: .claude/context.md (preserving user content)');
+  }
+
+  // Update project config version
+  if (await exists(paths.projectConfig)) {
+    try {
+      projectConfig.updated = new Date().toISOString();
+      await writeFile(paths.projectConfig, JSON.stringify(projectConfig, null, 2), { backup: options.backup !== false });
+      logger.success('Updated: .muaddib/config.json');
+    } catch (error) {
+      logger.warn(`Could not update config: ${error.message}`);
+    }
+  }
+
+  console.log();
+  logger.success('Project update complete!');
+  console.log();
+  logger.info('Note: CLAUDE.md and context files were not modified to preserve your customizations.');
+  logger.info('To regenerate, run: muaddib init --force');
+}

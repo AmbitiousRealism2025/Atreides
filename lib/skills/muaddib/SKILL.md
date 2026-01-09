@@ -1,0 +1,110 @@
+# Muad'Dib Skill
+
+## Skill Identity
+
+**Name**: muaddib
+**Type**: Orchestration Framework
+**Version**: 1.0.0
+
+## Purpose
+
+Muad'Dib is an orchestration skill that enables OmO-style systematic workflows,
+intelligent agent delegation, and robust error recovery for Claude Code.
+
+## Invocation
+
+This skill is automatically active when a project contains Muad'Dib configuration
+(CLAUDE.md with Muad'Dib markers).
+
+## Core Behaviors
+
+### 1. Task Management
+
+When working on multi-step tasks:
+
+- Always use TodoWrite for 3+ step tasks
+- Track progress continuously
+- Never leave incomplete todos
+- Mark complete only when verified
+
+### 2. Error Recovery
+
+After 3 consecutive failures:
+
+1. STOP - Halt modifications
+2. REVERT - Return to working state
+3. DOCUMENT - Record failure details
+4. CONSULT - Get architectural guidance
+5. ESCALATE - Ask user if still stuck
+
+### 3. Agent Delegation
+
+Use specialized agents appropriately:
+
+| Agent | Model | Use For |
+|-------|-------|---------|
+| Explore | haiku | File searches, structure analysis |
+| general-purpose | haiku | Research, documentation |
+| Plan | opus | Architecture, complex design |
+| security-engineer | sonnet | Security review |
+| performance-engineer | sonnet | Optimization |
+| frontend-architect | sonnet | UI/UX work |
+| backend-architect | sonnet | API design |
+
+### 4. Workflow Phases
+
+Follow the phase-based workflow:
+
+- **Phase 0**: Classify intent (Trivial/Explicit/Exploratory/Open-ended)
+- **Phase 1**: Assess codebase for complex tasks
+- **Phase 2A**: Explore and research
+- **Phase 2B**: Implement with tracking
+- **Phase 2C**: Recover from failures
+- **Phase 3**: Verify and complete
+
+### 5. Context Preservation
+
+Maintain context across sessions:
+
+- Read CLAUDE.md at session start
+- Update checkpoint.md for long tasks
+- Use critical-context.md for compaction survival
+- Document decisions in context.md
+
+## Quality Standards
+
+- Match existing code style exactly
+- No TODO comments in core functionality
+- No placeholder implementations
+- Run quality checks after edits
+- Preserve existing tests
+
+## Commands
+
+The Muad'Dib CLI provides project management:
+
+```bash
+muaddib install    # Install global components
+muaddib init       # Initialize in project
+muaddib update     # Update components
+muaddib doctor     # Health check
+```
+
+## Integration
+
+Muad'Dib integrates with Claude Code through:
+
+1. **CLAUDE.md** - Project orchestration rules
+2. **settings.json** - Hooks and permissions
+3. **context.md** - Session context
+4. **checkpoint.md** - Task state preservation
+
+## Philosophy
+
+Muad'Dib is inspired by the OmO (OpenCode Multi-agent Orchestration) framework,
+adapted specifically for Claude Code's capabilities. The goal is to provide
+systematic, reliable, and high-quality AI-assisted development.
+
+---
+
+*"The spice must flow" - Muad'Dib orchestrates the flow of development*

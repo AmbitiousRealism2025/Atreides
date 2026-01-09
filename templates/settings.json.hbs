@@ -1,0 +1,86 @@
+{
+  "hooks": {
+{{#if useHooks}}
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+{{#if-eq projectType "node"}}
+          {"type": "command", "command": "npx prettier --write \"$FILE\" 2>/dev/null || true"},
+          {"type": "command", "command": "npx eslint --fix \"$FILE\" 2>/dev/null || true"}
+{{else}}
+{{#if-eq projectType "typescript"}}
+          {"type": "command", "command": "npx prettier --write \"$FILE\" 2>/dev/null || true"},
+          {"type": "command", "command": "npx eslint --fix \"$FILE\" 2>/dev/null || true"}
+{{else}}
+{{#if-eq projectType "python"}}
+          {"type": "command", "command": "black \"$FILE\" 2>/dev/null || true"},
+          {"type": "command", "command": "ruff check --fix \"$FILE\" 2>/dev/null || true"}
+{{else}}
+{{#if-eq projectType "go"}}
+          {"type": "command", "command": "gofmt -w \"$FILE\" 2>/dev/null || true"}
+{{else}}
+{{#if-eq projectType "rust"}}
+          {"type": "command", "command": "rustfmt \"$FILE\" 2>/dev/null || true"}
+{{else}}
+          {"type": "command", "command": "echo 'Edited: $FILE'"}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+        ]
+      }
+    ]
+{{/if}}
+  },
+  "permissions": {
+    "allow": [
+{{#if-eq projectType "node"}}
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)"
+{{else}}
+{{#if-eq projectType "typescript"}}
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(tsc:*)"
+{{else}}
+{{#if-eq projectType "python"}}
+      "Bash(git:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(pytest:*)"
+{{else}}
+{{#if-eq projectType "go"}}
+      "Bash(git:*)",
+      "Bash(go:*)",
+      "Bash(make:*)"
+{{else}}
+{{#if-eq projectType "rust"}}
+      "Bash(git:*)",
+      "Bash(cargo:*)",
+      "Bash(rustc:*)"
+{{else}}
+      "Bash(git:*)"
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+    ],
+    "deny": [
+      "Bash(rm -rf /*:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(sudo:*)",
+      "Read(.env*)",
+      "Read(**/secrets/**)",
+      "Write(.env*)",
+      "Write(**/secrets/**)"
+    ]
+  }
+}

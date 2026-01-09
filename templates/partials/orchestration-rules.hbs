@@ -1,0 +1,46 @@
+## Orchestration Rules
+
+### Task Management
+
+1. **Use TodoWrite for any task with 3+ steps** - Track progress visibly
+2. **Mark todos complete only when fully verified** - No premature completion
+3. **Never stop with incomplete todos** - Continue until done or blocked
+4. **Break complex work into atomic tasks** - One clear deliverable per todo
+
+### Error Recovery (3-Strikes Rule)
+
+After 3 consecutive failures on the same operation:
+
+```
+Strike 1 → Attempt operation
+Strike 2 → Retry with adjustments
+Strike 3 → Retry again
+         │
+         ▼ (3rd failure)
+    ┌─────────┐
+    │  STOP   │ → Halt all modifications
+    └────┬────┘
+         │
+    ┌─────────┐
+    │ REVERT  │ → git checkout (last working state)
+    └────┬────┘
+         │
+    ┌─────────┐
+    │DOCUMENT │ → Record failure details
+    └────┬────┘
+         │
+    ┌─────────┐
+    │ CONSULT │ → Task(Plan, opus) for guidance
+    └────┬────┘
+         │
+    ┌─────────┐
+    │ESCALATE │ → AskUserQuestion if still stuck
+    └─────────┘
+```
+
+### Context Management
+
+- Read CLAUDE.md at session start
+- Update .claude/context.md for persistent state
+- Use .claude/checkpoint.md for long-running tasks
+- Check .claude/critical-context.md after compaction

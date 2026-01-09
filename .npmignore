@@ -1,0 +1,22 @@
+# Source of truth is package.json "files" field
+# This file catches anything missed
+
+# Development files
+tests/
+coverage/
+.github/
+.eslintrc.json
+
+# Documentation sources
+docs/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
