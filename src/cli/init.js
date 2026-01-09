@@ -11,6 +11,7 @@ import { confirm, projectInit } from '../utils/prompts.js';
 import {
   GLOBAL_MUADDIB_DIR,
   GLOBAL_SCRIPTS_DIR,
+  GLOBAL_SKILLS_DIR,
   getProjectPaths
 } from '../utils/paths.js';
 import {
@@ -184,12 +185,21 @@ async function runInit(options) {
     }
   }
 
-  // Copy scripts if full mode
-  if (isFull && await exists(GLOBAL_SCRIPTS_DIR)) {
+  // Copy scripts when hooks are enabled (scripts are required for hooks to work)
+  // Previously only copied in full mode, but standard mode with hooks needs them too
+  if (config.useHooks && await exists(GLOBAL_SCRIPTS_DIR)) {
     const projectScriptsDir = `${paths.claudeDir}/scripts`;
     await ensureDir(projectScriptsDir);
     await copyDir(GLOBAL_SCRIPTS_DIR, projectScriptsDir);
     logger.success('Copied: .claude/scripts/');
+  }
+
+  // Copy skills if full mode
+  if (isFull && await exists(GLOBAL_SKILLS_DIR)) {
+    const projectSkillsDir = `${paths.claudeDir}/skills`;
+    await ensureDir(projectSkillsDir);
+    await copyDir(GLOBAL_SKILLS_DIR, projectSkillsDir);
+    logger.success('Copied: .claude/skills/');
   }
 
   // Success message
@@ -205,7 +215,8 @@ async function runInit(options) {
       '.claude/critical-context.md',
       '.muaddib/config.json'
     ]),
-    ...(isFull ? ['.claude/scripts/'] : [])
+    ...(config.useHooks ? ['.claude/scripts/'] : []),
+    ...(isFull ? ['.claude/skills/muaddib/'] : [])
   ]);
   console.log();
   logger.info("You're all set! Claude Code will now use Muad'Dib orchestration.");

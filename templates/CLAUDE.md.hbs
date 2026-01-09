@@ -74,7 +74,7 @@ This project uses systematic workflows, intelligent agent delegation, and robust
 
 ## Project Structure
 
-After `muaddib init`, this project has:
+After `muaddib init --full`, this project has:
 
 ```
 {{projectName}}/
@@ -82,7 +82,18 @@ After `muaddib init`, this project has:
 ├── .claude/
 │   ├── settings.json            # Hooks and permissions
 │   ├── context.md               # Session context (optional)
-│   └── critical-context.md      # Preserved during compaction
+│   ├── critical-context.md      # Preserved during compaction
+│   ├── scripts/                 # Helper scripts for hooks
+│   │   ├── validate-bash-command.sh
+│   │   ├── pre-edit-check.sh
+│   │   ├── post-edit-log.sh
+│   │   ├── error-detector.sh
+│   │   └── notify-idle.sh
+│   └── skills/
+│       └── muaddib/             # Muad'Dib skill package
+│           ├── orchestrate.md   # Main orchestration skill
+│           ├── explore.md       # Forked context exploration
+│           └── validate.md      # Pre-completion validation
 └── .muaddib/
     ├── config.json              # Project configuration
     └── state/                   # Session state directory
@@ -96,8 +107,14 @@ After `muaddib init`, this project has:
 | `.claude/settings.json` | Hook configurations and permission rules |
 | `.claude/context.md` | Project context injected at session start |
 | `.claude/critical-context.md` | Context preserved during compaction |
+| `.claude/scripts/` | Helper scripts for hook automation |
+| `.claude/skills/muaddib/` | Muad'Dib skills (orchestrate, explore, validate) |
 | `.muaddib/config.json` | Project-specific Muad'Dib configuration |
 | `.muaddib/state/` | Session state, checkpoints, logs |
+
+---
+
+{{> skills-and-hooks}}
 
 ---
 
