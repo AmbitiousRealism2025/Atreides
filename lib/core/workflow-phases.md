@@ -57,6 +57,24 @@ Muad'Dib orchestration uses a multi-phase workflow to ensure systematic, high-qu
 
 ---
 
+## Phase Transitions
+
+| From | To | Trigger |
+|------|-----|---------|
+| Phase 0 | Phase 1 | Open-ended request |
+| Phase 0 | Phase 2B | Explicit request |
+| Phase 0 | (answer) | Trivial request |
+| Phase 1 | Phase 2A | Exploration needed |
+| Phase 1 | Phase 2B | Sufficient context |
+| Phase 2A | Phase 2B | Context gathered |
+| Phase 2B | Phase 2C | 3 failures |
+| Phase 2B | Phase 3 | Implementation done |
+| Phase 2C | Phase 2B | Recovery successful |
+| Phase 2C | Phase 3 | User intervention |
+| Phase 3 | (done) | Verification passed |
+
+---
+
 ## Phase 0: Intent Gate
 
 ### Purpose

@@ -72,7 +72,7 @@ After `muaddib init`, your project will have:
 
 ```
 your-project/
-├── CLAUDE.md              # Orchestration rules (~570 lines)
+├── CLAUDE.md              # Orchestration rules (~2400 lines)
 ├── .claude/
 │   ├── settings.json      # Hooks and permissions
 │   ├── context.md         # Session context
@@ -113,7 +113,14 @@ Classify requests using the Intent Classification matrix above.
 Evaluate codebase maturity for complex tasks using the Maturity Assessment checklist.
 
 ### Phase 2A: Exploration
-Gather context through parallel investigation with Explore agents.
+Gather context through **parallel investigation** with multiple agents launched in a single message.
+
+**Parallel Agent Pattern**:
+```
+Task(Explore, sonnet, "Search codebase for [pattern]")
+Task(general-purpose, sonnet, "Research [topic]")
+→ Both execute in parallel, results returned together
+```
 
 ### Phase 2B: Implementation
 Execute work with TodoWrite tracking and quality checks.
@@ -172,6 +179,39 @@ When delegating to agents, use this structure:
 5. **MUST NOT DO** - Forbidden actions
 6. **TOOLS ALLOWED** - Optional whitelist
 7. **SUCCESS CRITERIA** - Completion verification
+
+## Completion Checking
+
+Before ending any multi-step task, execute this protocol:
+
+1. **TodoWrite Audit** - Are ALL todos complete?
+2. **Quality Verification** - Did linters/tests/builds pass?
+3. **Deliverable Check** - Does output match requirements?
+4. **State Verification** - Is codebase clean?
+
+**NEVER rules** (absolute):
+- NEVER stop with incomplete todos
+- NEVER stop with failing tests
+- NEVER stop without verifying deliverables
+
+## Session Continuity
+
+**Session Start Protocol**:
+- Read CLAUDE.md (project rules)
+- Check for existing todos
+- Review git status
+- Understand current state
+
+**Session End Protocol**:
+- All work complete or documented
+- Summary provided
+- Pending work noted
+- State is clean
+
+**State Persistence**:
+- TodoWrite persists across conversation
+- `.claude/context.md` for session context
+- `.claude/critical-context.md` survives compaction
 
 ## Quality Standards
 
