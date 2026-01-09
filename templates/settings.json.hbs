@@ -36,37 +36,64 @@
   },
   "permissions": {
     "allow": [
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(which:*)",
+      "Bash(pwd:*)",
+      "Bash(echo:*)",
+      "Bash(wc:*)",
+      "Bash(diff:*)",
+      "Bash(git:*)",
 {{#if-eq projectType "node"}}
-      "Bash(git:*)",
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(node:*)"
-{{else}}
-{{#if-eq projectType "typescript"}}
-      "Bash(git:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",
       "Bash(node:*)",
+      "Bash(yarn:*)",
+      "Bash(pnpm:*)",
+      "Bash(jest:*)",
+      "Bash(eslint:*)",
+      "Bash(prettier:*)",
+      "Bash(tsc:*)"
+{{else}}
+{{#if-eq projectType "typescript"}}
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(yarn:*)",
+      "Bash(pnpm:*)",
+      "Bash(jest:*)",
+      "Bash(eslint:*)",
+      "Bash(prettier:*)",
       "Bash(tsc:*)"
 {{else}}
 {{#if-eq projectType "python"}}
-      "Bash(git:*)",
       "Bash(python:*)",
       "Bash(python3:*)",
       "Bash(pip:*)",
-      "Bash(pytest:*)"
+      "Bash(pip3:*)",
+      "Bash(pytest:*)",
+      "Bash(poetry:*)",
+      "Bash(black:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)"
 {{else}}
 {{#if-eq projectType "go"}}
-      "Bash(git:*)",
       "Bash(go:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(gofmt:*)",
+      "Bash(golint:*)"
 {{else}}
 {{#if-eq projectType "rust"}}
-      "Bash(git:*)",
       "Bash(cargo:*)",
-      "Bash(rustc:*)"
+      "Bash(rustc:*)",
+      "Bash(rustfmt:*)",
+      "Bash(clippy:*)"
 {{else}}
-      "Bash(git:*)"
+      "Bash(make:*)"
 {{/if-eq}}
 {{/if-eq}}
 {{/if-eq}}
@@ -76,11 +103,36 @@
     "deny": [
       "Bash(rm -rf /*:*)",
       "Bash(rm -rf ~:*)",
+      "Bash(rm -rf $HOME:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(curl * | sh:*)",
+      "Bash(curl * | bash:*)",
+      "Bash(wget * | sh:*)",
+      "Bash(wget * | bash:*)",
+      "Bash(chmod 777:*)",
+      "Bash(chmod -R 777:*)",
       "Bash(sudo:*)",
-      "Read(.env*)",
+      "Bash(su:*)",
+      "Bash(eval:*)",
+      "Bash(exec:*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(.env.local)",
+      "Read(.env.production)",
       "Read(**/secrets/**)",
-      "Write(.env*)",
-      "Write(**/secrets/**)"
+      "Read(**/.git/config)",
+      "Read(**/*credentials*)",
+      "Read(**/*password*)",
+      "Read(**/.ssh/**)",
+      "Read(**/.aws/**)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(.env.local)",
+      "Write(.env.production)",
+      "Write(**/secrets/**)",
+      "Write(**/.git/config)",
+      "Write(**/*credentials*)",
+      "Write(**/.ssh/**)"
     ]
   }
 }
