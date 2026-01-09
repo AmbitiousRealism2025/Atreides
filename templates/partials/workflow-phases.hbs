@@ -1,36 +1,56 @@
 ## Workflow Phases
 
+Every task follows a structured workflow for consistent, high-quality outcomes.
+
 ### Phase 0: Intent Gate
 **Purpose**: Classify and validate request before work begins
 
+| Intent Type | Description | Action |
+|-------------|-------------|--------|
+| Trivial | Simple question, quick lookup | Answer directly |
+| Explicit | Clear, well-defined task | Skip to Phase 2B |
+| Exploratory | Needs investigation first | Phase 1 → 2A → 2B |
+| Open-ended | Complex, multi-step | Full workflow |
+| Ambiguous | Unclear requirements | AskUserQuestion |
+
 **Actions**:
-1. Classify request type (Trivial/Explicit/Exploratory/Open-ended/Ambiguous)
-2. For Ambiguous: AskUserQuestion for clarification
-3. For Exploratory/Open-ended: Proceed to Phase 1
-4. For Explicit: Skip to Phase 2B
-5. For Trivial: Answer directly
+1. Read and understand the request
+2. Classify intent type from table above
+3. For Ambiguous: AskUserQuestion for clarification
+4. Route to appropriate phase
 
 ---
 
 ### Phase 1: Codebase Assessment
 **Purpose**: Evaluate project state for complex tasks
 
-**Triggers**: Open-ended requests, unfamiliar codebases
+**Triggers**: Open-ended requests, unfamiliar codebases, architectural changes
 
 **Actions**:
-1. Assess codebase maturity
+1. Assess codebase maturity (greenfield/transitional/mature/legacy)
 2. Identify existing patterns via Task(Explore)
-3. Check dependencies
+3. Check dependencies and versions
 4. Understand project structure
+5. Note conventions to follow
+
+**Output**: Clear understanding of codebase state and patterns
 
 ---
 
 ### Phase 2A: Exploration & Research
 **Purpose**: Gather context through parallel investigation
 
+**When to Use**: Before implementation when context is insufficient
+
 **Actions**:
-1. Launch parallel exploration agents
-2. Continue until sufficient context gathered
+1. Launch parallel exploration agents:
+   - Task(Explore) for file discovery
+   - Task(general-purpose) for documentation
+2. Collect and synthesize findings
+3. Identify dependencies and constraints
+4. Continue until sufficient context gathered
+
+**Output**: Complete context for implementation
 
 ---
 
@@ -38,11 +58,18 @@
 **Purpose**: Execute the actual development work
 
 **Actions**:
-1. Create TodoWrite items for multi-step work
-2. Handle core logic directly
-3. Delegate specialized work appropriately
-4. Track progress via TodoWrite
-5. Validate each step before proceeding
+1. Create TodoWrite items for work (3+ steps required)
+2. Mark first task as `in_progress`
+3. Handle core logic directly
+4. Delegate specialized work appropriately
+5. Track progress - mark complete only when verified
+6. Run quality checks after changes
+7. Proceed to next task
+
+**Rules**:
+- Never leave incomplete todos
+- One `in_progress` at a time
+- Verify before marking complete
 
 ---
 
@@ -51,16 +78,28 @@
 
 **Trigger**: 3 consecutive failures on same operation
 
-**Protocol**: STOP → REVERT → DOCUMENT → CONSULT → ESCALATE
+**Protocol**:
+```
+STOP     → Halt all modifications immediately
+REVERT   → git checkout to last working state
+DOCUMENT → Record what was attempted and failed
+CONSULT  → Task(Plan, opus) for alternative approach
+ESCALATE → AskUserQuestion if still stuck
+```
+
+**Exit**: New approach identified or user guidance received
 
 ---
 
 ### Phase 3: Completion
 **Purpose**: Verify and deliver results
 
-**Actions**:
-1. Verify all TodoWrite items complete
-2. Run quality checks
-3. Verify deliverables match requirements
-4. Clean up temporary files/states
-5. Summarize accomplishments
+**Checklist**:
+1. ✓ All TodoWrite items complete
+2. ✓ Quality checks pass (lint, type, test)
+3. ✓ Deliverables match requirements
+4. ✓ Documentation updated (if needed)
+5. ✓ No temporary files left behind
+6. ✓ Summary provided to user
+
+**Output**: Verified, complete deliverable with summary

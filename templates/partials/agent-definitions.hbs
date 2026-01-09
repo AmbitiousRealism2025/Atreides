@@ -2,33 +2,125 @@
 
 Use the Task tool with appropriate specialization:
 
+### Delegation Matrix
+
 | Task Type | subagent_type | model | When to Use |
 |-----------|---------------|-------|-------------|
-| Codebase exploration | `Explore` | haiku | Finding files, understanding structure |
-| Research/documentation | `general-purpose` | haiku | External lookups, documentation |
-| Architecture decisions | `Plan` | opus | Complex design, multi-component analysis |
+| Codebase exploration | `Explore` | haiku | Finding files, understanding structure, searching code |
+| Research/documentation | `general-purpose` | haiku | External lookups, reading docs, research |
+| Architecture decisions | `Plan` | opus | Complex design, multi-component analysis, major refactoring |
 | Implementation planning | `Plan` | sonnet | Feature design, refactoring strategy |
-| Security review | `security-engineer` | sonnet | Vulnerability analysis |
-| Performance analysis | `performance-engineer` | sonnet | Optimization, profiling |
-| Frontend work | `frontend-architect` | sonnet | UI/UX implementation |
+| Security review | `security-engineer` | sonnet | Vulnerability analysis, auth design |
+| Performance analysis | `performance-engineer` | sonnet | Optimization, bottleneck analysis |
+| Frontend work | `frontend-architect` | sonnet | UI/UX implementation, components |
 | Backend design | `backend-architect` | sonnet | API design, data modeling |
+| Implementation | (direct) | - | Execute yourself when task is clear |
 
 ### Model Selection Guidelines
 
-| Complexity | Model | Use When |
-|------------|-------|----------|
-| Low | haiku | Simple searches, quick lookups, routine tasks |
-| Medium | sonnet | Standard implementation, code review, testing |
-| High | opus | Architecture, complex debugging, critical decisions |
+**Use haiku for**:
+- Quick file searches
+- Simple lookups
+- Codebase exploration
+- Low-complexity research
+- Single-file operations
+
+**Use sonnet for**:
+- Implementation tasks
+- Code generation
+- Standard complexity analysis
+- Most delegation scenarios
+- Multi-file operations
+
+**Use opus for**:
+- Architecture decisions
+- Complex debugging
+- Error recovery consultation (3-strikes CONSULT)
+- Strategic planning
+- Critical path decisions
+
+### When to Delegate
+
+**Delegate when**:
+- Task requires specialized knowledge (security, performance)
+- Task benefits from isolated context (exploration)
+- You need external research
+- Complex analysis is needed
+- Multiple perspectives would help
+- Task is parallelizable
+
+**Handle directly when**:
+- Task is straightforward
+- You have sufficient context
+- Delegation overhead exceeds benefit
+- Simple code changes
+- Single-file edits
+- Context already loaded
 
 ### Delegation Prompt Template
 
-When delegating via Task tool, structure prompts as:
+When delegating via Task tool, structure prompts with these sections:
 
-1. **TASK**: [Specific, atomic goal]
-2. **EXPECTED OUTCOME**: [Concrete deliverable]
+1. **TASK**: [Specific, atomic goal - what needs to be done]
+2. **EXPECTED OUTCOME**: [Concrete deliverable - what success looks like]
 3. **CONTEXT**: [Relevant file paths, patterns, constraints]
 4. **MUST DO**: [Explicit requirements]
 5. **MUST NOT DO**: [Forbidden actions]
-6. **TOOLS ALLOWED**: [Optional whitelist]
+6. **TOOLS ALLOWED**: [Optional tool whitelist]
 7. **SUCCESS CRITERIA**: [How to know task is complete]
+
+### Delegation Example
+
+```javascript
+Task({
+  subagent_type: "Explore",
+  model: "haiku",
+  description: "Find auth imports",
+  prompt: `## TASK
+Find all files that import from the 'auth' module.
+
+## EXPECTED OUTCOME
+A list of file paths with line numbers where the import occurs.
+
+## CONTEXT
+- The auth module is at: src/lib/auth.js
+- Project uses ES modules (import/export)
+- Focus on src/ directory
+
+## MUST DO
+- Check all .js and .ts files in src/
+- Include the exact import statement found
+- Return paths relative to project root
+
+## MUST NOT DO
+- Modify any files
+- Check node_modules/
+- Execute any code
+
+## SUCCESS CRITERIA
+- Complete list of all files importing auth
+- Line numbers for each import
+- No false positives`
+})
+```
+
+### Parallel Delegation
+
+When tasks are independent, delegate in parallel:
+
+```javascript
+// Good: Independent searches in parallel
+Task({ subagent_type: "Explore", prompt: "Find all API routes" })
+Task({ subagent_type: "Explore", prompt: "Find all database models" })
+Task({ subagent_type: "Explore", prompt: "Find all test files" })
+```
+
+**When to parallelize**:
+- Independent searches
+- Multiple file explorations
+- Gathering diverse context
+
+**When NOT to parallelize**:
+- Sequential dependencies
+- Modifying same files
+- When results inform next steps
