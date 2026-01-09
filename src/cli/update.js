@@ -117,8 +117,49 @@ async function updateGlobal(options) {
 }
 
 /**
+ * Merge hook arrays, deduplicating by matcher and command
+ * @param {Array} existing - Existing hook entries
+ * @param {Array} newHooks - New hook entries to merge
+ * @returns {Array} Merged hook array
+ */
+function mergeHookArrays(existing, newHooks) {
+  const result = [...existing];
+
+  for (const newHook of newHooks) {
+    // Check if this hook already exists (by matcher + command signature)
+    const hookSignature = getHookSignature(newHook);
+    const isDuplicate = result.some(h => getHookSignature(h) === hookSignature);
+
+    if (!isDuplicate) {
+      result.push(newHook);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Generate a signature for a hook entry for deduplication
+ * @param {object} hook - Hook configuration
+ * @returns {string} Signature string
+ */
+function getHookSignature(hook) {
+  if (hook.matcher && hook.hooks) {
+    // PreToolUse/PostToolUse style: { matcher, hooks: [{type, command}] }
+    const commands = hook.hooks.map(h => h.command || h.type).join('|');
+    return `${hook.matcher}:${commands}`;
+  } else if (hook.type && hook.command) {
+    // Simple hook style: { type, command }
+    return `${hook.type}:${hook.command}`;
+  }
+  // Fallback to JSON
+  return JSON.stringify(hook);
+}
+
+/**
  * Deep merge settings with smart hook/permission handling
- * - New hook types are added (don't overwrite existing)
+ * - New hook types are added
+ * - New entries within existing hook types are merged with deduplication
  * - Existing hook customizations are preserved
  * - Permissions are merged with deduplication
  * @param {object} newSettings - New settings from template
@@ -128,15 +169,18 @@ async function updateGlobal(options) {
 function deepMergeSettings(newSettings, existingSettings) {
   const merged = { ...existingSettings };
 
-  // Merge hooks: add new hook types, preserve existing customizations
+  // Merge hooks: add new hook types AND merge entries within existing types
   if (newSettings.hooks) {
     merged.hooks = merged.hooks || {};
     for (const [hookType, hookConfig] of Object.entries(newSettings.hooks)) {
       if (!merged.hooks[hookType]) {
         // New hook type - add it
         merged.hooks[hookType] = hookConfig;
+      } else if (Array.isArray(hookConfig) && Array.isArray(merged.hooks[hookType])) {
+        // Merge hook arrays, deduplicating by command string
+        merged.hooks[hookType] = mergeHookArrays(merged.hooks[hookType], hookConfig);
       }
-      // If hook type exists, keep user's customization
+      // If hook type exists but isn't an array, keep user's customization
     }
   }
 

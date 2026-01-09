@@ -277,7 +277,7 @@ After **3 consecutive failures** on same operation:
  * @param {object} config - Project config
  * @returns {object}
  */
-function createBasicSettings(config) {
+function createBasicSettings(_config) {
   return {
     hooks: {},
     permissions: {

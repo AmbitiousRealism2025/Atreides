@@ -41,7 +41,7 @@
     "lib/"
   ],
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchman=false",
     "test:watch": "npm test -- --watch",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",

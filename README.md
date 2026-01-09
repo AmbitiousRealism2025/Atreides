@@ -68,6 +68,8 @@ Your project now has Muad'Dib orchestration! Claude Code will automatically:
 | `muaddib update` | Update global components |
 | `muaddib update --project` | Update project files |
 | `muaddib doctor` | Check installation health |
+| `muaddib uninstall` | Remove global components |
+| `muaddib uninstall --project` | Also remove project files |
 
 ## Generated Files
 
@@ -365,10 +367,12 @@ npm run lint
 
 ### Test Suite
 
-The project includes 53 tests across 3 test files:
+The project includes 188 tests across 5 test files:
 - `template-engine.test.js` - Handlebars helpers and rendering
 - `settings-merge.test.js` - Deep merge logic for updates
 - `init.test.js` - Template generation, hooks, skills, permissions, Phase 5 features
+- `cli.test.js` - CLI command integration tests
+- `file-manager.test.js` - File operations, backup, restore, symlinks
 
 ## License
 

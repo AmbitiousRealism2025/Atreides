@@ -25,7 +25,7 @@ describe('deepMergeSettings', () => {
       expect(result.hooks.PostToolUse).toEqual([{ type: 'command', command: 'format.sh' }]);
     });
 
-    it('should preserve existing hook customizations', () => {
+    it('should merge new entries with existing hook customizations', () => {
       const newSettings = {
         hooks: {
           PostToolUse: [{ type: 'command', command: 'new-format.sh' }]
@@ -39,8 +39,28 @@ describe('deepMergeSettings', () => {
 
       const result = deepMergeSettings(newSettings, existingSettings);
 
-      // Should keep user's customization, not overwrite
-      expect(result.hooks.PostToolUse).toEqual([{ type: 'command', command: 'my-custom-format.sh' }]);
+      // Should keep user's customization AND add new entry
+      expect(result.hooks.PostToolUse).toHaveLength(2);
+      expect(result.hooks.PostToolUse[0]).toEqual({ type: 'command', command: 'my-custom-format.sh' });
+      expect(result.hooks.PostToolUse[1]).toEqual({ type: 'command', command: 'new-format.sh' });
+    });
+
+    it('should not duplicate identical hooks', () => {
+      const newSettings = {
+        hooks: {
+          PostToolUse: [{ type: 'command', command: 'format.sh' }]
+        }
+      };
+      const existingSettings = {
+        hooks: {
+          PostToolUse: [{ type: 'command', command: 'format.sh' }]
+        }
+      };
+
+      const result = deepMergeSettings(newSettings, existingSettings);
+
+      // Should not duplicate identical hooks
+      expect(result.hooks.PostToolUse).toHaveLength(1);
     });
 
     it('should add new hook types while preserving existing ones', () => {
@@ -190,8 +210,10 @@ describe('deepMergeSettings', () => {
       expect(result.hooks.PreToolUse).toBeDefined();
       expect(result.hooks.SessionStart).toBeDefined();
 
-      // Existing PostToolUse should be preserved (user's customization)
+      // PostToolUse should have user's customization AND new entry (merged)
+      expect(result.hooks.PostToolUse).toHaveLength(2);
       expect(result.hooks.PostToolUse[0].hooks[0].command).toBe('prettier --write');
+      expect(result.hooks.PostToolUse[1].hooks[0].command).toBe('new-formatter.sh');
 
       // New permissions should be added
       expect(result.permissions.allow).toContain('Bash(cargo:*)');
