@@ -2,13 +2,28 @@
 
 ### Available Skills
 
-Muad'Dib provides three specialized skills that can be invoked with `/muaddib-<skill>`:
+Muad'Dib provides 11 specialized skills that can be invoked with `/muaddib-<skill>`:
+
+#### Core Skills (Phase 4)
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
 | `muaddib-orchestrate` | main | Main workflow coordination and task management |
 | `muaddib-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
 | `muaddib-validate` | main | Pre-completion quality gates and verification |
+
+#### Extended Skills (Phase 5)
+
+| Skill | Context | Purpose |
+|-------|---------|---------|
+| `muaddib-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
+| `muaddib-refactor` | **forked** | AST-grep structural code transformations |
+| `muaddib-checkpoint` | main | Session state checkpointing and recovery |
+| `muaddib-tdd` | **forked** | Test-driven development workflow |
+| `muaddib-parallel-explore` | **forked** | Multiple parallel exploration queries |
+| `muaddib-incremental-refactor` | **forked** | Per-file refactoring with verification |
+| `muaddib-doc-sync` | main | Documentation synchronization with code |
+| `muaddib-quality-gate` | main | Pre-completion quality verification |
 
 ### Forked Context (Key Feature)
 
