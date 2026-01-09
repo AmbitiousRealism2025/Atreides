@@ -1,19 +1,40 @@
-# Muad'Dib
+# Atreides
 
-OmO-style orchestration for Claude Code - systematic workflows, intelligent agent delegation, and robust error recovery.
+**Transform Claude Code into a disciplined, self-orchestrating development partner.**
+
+Atreides brings systematic workflows, intelligent agent delegation, and robust error recovery to your Claude Code sessions. At its core is **Muad'Dib**—the orchestration agent that manages your development workflow from start to finish. Instead of ad-hoc prompting, Muad'Dib provides a structured methodology that knows when to explore, when to implement, and when to stop and recover from errors—automatically.
+
+Whether you're navigating a legacy codebase or building from scratch, Muad'Dib adapts to your project's maturity level and applies the right approach for each task. Complex multi-step operations are broken down and tracked. Failures trigger automatic recovery protocols. Specialized agents are delegated to with clear instructions and success criteria.
+
+**The result?** More reliable AI-assisted development with fewer dead ends and wasted context.
+
+---
+
+### Inspired By
+
+Atreides was inspired by [Oh My Opencode](https://github.com/code-yeongyu/oh-my-opencode), created by **YeonGyu Kim** ([@code-yeongyu](https://github.com/code-yeongyu)). Oh My Opencode pioneered the concept of batteries-included agent orchestration, demonstrating how pre-built tools, specialized agents, and intelligent workflows can dramatically improve AI coding assistants. Atreides builds on these ideas with a focus on Claude Code's unique capabilities.
+
+---
 
 ## Features
 
-- **Systematic Workflows** - Phase-based approach to task execution
-- **Intelligent Delegation** - Use the right agent and model for each task
-- **Robust Error Recovery** - 3-strikes rule with graceful escalation
-- **Context Preservation** - Maintain state across sessions and compaction
-- **Project Templates** - Quick initialization with best practices
-- **Quality Guardrails** - Comprehensive permission controls and quality checks
-- **Muad'Dib Skills** (Claude Code 2.1+) - Specialized skills with forked context isolation
-- **Wildcard Permissions** - Flexible `Bash(npm *)` pattern matching
+- **Systematic Workflows** — Move through intent classification, exploration, implementation, and completion phases automatically. No more wondering "what should I do next?"
+- **Intelligent Delegation** — Muad'Dib selects the right agent and model for each task. Quick lookups use fast models; complex architecture decisions get the heavy hitters.
+- **Robust Error Recovery** — The 3-strikes rule automatically halts, reverts, and escalates when things go wrong. No more runaway failures corrupting your codebase.
+- **Context Preservation** — Session state persists across conversations and survives context compaction. Pick up exactly where you left off.
+- **Project Templates** — Initialize new projects with sensible defaults, or configure existing ones to match your team's standards.
+- **Quality Guardrails** — Built-in permission controls prevent dangerous operations while allowing the flexibility you need for real development work.
+- **Muad'Dib Skills** (Claude Code 2.1+) — 11 specialized skills with forked context isolation. Explore 50+ files without bloating your main session.
+- **Wildcard Permissions** — Flexible patterns like `Bash(npm *)` give you fine-grained control over what operations are allowed.
 
 ## Installation
+
+You have two options for installing Atreides:
+
+1. **As your main Claude environment** — Atreides orchestration applies to all your Claude Code sessions. Follow the directions below.
+2. **As a separate custom environment** — Keep vanilla `claude` untouched and launch Atreides with a dedicated `atreides` command. See the [Dual Environment Setup Guide](docs/DUAL-ENVIRONMENT-SETUP.md).
+
+### Standard Installation
 
 ```bash
 # Install globally
@@ -107,7 +128,9 @@ your-project/
 
 ## Intent Classification
 
-Before starting any task, requests are classified to determine the appropriate workflow:
+Not every request needs the same level of rigor. Asking "what does this function do?" shouldn't trigger a full codebase assessment. But "refactor the auth system" absolutely should.
+
+Muad'Dib classifies your requests before acting, ensuring simple questions get quick answers while complex tasks receive the thorough treatment they deserve:
 
 | Category | Examples | Action |
 |----------|----------|--------|
@@ -119,7 +142,9 @@ Before starting any task, requests are classified to determine the appropriate w
 
 ## Codebase Maturity Assessment
 
-Projects are assessed on a 4-level scale to calibrate behavior:
+A battle-tested codebase with 90% test coverage deserves different treatment than a scrappy prototype. Muad'Dib assesses your project's maturity level and adjusts its approach accordingly—following established patterns exactly in disciplined codebases, while being more flexible in greenfield projects where patterns are still being established.
+
+Projects are assessed on a 4-level scale:
 
 | Level | Description | Approach |
 |-------|-------------|----------|
@@ -129,6 +154,10 @@ Projects are assessed on a 4-level scale to calibrate behavior:
 | **GREENFIELD** | New project | Establish best practices |
 
 ## Orchestration Phases
+
+Muad'Dib orchestrates your development workflow through a series of intelligent phases. Rather than jumping straight into code changes, the agent first understands what you're asking for, assesses your codebase, and gathers the context needed to succeed. This methodical approach prevents the common pitfalls of AI-assisted development: incomplete understanding, missed edge cases, and changes that break existing functionality.
+
+When you give Muad'Dib a task, it automatically routes your request through the appropriate phases. Simple questions get immediate answers. Implementation requests trigger exploration and planning. Complex refactoring engages the full workflow with quality gates and recovery protocols. You don't need to manage this process—Muad'Dib handles the orchestration while keeping you informed of progress through each phase.
 
 ### Phase 0: Intent Gate
 Classify requests using the Intent Classification matrix above.
@@ -157,6 +186,8 @@ Verify deliverables, run quality checks, and summarize accomplishments.
 
 ## 3-Strikes Error Recovery
 
+One of the most frustrating aspects of AI-assisted development is watching an agent repeatedly fail at the same operation, consuming context and making things worse with each attempt. Muad'Dib implements a strict 3-strikes protocol: after three consecutive failures, it stops, reverts to a known-good state, and escalates—either consulting a more capable agent or asking you for guidance.
+
 After 3 consecutive failures on the same operation:
 
 ```
@@ -175,6 +206,8 @@ ESCALATE → AskUserQuestion if still stuck
 - Lint errors not resolvable
 
 ## Agent Delegation
+
+Muad'Dib doesn't try to do everything itself. When a task calls for specialized expertise—security analysis, performance optimization, frontend architecture—it delegates to purpose-built agents with the right capabilities and model selection. This team-based approach means you get the right level of intelligence for each subtask without burning expensive tokens on simple operations.
 
 | Agent | Model | Use For |
 |-------|-------|---------|
@@ -206,7 +239,9 @@ When delegating to agents, use this structure:
 
 ## Completion Checking
 
-Before ending any multi-step task, execute this protocol:
+"Done" doesn't mean "I stopped working." Muad'Dib enforces a strict completion protocol that verifies all todos are complete, quality checks pass, and deliverables match requirements before declaring victory. No more prematurely ended sessions with half-finished features and failing tests.
+
+Before ending any multi-step task, this protocol runs:
 
 1. **TodoWrite Audit** - Are ALL todos complete?
 2. **Quality Verification** - Did linters/tests/builds pass?
@@ -219,6 +254,8 @@ Before ending any multi-step task, execute this protocol:
 - NEVER stop without verifying deliverables
 
 ## Session Continuity
+
+Development rarely happens in a single sitting. Muad'Dib maintains context across sessions so you can pick up exactly where you left off—even after context compaction. Critical information is preserved in dedicated files that survive conversation resets.
 
 **Session Start Protocol**:
 - Read CLAUDE.md (project rules)
@@ -239,6 +276,8 @@ Before ending any multi-step task, execute this protocol:
 
 ## Quality Standards
 
+Code that doesn't pass linting, type checking, and tests isn't done—it's a liability. Muad'Dib runs your project's quality checks before marking tasks complete, catching issues while the context is still fresh rather than leaving them for future debugging sessions.
+
 Before marking any task complete:
 
 1. Save all files
@@ -250,7 +289,9 @@ Before marking any task complete:
 
 ## Muad'Dib Skills (Claude Code 2.1+)
 
-Muad'Dib includes 11 specialized skills that can be invoked with `/muaddib-<skill>`:
+Beyond orchestration, Muad'Dib provides 11 specialized skills that extend Claude Code's capabilities. These skills leverage forked context—a powerful feature that lets you explore dozens of files without consuming your main session's context window. The results come back as concise summaries, keeping your working memory clean while giving you deep codebase insights.
+
+Invoke any skill with `/muaddib-<skill>`:
 
 ### Core Skills
 
@@ -297,6 +338,8 @@ ast-grep --pattern 'console.log($$$ARGS)' --rewrite '' --lang javascript src/
 
 ## Security
 
+Giving an AI agent access to your terminal requires trust—and guardrails. Atreides ships with a carefully designed permission system that allows productive development workflows while blocking destructive operations. You can customize these permissions for your team's needs, but the defaults are designed to keep you safe out of the box.
+
 ### Wildcard Permissions (Claude Code 2.1)
 
 Muad'Dib uses flexible wildcard patterns:
@@ -332,6 +375,8 @@ Muad'Dib uses flexible wildcard patterns:
 
 ## Configuration
 
+Atreides uses a layered configuration system. Global settings apply across all your projects, while project-specific settings let you customize behavior for individual codebases. Project config takes precedence, with smart merging that preserves your customizations during updates.
+
 ### Global Configuration
 Located at `~/.muaddib/config.json`
 
@@ -347,12 +392,27 @@ When running `muaddib update --project`:
 - **Permissions** are merged with deduplication
 - **Existing settings** are preserved
 
+## Running Alongside Vanilla Claude Code
+
+Want to keep your standard `claude` command untouched while having `atreides` available for orchestrated sessions? See the [Dual Environment Setup Guide](docs/DUAL-ENVIRONMENT-SETUP.md) for instructions on configuring both:
+
+```bash
+claude     # Vanilla Claude Code
+atreides   # Claude Code + Muad'Dib orchestration
+```
+
+This lets you choose the right level of structure for each task.
+
 ## Requirements
+
+Atreides has minimal dependencies—just Node.js and Claude Code:
 
 - Node.js 18+
 - Claude Code CLI
 
 ## Development
+
+Contributions are welcome! The codebase is thoroughly tested and follows consistent patterns.
 
 ```bash
 # Install dependencies
@@ -367,7 +427,7 @@ npm run lint
 
 ### Test Suite
 
-The project includes 188 tests across 5 test files:
+The project includes a comprehensive test suite with 188 tests across 5 test files:
 - `template-engine.test.js` - Handlebars helpers and rendering
 - `settings-merge.test.js` - Deep merge logic for updates
 - `init.test.js` - Template generation, hooks, skills, permissions, Phase 5 features
@@ -380,8 +440,8 @@ MIT
 
 ## Credits
 
-Inspired by OmO (OpenCode Multi-agent Orchestration) framework.
+Inspired by [Oh My Opencode](https://github.com/code-yeongyu/oh-my-opencode) by [YeonGyu Kim](https://github.com/code-yeongyu).
 
 ---
 
-*"The spice must flow" - Muad'Dib orchestrates the flow of development*
+*"The spice must flow" — Atreides orchestrates the flow of development*
