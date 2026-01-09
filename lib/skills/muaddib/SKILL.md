@@ -43,13 +43,13 @@ Use specialized agents appropriately:
 
 | Agent | Model | Use For |
 |-------|-------|---------|
-| Explore | haiku | File searches, structure analysis |
-| general-purpose | haiku | Research, documentation |
+| Explore | sonnet | File searches, structure analysis |
+| general-purpose | sonnet | Research, documentation |
 | Plan | opus | Architecture, complex design |
-| security-engineer | sonnet | Security review |
-| performance-engineer | sonnet | Optimization |
-| frontend-architect | sonnet | UI/UX work |
-| backend-architect | sonnet | API design |
+| security-engineer | opus | Security review |
+| performance-engineer | opus | Optimization |
+| frontend-architect | opus | UI/UX work |
+| backend-architect | opus | API design |
 
 ### 4. Workflow Phases
 

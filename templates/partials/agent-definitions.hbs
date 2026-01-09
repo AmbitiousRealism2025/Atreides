@@ -6,33 +6,31 @@ Use the Task tool with appropriate specialization:
 
 | Task Type | subagent_type | model | When to Use |
 |-----------|---------------|-------|-------------|
-| Codebase exploration | `Explore` | haiku | Finding files, understanding structure, searching code |
-| Research/documentation | `general-purpose` | haiku | External lookups, reading docs, research |
+| Codebase exploration | `Explore` | sonnet | Finding files, understanding structure, searching code |
+| Research/documentation | `general-purpose` | sonnet | External lookups, reading docs, research |
 | Architecture decisions | `Plan` | opus | Complex design, multi-component analysis, major refactoring |
-| Implementation planning | `Plan` | sonnet | Feature design, refactoring strategy |
-| Security review | `security-engineer` | sonnet | Vulnerability analysis, auth design |
-| Performance analysis | `performance-engineer` | sonnet | Optimization, bottleneck analysis |
-| Frontend work | `frontend-architect` | sonnet | UI/UX implementation, components |
-| Backend design | `backend-architect` | sonnet | API design, data modeling |
+| Implementation planning | `Plan` | opus | Feature design, refactoring strategy |
+| Security review | `security-engineer` | opus | Vulnerability analysis, auth design |
+| Performance analysis | `performance-engineer` | opus | Optimization, bottleneck analysis |
+| Frontend work | `frontend-architect` | opus | UI/UX implementation, components |
+| Backend design | `backend-architect` | opus | API design, data modeling |
 | Implementation | (direct) | - | Execute yourself when task is clear |
 
 ### Model Selection Guidelines
 
-**Use haiku for**:
+**Use sonnet for**:
 - Quick file searches
 - Simple lookups
 - Codebase exploration
 - Low-complexity research
 - Single-file operations
 
-**Use sonnet for**:
+**Use opus for**:
 - Implementation tasks
 - Code generation
 - Standard complexity analysis
 - Most delegation scenarios
 - Multi-file operations
-
-**Use opus for**:
 - Architecture decisions
 - Complex debugging
 - Error recovery consultation (3-strikes CONSULT)
@@ -74,7 +72,7 @@ When delegating via Task tool, structure prompts with these sections:
 ```javascript
 Task({
   subagent_type: "Explore",
-  model: "haiku",
+  model: "sonnet",
   description: "Find auth imports",
   prompt: `## TASK
 Find all files that import from the 'auth' module.

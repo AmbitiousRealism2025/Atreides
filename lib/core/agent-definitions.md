@@ -13,7 +13,7 @@ This document defines when and how to use different agent types.
 
 #### Explore Agent
 **subagent_type**: `Explore`
-**model**: `haiku`
+**model**: `sonnet`
 
 **Use For**:
 - Finding files by pattern
@@ -25,14 +25,14 @@ This document defines when and how to use different agent types.
 ```javascript
 Task({
   subagent_type: "Explore",
-  model: "haiku",
+  model: "sonnet",
   prompt: "Find all API route handlers in the src directory"
 })
 ```
 
 #### General-Purpose Agent
 **subagent_type**: `general-purpose`
-**model**: `haiku`
+**model**: `sonnet`
 
 **Use For**:
 - Documentation research
@@ -44,7 +44,7 @@ Task({
 ```javascript
 Task({
   subagent_type: "general-purpose",
-  model: "haiku",
+  model: "sonnet",
   prompt: "Research best practices for JWT refresh token rotation"
 })
 ```
@@ -74,7 +74,7 @@ Task({
 
 #### Plan Agent (Tactical)
 **subagent_type**: `Plan`
-**model**: `sonnet`
+**model**: `opus`
 
 **Use For**:
 - Feature design
@@ -86,7 +86,7 @@ Task({
 ```javascript
 Task({
   subagent_type: "Plan",
-  model: "sonnet",
+  model: "opus",
   prompt: "Plan the refactoring of the authentication module from callbacks to async/await"
 })
 ```
@@ -97,7 +97,7 @@ Task({
 
 #### Security Engineer
 **subagent_type**: `security-engineer`
-**model**: `sonnet`
+**model**: `opus`
 
 **Use For**:
 - Vulnerability analysis
@@ -109,14 +109,14 @@ Task({
 ```javascript
 Task({
   subagent_type: "security-engineer",
-  model: "sonnet",
+  model: "opus",
   prompt: "Review this authentication flow for security vulnerabilities"
 })
 ```
 
 #### Performance Engineer
 **subagent_type**: `performance-engineer`
-**model**: `sonnet`
+**model**: `opus`
 
 **Use For**:
 - Performance optimization
@@ -128,14 +128,14 @@ Task({
 ```javascript
 Task({
   subagent_type: "performance-engineer",
-  model: "sonnet",
+  model: "opus",
   prompt: "Analyze this database query pattern for performance issues"
 })
 ```
 
 #### Frontend Architect
 **subagent_type**: `frontend-architect`
-**model**: `sonnet`
+**model**: `opus`
 
 **Use For**:
 - UI/UX implementation
@@ -147,14 +147,14 @@ Task({
 ```javascript
 Task({
   subagent_type: "frontend-architect",
-  model: "sonnet",
+  model: "opus",
   prompt: "Design a reusable data table component with sorting and pagination"
 })
 ```
 
 #### Backend Architect
 **subagent_type**: `backend-architect`
-**model**: `sonnet`
+**model**: `opus`
 
 **Use For**:
 - API design
@@ -166,7 +166,7 @@ Task({
 ```javascript
 Task({
   subagent_type: "backend-architect",
-  model: "sonnet",
+  model: "opus",
   prompt: "Design the REST API endpoints for user management"
 })
 ```
@@ -177,25 +177,22 @@ Task({
 
 | Task Complexity | Model | Cost | Speed | Use When |
 |-----------------|-------|------|-------|----------|
-| Low | haiku | $ | Fast | Simple searches, lookups |
-| Medium | sonnet | $$ | Medium | Implementation, review |
-| High | opus | $$$ | Slower | Architecture, critical decisions |
+| Low | sonnet | $ | Fast | Simple searches, lookups |
+| Medium-High | opus | $$ | Medium | Implementation, review, architecture |
 
 ### Complexity Indicators
 
-**Use haiku when**:
+**Use sonnet when**:
 - Single file operations
 - Pattern matching
 - Documentation lookup
 - Quick questions
 
-**Use sonnet when**:
+**Use opus when**:
 - Multi-file changes
 - Code implementation
 - Testing and review
 - Standard features
-
-**Use opus when**:
 - Architectural decisions
 - Complex debugging
 - Security critical
@@ -238,7 +235,7 @@ When delegating via Task tool, structure your prompt using this template:
 ```javascript
 Task({
   subagent_type: "Explore",
-  model: "haiku",
+  model: "sonnet",
   prompt: `## TASK
 Find all files that import from the deprecated 'old-utils' module.
 

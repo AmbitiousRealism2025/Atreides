@@ -133,8 +133,8 @@ Evaluate the project state before diving into complex tasks.
 
 | Task | Tool | Model |
 |------|------|-------|
-| Find patterns | Task(Explore) | haiku |
-| Analyze structure | Task(Explore) | haiku |
+| Find patterns | Task(Explore) | sonnet |
+| Analyze structure | Task(Explore) | sonnet |
 | Architectural review | Task(Plan) | opus |
 
 ---

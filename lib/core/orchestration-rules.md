@@ -184,25 +184,22 @@ Never modify tests to make them pass:
 
 | Complexity | Model | Use When |
 |------------|-------|----------|
-| Low | haiku | Simple searches, quick lookups, routine tasks |
-| Medium | sonnet | Standard implementation, code review, testing |
-| High | opus | Architecture, complex debugging, critical decisions |
+| Low | sonnet | Simple searches, quick lookups, routine tasks |
+| Medium-High | opus | Implementation, code review, testing, architecture, critical decisions |
 
 ### Complexity Indicators
 
-**Low Complexity (haiku)**:
+**Low Complexity (sonnet)**:
 - Single-file searches
 - Pattern matching
 - Documentation lookup
 - Simple file operations
 
-**Medium Complexity (sonnet)**:
+**Medium-High Complexity (opus)**:
 - Multi-file changes
 - Code implementation
 - Test writing
 - Refactoring
-
-**High Complexity (opus)**:
 - Architectural decisions
 - Cross-cutting concerns
 - Performance optimization

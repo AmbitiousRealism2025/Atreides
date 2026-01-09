@@ -150,8 +150,8 @@ export function getDefaultGlobalConfig() {
       useHooks: true,
       useAgentDelegation: true,
       modelPreferences: {
-        exploration: 'haiku',
-        implementation: 'sonnet',
+        exploration: 'sonnet',
+        implementation: 'opus',
         architecture: 'opus'
       }
     },
