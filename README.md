@@ -81,13 +81,36 @@ your-project/
     └── config.json        # Project configuration
 ```
 
+## Intent Classification
+
+Before starting any task, requests are classified to determine the appropriate workflow:
+
+| Category | Examples | Action |
+|----------|----------|--------|
+| **Trivial** | "What does this function do?" | Direct answer |
+| **Explicit** | "Add a login button" | Execute immediately |
+| **Exploratory** | "Find where auth is handled" | Explore first, then implement |
+| **Open-ended** | "Refactor the auth system" | Full assessment, planning required |
+| **Ambiguous** | "Make it better" | Clarify before proceeding |
+
+## Codebase Maturity Assessment
+
+Projects are assessed on a 4-level scale to calibrate behavior:
+
+| Level | Description | Approach |
+|-------|-------------|----------|
+| **DISCIPLINED** | High test coverage, consistent patterns | Follow patterns EXACTLY |
+| **TRANSITIONAL** | Mixed patterns, evolving | Respect existing, introduce carefully |
+| **LEGACY** | Technical debt, inconsistent | Be conservative, propose improvements |
+| **GREENFIELD** | New project | Establish best practices |
+
 ## Orchestration Phases
 
 ### Phase 0: Intent Gate
-Classify requests as Trivial, Explicit, Exploratory, Open-ended, or Ambiguous.
+Classify requests using the Intent Classification matrix above.
 
 ### Phase 1: Assessment
-Evaluate codebase maturity for complex tasks (greenfield/transitional/mature/legacy).
+Evaluate codebase maturity for complex tasks using the Maturity Assessment checklist.
 
 ### Phase 2A: Exploration
 Gather context through parallel investigation with Explore agents.
@@ -135,8 +158,20 @@ ESCALATE → AskUserQuestion if still stuck
 
 ### Model Selection
 
-- **sonnet**: Quick searches, simple lookups, single-file operations
+- **sonnet**: Quick searches, simple lookups, codebase exploration
 - **opus**: Implementation, code review, multi-file changes, architecture, complex debugging
+
+### 7-Section Delegation Template
+
+When delegating to agents, use this structure:
+
+1. **TASK** - Specific, atomic goal
+2. **EXPECTED OUTCOME** - Concrete deliverables
+3. **CONTEXT** - Files, patterns, constraints
+4. **MUST DO** - Explicit requirements
+5. **MUST NOT DO** - Forbidden actions
+6. **TOOLS ALLOWED** - Optional whitelist
+7. **SUCCESS CRITERIA** - Completion verification
 
 ## Quality Standards
 

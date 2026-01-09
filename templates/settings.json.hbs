@@ -18,10 +18,12 @@
           {"type": "command", "command": "ruff check --fix \"$FILE\" 2>/dev/null || true"}
 {{else}}
 {{#if-eq projectType "go"}}
-          {"type": "command", "command": "gofmt -w \"$FILE\" 2>/dev/null || true"}
+          {"type": "command", "command": "gofmt -w \"$FILE\" 2>/dev/null || true"},
+          {"type": "command", "command": "go vet \"$(dirname \"$FILE\")\" 2>/dev/null || true"}
 {{else}}
 {{#if-eq projectType "rust"}}
-          {"type": "command", "command": "rustfmt \"$FILE\" 2>/dev/null || true"}
+          {"type": "command", "command": "rustfmt \"$FILE\" 2>/dev/null || true"},
+          {"type": "command", "command": "cargo clippy --fix --allow-dirty --allow-staged 2>/dev/null || true"}
 {{else}}
           {"type": "command", "command": "echo 'Edited: $FILE'"}
 {{/if-eq}}
