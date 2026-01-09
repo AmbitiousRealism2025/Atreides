@@ -95,6 +95,74 @@ describe('deepMergeSettings', () => {
 
       expect(result.hooks.PreToolUse).toEqual([{ type: 'command', command: 'test.sh' }]);
     });
+
+    it('should merge hooks by matcher to avoid duplicate runs', () => {
+      // Existing project has Bash matcher with 2 commands
+      const existingSettings = {
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [
+                { type: 'command', command: 'validate-a.sh' },
+                { type: 'command', command: 'validate-b.sh' }
+              ]
+            }
+          ]
+        }
+      };
+
+      // New release adds a third command to Bash matcher
+      const newSettings = {
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [
+                { type: 'command', command: 'validate-a.sh' },
+                { type: 'command', command: 'validate-b.sh' },
+                { type: 'command', command: 'validate-c.sh' }
+              ]
+            }
+          ]
+        }
+      };
+
+      const result = deepMergeSettings(newSettings, existingSettings);
+
+      // Should have ONE entry with merged hooks, not two duplicate matchers
+      expect(result.hooks.PreToolUse).toHaveLength(1);
+      expect(result.hooks.PreToolUse[0].matcher).toBe('Bash');
+      expect(result.hooks.PreToolUse[0].hooks).toHaveLength(3);
+      expect(result.hooks.PreToolUse[0].hooks).toContainEqual({ type: 'command', command: 'validate-a.sh' });
+      expect(result.hooks.PreToolUse[0].hooks).toContainEqual({ type: 'command', command: 'validate-b.sh' });
+      expect(result.hooks.PreToolUse[0].hooks).toContainEqual({ type: 'command', command: 'validate-c.sh' });
+    });
+
+    it('should add new matchers alongside existing ones', () => {
+      const existingSettings = {
+        hooks: {
+          PreToolUse: [
+            { matcher: 'Bash', hooks: [{ type: 'command', command: 'bash-check.sh' }] }
+          ]
+        }
+      };
+
+      const newSettings = {
+        hooks: {
+          PreToolUse: [
+            { matcher: 'Edit', hooks: [{ type: 'command', command: 'edit-check.sh' }] }
+          ]
+        }
+      };
+
+      const result = deepMergeSettings(newSettings, existingSettings);
+
+      // Should have both matchers
+      expect(result.hooks.PreToolUse).toHaveLength(2);
+      expect(result.hooks.PreToolUse.find(h => h.matcher === 'Bash')).toBeDefined();
+      expect(result.hooks.PreToolUse.find(h => h.matcher === 'Edit')).toBeDefined();
+    });
   });
 
   describe('permission merging', () => {
@@ -210,10 +278,12 @@ describe('deepMergeSettings', () => {
       expect(result.hooks.PreToolUse).toBeDefined();
       expect(result.hooks.SessionStart).toBeDefined();
 
-      // PostToolUse should have user's customization AND new entry (merged)
-      expect(result.hooks.PostToolUse).toHaveLength(2);
-      expect(result.hooks.PostToolUse[0].hooks[0].command).toBe('prettier --write');
-      expect(result.hooks.PostToolUse[1].hooks[0].command).toBe('new-formatter.sh');
+      // PostToolUse should merge by matcher - ONE entry with both commands
+      expect(result.hooks.PostToolUse).toHaveLength(1);
+      expect(result.hooks.PostToolUse[0].matcher).toBe('Edit|Write');
+      expect(result.hooks.PostToolUse[0].hooks).toHaveLength(2);
+      expect(result.hooks.PostToolUse[0].hooks).toContainEqual({ type: 'command', command: 'prettier --write' });
+      expect(result.hooks.PostToolUse[0].hooks).toContainEqual({ type: 'command', command: 'new-formatter.sh' });
 
       // New permissions should be added
       expect(result.permissions.allow).toContain('Bash(cargo:*)');

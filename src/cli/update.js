@@ -117,7 +117,7 @@ async function updateGlobal(options) {
 }
 
 /**
- * Merge hook arrays, deduplicating by matcher and command
+ * Merge hook arrays by matcher, combining commands to avoid duplicate runs
  * @param {Array} existing - Existing hook entries
  * @param {Array} newHooks - New hook entries to merge
  * @returns {Array} Merged hook array
@@ -126,16 +126,54 @@ function mergeHookArrays(existing, newHooks) {
   const result = [...existing];
 
   for (const newHook of newHooks) {
-    // Check if this hook already exists (by matcher + command signature)
-    const hookSignature = getHookSignature(newHook);
-    const isDuplicate = result.some(h => getHookSignature(h) === hookSignature);
+    if (newHook.matcher && newHook.hooks) {
+      // PreToolUse/PostToolUse style: { matcher, hooks: [{type, command}] }
+      // Find existing entry with same matcher
+      const existingIndex = result.findIndex(h => h.matcher === newHook.matcher);
 
-    if (!isDuplicate) {
-      result.push(newHook);
+      if (existingIndex >= 0) {
+        // Merge hooks arrays, deduplicating by command
+        const existingHooks = result[existingIndex].hooks || [];
+        const mergedHooks = [...existingHooks];
+
+        for (const newSubHook of newHook.hooks) {
+          const subHookSig = getSubHookSignature(newSubHook);
+          const isDupe = mergedHooks.some(h => getSubHookSignature(h) === subHookSig);
+          if (!isDupe) {
+            mergedHooks.push(newSubHook);
+          }
+        }
+
+        result[existingIndex] = { ...result[existingIndex], hooks: mergedHooks };
+      } else {
+        // New matcher - add the whole entry
+        result.push(newHook);
+      }
+    } else {
+      // Simple hook style or unknown format - dedupe by full signature
+      const hookSignature = getHookSignature(newHook);
+      const isDuplicate = result.some(h => getHookSignature(h) === hookSignature);
+      if (!isDuplicate) {
+        result.push(newHook);
+      }
     }
   }
 
   return result;
+}
+
+/**
+ * Generate a signature for a sub-hook (inside hooks array)
+ * @param {object} subHook - Sub-hook like {type, command}
+ * @returns {string} Signature string
+ */
+function getSubHookSignature(subHook) {
+  if (subHook.command) {
+    return subHook.command;
+  } else if (subHook.type) {
+    return subHook.type;
+  }
+  return JSON.stringify(subHook);
 }
 
 /**
@@ -146,7 +184,7 @@ function mergeHookArrays(existing, newHooks) {
 function getHookSignature(hook) {
   if (hook.matcher && hook.hooks) {
     // PreToolUse/PostToolUse style: { matcher, hooks: [{type, command}] }
-    const commands = hook.hooks.map(h => h.command || h.type).join('|');
+    const commands = hook.hooks.map(h => h.command || h.type).sort().join('|');
     return `${hook.matcher}:${commands}`;
   } else if (hook.type && hook.command) {
     // Simple hook style: { type, command }
