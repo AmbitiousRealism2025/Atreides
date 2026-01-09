@@ -201,34 +201,68 @@ Task({
 
 ---
 
-## Delegation Prompt Template
+## 7-Section Delegation Template
 
-When delegating via Task tool, structure your prompt using this template:
+When delegating via Task tool, structure your prompt using this comprehensive template:
 
 ```markdown
-## TASK
-[Specific, atomic goal - what needs to be done]
+## 1. TASK
+[Specific, atomic goal with single deliverable]
+• One sentence, one goal
+• Action verb first
+• Measurable outcome
+• Not decomposable into subtasks
 
-## EXPECTED OUTCOME
-[Concrete deliverable - what success looks like]
+## 2. EXPECTED OUTCOME
+[Concrete, verifiable deliverables]
+• What you'll receive back
+• Include format expectations
+• Quantify when possible
 
-## CONTEXT
-[Relevant information]
-- Key files: [list paths]
-- Patterns to follow: [describe]
-- Constraints: [list any]
+## 3. CONTEXT
+• **Files**: [Relevant file paths - absolute or relative to project root]
+• **Patterns**: [Existing conventions to follow]
+• **Constraints**: [Limitations, boundaries, requirements]
+• **Background**: [Why this task exists, what problem it solves]
 
-## MUST DO
-- [Explicit requirement 1]
-- [Explicit requirement 2]
+## 4. MUST DO
+• [Explicit requirement 1]
+• [Explicit requirement 2]
+• [Explicit requirement 3]
+(Positive requirements - specific, observable actions)
 
-## MUST NOT DO
-- [Forbidden action 1]
-- [Forbidden action 2]
+## 5. MUST NOT DO
+• [Forbidden action 1]
+• [Forbidden action 2]
+• Do NOT modify files outside the specified scope
+• Do NOT spawn additional sub-agents
+• Do NOT make assumptions about missing information
+(Guards against common errors and scope creep)
 
-## SUCCESS CRITERIA
-- [How to know the task is complete]
+## 6. TOOLS ALLOWED (optional)
+[Whitelist of permitted tools, if constraining]
+• Glob, Grep, Read (for exploration)
+• Edit, Write (for implementation)
+• Bash (for specific commands only)
+
+## 7. SUCCESS CRITERIA
+[How to verify the task is complete]
+• [ ] Criterion 1
+• [ ] Criterion 2
+• [ ] Criterion 3
 ```
+
+### Section Requirements
+
+| Section | Required | Purpose |
+|---------|----------|---------|
+| 1. TASK | **Yes** | Defines what to accomplish |
+| 2. EXPECTED OUTCOME | **Yes** | Defines deliverables |
+| 3. CONTEXT | **Yes** | Provides necessary information |
+| 4. MUST DO | **Yes** | Explicit requirements |
+| 5. MUST NOT DO | **Yes** | Guards against errors |
+| 6. TOOLS ALLOWED | No | Optional constraint |
+| 7. SUCCESS CRITERIA | **Yes** | Verifies completion |
 
 ### Example Delegation
 
