@@ -44,6 +44,7 @@ muaddib init
 Follow the prompts to configure:
 - Project name and type (node/typescript/python/go/rust)
 - Orchestration level (minimal/standard/full)
+- Codebase maturity (GREENFIELD/TRANSITIONAL/DISCIPLINED/LEGACY)
 - Hook preferences
 
 ### 3. Start Using Claude Code
@@ -248,10 +249,37 @@ Located at `.muaddib/config.json`
 
 Project config overrides global config with smart merging.
 
+### Update Behavior
+
+When running `muaddib update --project`:
+- **New hook types** are added without overwriting your customizations
+- **Permissions** are merged with deduplication
+- **Existing settings** are preserved
+
 ## Requirements
 
 - Node.js 18+
 - Claude Code CLI
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run linter
+npm run lint
+```
+
+### Test Suite
+
+The project includes 38 tests across 3 test files:
+- `template-engine.test.js` - Handlebars helpers and rendering
+- `settings-merge.test.js` - Deep merge logic for updates
+- `init.test.js` - Template generation for all project types
 
 ## License
 

@@ -13,9 +13,11 @@ import {
   GLOBAL_TEMPLATES_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_LIB_DIR,
+  GLOBAL_SKILLS_DIR,
   PACKAGE_TEMPLATES_DIR,
   PACKAGE_SCRIPTS_DIR,
   PACKAGE_LIB_CORE_DIR,
+  PACKAGE_SKILLS_DIR,
   getProjectPaths
 } from '../utils/paths.js';
 import {
@@ -104,8 +106,64 @@ async function updateGlobal(options) {
     logger.success('Updated lib/core');
   }
 
+  // Update skills
+  if (await exists(PACKAGE_SKILLS_DIR)) {
+    await copyDir(PACKAGE_SKILLS_DIR, GLOBAL_SKILLS_DIR, { overwrite: true });
+    logger.success('Updated skills');
+  }
+
   console.log();
   logger.success('Global update complete!');
+}
+
+/**
+ * Deep merge settings with smart hook/permission handling
+ * - New hook types are added (don't overwrite existing)
+ * - Existing hook customizations are preserved
+ * - Permissions are merged with deduplication
+ * @param {object} newSettings - New settings from template
+ * @param {object} existingSettings - User's existing settings
+ * @returns {object} Merged settings
+ */
+function deepMergeSettings(newSettings, existingSettings) {
+  const merged = { ...existingSettings };
+
+  // Merge hooks: add new hook types, preserve existing customizations
+  if (newSettings.hooks) {
+    merged.hooks = merged.hooks || {};
+    for (const [hookType, hookConfig] of Object.entries(newSettings.hooks)) {
+      if (!merged.hooks[hookType]) {
+        // New hook type - add it
+        merged.hooks[hookType] = hookConfig;
+      }
+      // If hook type exists, keep user's customization
+    }
+  }
+
+  // Merge permissions: combine arrays with deduplication
+  if (newSettings.permissions) {
+    merged.permissions = merged.permissions || {};
+
+    // Merge allow list
+    if (newSettings.permissions.allow) {
+      const existingAllow = merged.permissions.allow || [];
+      const newAllow = newSettings.permissions.allow.filter(
+        p => !existingAllow.includes(p)
+      );
+      merged.permissions.allow = [...existingAllow, ...newAllow];
+    }
+
+    // Merge deny list
+    if (newSettings.permissions.deny) {
+      const existingDeny = merged.permissions.deny || [];
+      const newDeny = newSettings.permissions.deny.filter(
+        p => !existingDeny.includes(p)
+      );
+      merged.permissions.deny = [...existingDeny, ...newDeny];
+    }
+  }
+
+  return merged;
 }
 
 /**
@@ -160,16 +218,8 @@ async function updateProject(options) {
       const newSettings = await renderTemplate('settings.json', templateData);
       const newSettingsObj = JSON.parse(newSettings);
 
-      // Merge: keep existing custom settings, update structure
-      const mergedSettings = {
-        ...newSettingsObj,
-        ...existingSettings,
-        // Ensure hooks are merged, not replaced
-        hooks: {
-          ...newSettingsObj.hooks,
-          ...existingSettings.hooks
-        }
-      };
+      // Deep merge settings: new values fill gaps, existing customizations preserved
+      const mergedSettings = deepMergeSettings(newSettingsObj, existingSettings);
 
       await writeFile(paths.settingsJson, JSON.stringify(mergedSettings, null, 2), { backup: options.backup !== false });
       logger.success('Updated: .claude/settings.json');
@@ -201,3 +251,6 @@ async function updateProject(options) {
   logger.info('Note: CLAUDE.md and context files were not modified to preserve your customizations.');
   logger.info('To regenerate, run: muaddib init --force');
 }
+
+// Export for testing
+export { deepMergeSettings };

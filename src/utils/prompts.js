@@ -150,6 +150,18 @@ export async function projectInit() {
       default: 'standard'
     },
     {
+      type: 'list',
+      name: 'codebaseMaturity',
+      message: 'Codebase maturity level:',
+      choices: [
+        { name: 'Greenfield - New project, establishing patterns', value: 'GREENFIELD' },
+        { name: 'Transitional - Mixed patterns, evolving (default)', value: 'TRANSITIONAL' },
+        { name: 'Disciplined - High test coverage, consistent patterns', value: 'DISCIPLINED' },
+        { name: 'Legacy - Technical debt, inconsistent patterns', value: 'LEGACY' }
+      ],
+      default: 'TRANSITIONAL'
+    },
+    {
       type: 'confirm',
       name: 'useHooks',
       message: 'Enable Claude Code hooks?',

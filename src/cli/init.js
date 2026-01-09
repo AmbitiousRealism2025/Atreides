@@ -92,6 +92,7 @@ async function runInit(options) {
       description: '',
       projectType: 'node',
       orchestrationLevel: options.minimal ? 'minimal' : options.full ? 'full' : 'standard',
+      codebaseMaturity: 'TRANSITIONAL',
       useHooks: !options.minimal,
       useAgentDelegation: options.full
     };

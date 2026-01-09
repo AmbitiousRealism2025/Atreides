@@ -6,9 +6,19 @@
 
 import Handlebars from 'handlebars';
 import { join } from 'path';
+import { readFileSync } from 'fs';
 import { readFile, listFiles, exists } from './file-manager.js';
-import { PACKAGE_TEMPLATES_DIR } from '../utils/paths.js';
+import { PACKAGE_TEMPLATES_DIR, PACKAGE_ROOT } from '../utils/paths.js';
 import { debug } from '../utils/logger.js';
+
+// Read package version at module load
+let packageVersion = '1.0.0';
+try {
+  const packageJson = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
+  packageVersion = packageJson.version || '1.0.0';
+} catch {
+  // Fallback to default version if package.json can't be read
+}
 
 // Create a separate Handlebars instance to avoid polluting global
 const hbs = Handlebars.create();
@@ -215,7 +225,7 @@ export function getDefaultData(overrides = {}) {
     date: new Date().toISOString().split('T')[0],
     timestamp: new Date().toISOString(),
     year: new Date().getFullYear(),
-    version: '1.0.0',
+    version: packageVersion,
     ...overrides
   };
 }

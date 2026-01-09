@@ -17,12 +17,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/muaddib-claude/muaddib-claude.git"
+    "url": "git+https://github.com/AmbitiousRealism2025/muad-dib.git"
   },
   "bugs": {
-    "url": "https://github.com/muaddib-claude/muaddib-claude/issues"
+    "url": "https://github.com/AmbitiousRealism2025/muad-dib/issues"
   },
-  "homepage": "https://github.com/muaddib-claude/muaddib-claude#readme",
+  "homepage": "https://github.com/AmbitiousRealism2025/muad-dib#readme",
   "type": "module",
   "bin": {
     "muaddib": "./bin/muaddib.js"
