@@ -1,28 +1,29 @@
 {
   "name": "muaddib-claude",
   "version": "1.0.0",
-  "description": "OmO-style orchestration for Claude Code - systematic workflows, intelligent agent delegation, and robust error recovery",
+  "description": "Transform Claude Code into a disciplined, self-orchestrating development partner with Muad'Dib orchestration",
   "keywords": [
     "claude",
     "claude-code",
     "ai",
     "orchestration",
-    "omo",
-    "opencode",
+    "atreides",
+    "muaddib",
     "ai-assistant",
     "developer-tools",
-    "cli"
+    "cli",
+    "agent"
   ],
-  "author": "Muad'Dib Contributors",
+  "author": "Ambitious Realism",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AmbitiousRealism2025/muad-dib.git"
+    "url": "git+https://github.com/AmbitiousRealism2025/Atreides.git"
   },
   "bugs": {
-    "url": "https://github.com/AmbitiousRealism2025/muad-dib/issues"
+    "url": "https://github.com/AmbitiousRealism2025/Atreides/issues"
   },
-  "homepage": "https://github.com/AmbitiousRealism2025/muad-dib#readme",
+  "homepage": "https://github.com/AmbitiousRealism2025/Atreides#readme",
   "type": "module",
   "bin": {
     "muaddib": "./bin/muaddib.js"
