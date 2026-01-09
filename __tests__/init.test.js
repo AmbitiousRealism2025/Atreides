@@ -190,4 +190,113 @@ describe('Init Command - Template Rendering', () => {
       expect(result).toContain('Bash(npm *)');
     });
   });
+
+  describe('Phase 5 - Extended Skills', () => {
+    it('should include all 11 skills in CLAUDE.md', async () => {
+      const templateData = { ...getDefaultData(), ...baseConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      // Core skills (Phase 4)
+      expect(result).toContain('muaddib-orchestrate');
+      expect(result).toContain('muaddib-explore');
+      expect(result).toContain('muaddib-validate');
+
+      // Extended skills (Phase 5)
+      expect(result).toContain('muaddib-lsp');
+      expect(result).toContain('muaddib-refactor');
+      expect(result).toContain('muaddib-checkpoint');
+      expect(result).toContain('muaddib-tdd');
+      expect(result).toContain('muaddib-parallel-explore');
+      expect(result).toContain('muaddib-incremental-refactor');
+      expect(result).toContain('muaddib-doc-sync');
+      expect(result).toContain('muaddib-quality-gate');
+    });
+
+    it('should include LSP operations documentation', async () => {
+      const templateData = { ...getDefaultData(), ...baseConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('## LSP Operations');
+      expect(result).toContain('Go to Definition');
+      expect(result).toContain('Find References');
+    });
+
+    it('should include ast-grep patterns documentation', async () => {
+      const templateData = { ...getDefaultData(), ...baseConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('## AST-grep Patterns');
+      expect(result).toContain('ast-grep');
+      expect(result).toContain('$NAME');
+    });
+
+    it('should include checkpoint system documentation', async () => {
+      const templateData = { ...getDefaultData(), ...baseConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('## Checkpoint System');
+      expect(result).toContain('checkpoint.md');
+    });
+
+    it('should include skill composition patterns', async () => {
+      const templateData = { ...getDefaultData(), ...baseConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('## Skill Composition Patterns');
+      expect(result).toContain('Sequential Chaining');
+      expect(result).toContain('Parallel Execution');
+    });
+
+    it('should show Phase 5 skills with correct context types', async () => {
+      const templateData = { ...getDefaultData(), ...baseConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      // Forked context skills
+      expect(result).toMatch(/muaddib-lsp.*\*\*forked\*\*/s);
+      expect(result).toMatch(/muaddib-refactor.*\*\*forked\*\*/s);
+      expect(result).toMatch(/muaddib-tdd.*\*\*forked\*\*/s);
+
+      // Main context skills
+      expect(result).toContain('muaddib-checkpoint');
+      expect(result).toContain('muaddib-doc-sync');
+      expect(result).toContain('muaddib-quality-gate');
+    });
+  });
+
+  describe('Phase 5 - Language-specific patterns', () => {
+    it('should include node-specific ast-grep patterns', async () => {
+      const templateData = { ...getDefaultData(), ...baseConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('JavaScript/TypeScript Patterns');
+      expect(result).toContain('console.log');
+    });
+
+    it('should include python-specific patterns for python projects', async () => {
+      const pythonConfig = { ...baseConfig, projectType: 'python' };
+      const templateData = { ...getDefaultData(), ...pythonConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('Python Patterns');
+      expect(result).toContain('pyright');
+    });
+
+    it('should include go-specific patterns for go projects', async () => {
+      const goConfig = { ...baseConfig, projectType: 'go' };
+      const templateData = { ...getDefaultData(), ...goConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('Go Patterns');
+      expect(result).toContain('gopls');
+    });
+
+    it('should include rust-specific patterns for rust projects', async () => {
+      const rustConfig = { ...baseConfig, projectType: 'rust' };
+      const templateData = { ...getDefaultData(), ...rustConfig };
+      const result = await renderTemplate('CLAUDE.md', templateData);
+
+      expect(result).toContain('Rust Patterns');
+      expect(result).toContain('unwrap');
+    });
+  });
 });

@@ -87,10 +87,18 @@ your-project/
 │   │   ├── error-detector.sh
 │   │   └── notify-idle.sh
 │   └── skills/
-│       └── muaddib/             # Muad'Dib skill package
+│       └── muaddib/             # Muad'Dib skill package (11 skills)
 │           ├── orchestrate.md   # Main workflow coordination
 │           ├── explore.md       # Forked context exploration
-│           └── validate.md      # Pre-completion validation
+│           ├── validate.md      # Pre-completion validation
+│           ├── lsp.md           # Semantic code operations
+│           ├── refactor.md      # AST-grep transformations
+│           ├── checkpoint.md    # Session state management
+│           ├── tdd.md           # Test-driven development
+│           ├── parallel-explore.md  # Multi-angle exploration
+│           ├── incremental-refactor.md  # Per-file refactoring
+│           ├── doc-sync.md      # Documentation sync
+│           └── quality-gate.md  # Pre-completion verification
 └── .muaddib/
     └── config.json              # Project configuration
 ```
@@ -240,7 +248,9 @@ Before marking any task complete:
 
 ## Muad'Dib Skills (Claude Code 2.1+)
 
-Muad'Dib includes three specialized skills that can be invoked:
+Muad'Dib includes 11 specialized skills that can be invoked with `/muaddib-<skill>`:
+
+### Core Skills
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
@@ -248,13 +258,40 @@ Muad'Dib includes three specialized skills that can be invoked:
 | `muaddib-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
 | `muaddib-validate` | main | Pre-completion quality gates and verification |
 
+### Extended Skills
+
+| Skill | Context | Purpose |
+|-------|---------|---------|
+| `muaddib-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
+| `muaddib-refactor` | **forked** | AST-grep structural code transformations |
+| `muaddib-checkpoint` | main | Session state checkpointing and recovery |
+| `muaddib-tdd` | **forked** | Test-driven development workflow |
+| `muaddib-parallel-explore` | **forked** | Multiple parallel exploration queries |
+| `muaddib-incremental-refactor` | **forked** | Per-file refactoring with verification |
+| `muaddib-doc-sync` | main | Documentation synchronization with code |
+| `muaddib-quality-gate` | main | Pre-completion quality verification |
+
 ### Forked Context
 
-The `muaddib-explore` skill uses **forked context**, a Claude Code 2.1 feature that runs exploration in an isolated context. Benefits:
+Skills marked with **forked** use Claude Code 2.1's forked context feature:
 
 - Exploration doesn't consume main session context
 - Can read 50+ files without bloat
 - Only summarized results return to main session
+- Perfect for research, analysis, and parallel investigations
+
+### LSP Integration
+
+The `muaddib-lsp` skill supports semantic code operations via MCP or CLI:
+- **MCP option**: [mcp-language-server](https://github.com/isaacphi/mcp-language-server)
+- **CLI fallbacks**: Language-specific tools (pyright, gopls, rust-analyzer)
+
+### AST-grep Integration
+
+The `muaddib-refactor` skill uses [ast-grep](https://ast-grep.github.io/) for structural transformations:
+```bash
+ast-grep --pattern 'console.log($$$ARGS)' --rewrite '' --lang javascript src/
+```
 
 ## Security
 
@@ -328,10 +365,10 @@ npm run lint
 
 ### Test Suite
 
-The project includes 43 tests across 3 test files:
+The project includes 53 tests across 3 test files:
 - `template-engine.test.js` - Handlebars helpers and rendering
 - `settings-merge.test.js` - Deep merge logic for updates
-- `init.test.js` - Template generation, hooks, skills, permissions
+- `init.test.js` - Template generation, hooks, skills, permissions, Phase 5 features
 
 ## License
 

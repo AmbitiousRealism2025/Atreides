@@ -90,10 +90,18 @@ After `muaddib init --full`, this project has:
 │   │   ├── error-detector.sh
 │   │   └── notify-idle.sh
 │   └── skills/
-│       └── muaddib/             # Muad'Dib skill package
+│       └── muaddib/             # Muad'Dib skill package (11 skills)
 │           ├── orchestrate.md   # Main orchestration skill
 │           ├── explore.md       # Forked context exploration
-│           └── validate.md      # Pre-completion validation
+│           ├── validate.md      # Pre-completion validation
+│           ├── lsp.md           # Semantic code operations
+│           ├── refactor.md      # AST-grep structural changes
+│           ├── checkpoint.md    # Session state management
+│           ├── tdd.md           # Test-driven development
+│           ├── parallel-explore.md  # Multiple parallel explorations
+│           ├── incremental-refactor.md  # Per-file refactoring
+│           ├── doc-sync.md      # Documentation synchronization
+│           └── quality-gate.md  # Pre-completion verification
 └── .muaddib/
     ├── config.json              # Project configuration
     └── state/                   # Session state directory
@@ -115,6 +123,22 @@ After `muaddib init --full`, this project has:
 ---
 
 {{> skills-and-hooks}}
+
+---
+
+{{> lsp-operations}}
+
+---
+
+{{> ast-grep-patterns}}
+
+---
+
+{{> checkpoint-system}}
+
+---
+
+{{> skill-composition}}
 
 ---
 
