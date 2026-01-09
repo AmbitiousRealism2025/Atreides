@@ -12,21 +12,13 @@ This lets you choose the right tool for the job. Quick questions and simple edit
 
 ## How It Works
 
-Claude Code reads instructions from `CLAUDE.md` files in two locations:
-1. **Global**: `~/.claude/CLAUDE.md` (applies to all sessions)
-2. **Project**: `./CLAUDE.md` in your current directory (project-specific)
-
-The trick is to keep your global `~/.claude/CLAUDE.md` empty (or minimal) for vanilla sessions, and have the `atreides` command inject Atreides orchestration via a profile or environment configuration.
+The `atreides` command is a wrapper script that launches Claude Code with Muad'Dib orchestration rules injected via the `--append-system-prompt` flag. Your vanilla `claude` command remains completely unchanged.
 
 ---
 
-## Setup Options
+## Setup
 
-### Option 1: Shell Alias with Profile (Recommended)
-
-Claude Code supports profiles that can load different configurations. Create an Atreides profile and alias.
-
-**Step 1: Install Atreides globally**
+### Step 1: Install Atreides globally
 
 ```bash
 npm install -g muaddib-claude
@@ -35,9 +27,9 @@ muaddib install
 
 This installs Atreides components to `~/.muaddib/`.
 
-**Step 2: Create the Atreides profile**
+### Step 2: Create the Atreides profile
 
-Create a profile directory:
+Create a profile directory and orchestration file:
 
 ```bash
 mkdir -p ~/.claude/profiles/atreides
@@ -49,44 +41,31 @@ Create the profile's CLAUDE.md with Atreides orchestration:
 cat > ~/.claude/profiles/atreides/CLAUDE.md << 'EOF'
 # Atreides Orchestration Profile
 
-@~/.muaddib/lib/CLAUDE.md
+This profile enables Muad'Dib orchestration for Claude Code sessions.
+
+# Core Orchestration Rules
+@~/.muaddib/lib/core/orchestration-rules.md
+@~/.muaddib/lib/core/workflow-phases.md
+@~/.muaddib/lib/core/intent-classification.md
+
+# Assessment & Context
+@~/.muaddib/lib/core/maturity-assessment.md
+@~/.muaddib/lib/core/context-management.md
+@~/.muaddib/lib/core/exploration-patterns.md
+
+# Completion & Continuity
+@~/.muaddib/lib/core/completion-checking.md
+@~/.muaddib/lib/core/session-continuity.md
+
+# Agent Delegation
+@~/.muaddib/lib/core/agent-definitions.md
 
 # Add any personal customizations below
+
 EOF
 ```
 
-**Step 3: Add the shell alias**
-
-Add to your shell configuration (`~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`):
-
-**Bash/Zsh:**
-```bash
-# Vanilla Claude Code (default)
-alias claude='claude'
-
-# Atreides-orchestrated Claude Code
-alias atreides='claude --profile atreides'
-```
-
-**Fish:**
-```fish
-# Atreides-orchestrated Claude Code
-alias atreides 'claude --profile atreides'
-```
-
-**Step 4: Reload your shell**
-
-```bash
-source ~/.zshrc  # or ~/.bashrc
-```
-
----
-
-### Option 2: Wrapper Script (More Control)
-
-If you need more control over the environment, use a wrapper script.
-
-**Step 1: Create the wrapper script**
+### Step 3: Create the wrapper script
 
 ```bash
 sudo tee /usr/local/bin/atreides << 'EOF'
@@ -94,66 +73,38 @@ sudo tee /usr/local/bin/atreides << 'EOF'
 #
 # Atreides - Claude Code with Muad'Dib Orchestration
 #
-# This wrapper launches Claude Code with Atreides orchestration enabled.
-# Your vanilla 'claude' command remains unchanged.
-#
 
-set -e
+CLAUDE_BIN="$HOME/.claude/local/claude"
+ATREIDES_CLAUDE_MD="$HOME/.claude/profiles/atreides/CLAUDE.md"
 
-# Atreides installation directory
-ATREIDES_HOME="${ATREIDES_HOME:-$HOME/.muaddib}"
-
-# Verify Atreides is installed
-if [[ ! -d "$ATREIDES_HOME" ]]; then
-    echo "Error: Atreides not found at $ATREIDES_HOME"
-    echo "Run 'npm install -g muaddib-claude && muaddib install' first."
+if [[ ! -f "$CLAUDE_BIN" ]]; then
+    echo "Error: Claude Code not found at $CLAUDE_BIN"
     exit 1
 fi
 
-# Launch Claude Code with Atreides profile
-exec claude --profile atreides "$@"
+if [[ ! -f "$ATREIDES_CLAUDE_MD" ]]; then
+    echo "Error: Atreides profile not found at $ATREIDES_CLAUDE_MD"
+    echo "Run 'muaddib install' to set up Atreides."
+    exit 1
+fi
+
+# Read the orchestration rules and pass as appended system prompt
+ORCHESTRATION_CONTENT=$(cat "$ATREIDES_CLAUDE_MD")
+
+exec "$CLAUDE_BIN" --append-system-prompt "$ORCHESTRATION_CONTENT" "$@"
 EOF
 
 sudo chmod +x /usr/local/bin/atreides
 ```
 
-**Step 2: Verify installation**
+### Step 4: Verify installation
 
 ```bash
 which atreides
 # Should output: /usr/local/bin/atreides
 
-atreides --help
-# Should show Claude Code help
-```
-
----
-
-### Option 3: Environment Variable Toggle
-
-For users who want a single command with a toggle:
-
-**Add to your shell config:**
-
-```bash
-# Toggle Atreides orchestration with environment variable
-claude-env() {
-    if [[ "$1" == "--atreides" ]] || [[ "$1" == "-a" ]]; then
-        shift
-        claude --profile atreides "$@"
-    else
-        claude "$@"
-    fi
-}
-
-alias cc='claude-env'
-```
-
-**Usage:**
-```bash
-cc                    # Vanilla Claude Code
-cc --atreides         # With Atreides orchestration
-cc -a                 # Shorthand for Atreides
+atreides --version
+# Should show Claude Code version
 ```
 
 ---
@@ -171,7 +122,7 @@ cd your-project
 muaddib init
 ```
 
-Now both `claude` and `atreides` will use project-level orchestration in this directory (the project CLAUDE.md takes precedence).
+This creates a `CLAUDE.md` in your project with full orchestration rules. Both `claude` and `atreides` will use these rules when in this directory.
 
 ### Projects WITHOUT Atreides
 
@@ -185,13 +136,12 @@ In projects without a CLAUDE.md:
 
 ### Personal Overrides
 
-Add personal customizations that apply only to your Atreides sessions:
+Add personal customizations to your Atreides profile:
 
 ```bash
-# ~/.claude/profiles/atreides/CLAUDE.md
+# Edit ~/.claude/profiles/atreides/CLAUDE.md
 
-@~/.muaddib/lib/CLAUDE.md
-
+# Add at the bottom:
 # Personal preferences
 - Always run tests before committing
 - Prefer TypeScript over JavaScript
@@ -216,7 +166,7 @@ Project CLAUDE.md     → Team standards
 
 ```bash
 claude
-# Should start without Muad'Dib orchestration messages
+# Should start without Muad'Dib orchestration
 # Type: "What orchestration system are you using?"
 # Should respond that it's using standard Claude Code
 ```
@@ -227,34 +177,43 @@ claude
 atreides
 # Should start with Muad'Dib orchestration
 # Type: "What orchestration system are you using?"
-# Should mention Muad'Dib and Atreides
+# Should mention Muad'Dib and the workflow phases
 ```
 
 ---
 
 ## Troubleshooting
 
-### "Profile not found" error
+### "Claude Code not found" error
 
-Ensure the profile directory exists:
+The wrapper script looks for Claude at `~/.claude/local/claude`. If your Claude is installed elsewhere, update the `CLAUDE_BIN` path in `/usr/local/bin/atreides`.
+
+Find your Claude installation:
 ```bash
-ls -la ~/.claude/profiles/atreides/
+type claude
+# or
+which claude
 ```
 
-### Atreides not applying in project
+### "Atreides profile not found" error
 
-Check the load order:
+Ensure the profile exists:
 ```bash
-# In an atreides session, ask:
-"Show me what CLAUDE.md files are loaded"
+ls -la ~/.claude/profiles/atreides/CLAUDE.md
 ```
 
-### Alias not working after shell restart
+If missing, re-run Steps 2-3 above.
 
-Ensure your alias is in the correct shell config file:
-- **Zsh**: `~/.zshrc`
-- **Bash**: `~/.bashrc` or `~/.bash_profile`
-- **Fish**: `~/.config/fish/config.fish`
+### Permission denied creating wrapper
+
+If you can't write to `/usr/local/bin/`, create the script in your home directory instead:
+
+```bash
+mkdir -p ~/bin
+# Create the script in ~/bin/atreides instead
+# Then add ~/bin to your PATH in ~/.zshrc:
+export PATH="$HOME/bin:$PATH"
+```
 
 ### Updating Atreides
 
@@ -263,7 +222,7 @@ npm update -g muaddib-claude
 muaddib update
 ```
 
-Your profile and aliases remain unchanged.
+Your wrapper script and profile remain unchanged.
 
 ---
 
