@@ -6,6 +6,77 @@
 
 import chalk from 'chalk';
 
+const SENSITIVE_PATTERNS = [
+  /\.env/i,
+  /credentials?/i,
+  /secret/i,
+  /\.ssh/i,
+  /\.aws/i,
+  /\.pem/i,
+  /\.key/i,
+  /id_rsa/i,
+  /id_ed25519/i,
+  /kubeconfig/i,
+  /\.tfvars/i,
+  /\.tfstate/i
+];
+
+const SENSITIVE_KEYS = [
+  'password',
+  'secret',
+  'token',
+  'key',
+  'credential',
+  'env'
+];
+
+function redactString(value) {
+  if (SENSITIVE_PATTERNS.some(pattern => pattern.test(value))) {
+    return '[REDACTED]';
+  }
+  return value;
+}
+
+function redactValue(value, seen = new WeakSet()) {
+  if (typeof value === 'string') {
+    return redactString(value);
+  }
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value !== 'object') {
+    return value;
+  }
+  if (value === process.env) {
+    return '[REDACTED]';
+  }
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: redactString(value.message || '')
+    };
+  }
+  if (seen.has(value)) {
+    return '[REDACTED]';
+  }
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    return value.map(item => redactValue(item, seen));
+  }
+
+  const redacted = {};
+  for (const [key, val] of Object.entries(value)) {
+    const lowerKey = key.toLowerCase();
+    if (SENSITIVE_KEYS.some(token => lowerKey.includes(token))) {
+      redacted[key] = '[REDACTED]';
+      continue;
+    }
+    redacted[key] = redactValue(val, seen);
+  }
+  return redacted;
+}
+
 /**
  * Log an info message
  * @param {string} message - The message to log
@@ -69,7 +140,9 @@ export function title(title) {
  */
 export function debug(message, ...args) {
   if (process.env.DEBUG || process.env.MUADDIB_DEBUG) {
-    console.log(chalk.gray('[debug]'), message, ...args);
+    const safeMessage = redactValue(message);
+    const safeArgs = args.map(arg => redactValue(arg));
+    console.log(chalk.gray('[debug]'), safeMessage, ...safeArgs);
   }
 }
 

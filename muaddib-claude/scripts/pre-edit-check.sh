@@ -16,13 +16,16 @@ if [[ -z "$FILE" ]]; then
   exit 0
 fi
 
+# Convert to lowercase for case-insensitive matching
+FILE_LOWER=$(echo "$FILE" | tr '[:upper:]' '[:lower:]')
+
 # === BLOCKED FILES ===
 
-# Environment files with secrets
-if [[ "$FILE" =~ \.env$ ]] || \
-   [[ "$FILE" =~ \.env\. ]] || \
-   [[ "$FILE" =~ /\.env$ ]] || \
-   [[ "$FILE" =~ \.envrc$ ]]; then
+# Environment files with secrets (case-insensitive)
+if [[ "$FILE_LOWER" =~ \.env$ ]] || \
+   [[ "$FILE_LOWER" =~ \.env\. ]] || \
+   [[ "$FILE_LOWER" =~ /\.env$ ]] || \
+   [[ "$FILE_LOWER" =~ \.envrc$ ]]; then
   echo "BLOCKED: Cannot edit .env/.envrc files - may contain secrets"
   exit 1
 fi
@@ -48,6 +51,37 @@ if [[ "$FILE" =~ credentials\.json$ ]] || \
    [[ "$FILE" =~ service-account\.json$ ]] || \
    [[ "$FILE" =~ \.credentials$ ]]; then
   echo "BLOCKED: Cannot edit credential files"
+  exit 1
+fi
+
+# Additional secrets/credentials files
+if [[ "$FILE" =~ secrets\.json$ ]] || \
+   [[ "$FILE" =~ secrets\.yaml$ ]] || \
+   [[ "$FILE" =~ secrets\.yml$ ]] || \
+   [[ "$FILE" =~ credentials\.yaml$ ]] || \
+   [[ "$FILE" =~ credentials\.yml$ ]]; then
+  echo "BLOCKED: Cannot edit secrets/credentials files"
+  exit 1
+fi
+
+# SSH config
+if [[ "$FILE" =~ \.ssh/config ]]; then
+  echo "BLOCKED: Cannot edit SSH config file"
+  exit 1
+fi
+
+# Cloud provider credentials
+if [[ "$FILE" =~ \.aws/credentials ]] || \
+   [[ "$FILE" =~ \.aws/config ]]; then
+  echo "BLOCKED: Cannot edit AWS credential files"
+  exit 1
+fi
+
+# Package manager auth files
+if [[ "$FILE" =~ \.npmrc$ ]] || \
+   [[ "$FILE" =~ \.pypirc$ ]] || \
+   [[ "$FILE" =~ \.yarnrc$ ]]; then
+  echo "BLOCKED: Cannot edit package manager auth files"
   exit 1
 fi
 

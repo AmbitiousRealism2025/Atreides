@@ -17,6 +17,11 @@ import fs from 'fs-extra';
 import {
   exists,
   readJson,
+  validatePath,
+  writeFile,
+  writeJson,
+  copyFile,
+  copyDir,
   isSymlink,
   readSymlink,
   makeExecutable,
@@ -154,6 +159,55 @@ describe('File Manager', () => {
 
     it('should throw on missing file', async () => {
       await expect(readJson(join(testDir, 'missing.json'))).rejects.toThrow();
+    });
+  });
+
+  describe('path traversal protection', () => {
+    it('validatePath should resolve safe relative paths within baseDir', () => {
+      const safePath = validatePath('safe.txt', testDir);
+      expect(safePath).toBe(join(testDir, 'safe.txt'));
+    });
+
+    it('validatePath should block traversal outside baseDir', () => {
+      expect(() => validatePath('../outside.txt', testDir))
+        .toThrow(/Path traversal attempt detected/);
+    });
+
+    it('writeFile should block traversal attempts', async () => {
+      await expect(writeFile('../outside.txt', 'content', { baseDir: testDir }))
+        .rejects
+        .toThrow(/Path traversal attempt detected/);
+    });
+
+    it('writeJson should block traversal attempts', async () => {
+      await expect(writeJson('../outside.json', { ok: true }, { baseDir: testDir }))
+        .rejects
+        .toThrow(/Path traversal attempt detected/);
+    });
+
+    it('copyFile should block traversal in source path', async () => {
+      await expect(copyFile('../outside.txt', 'dest.txt', { baseDir: testDir }))
+        .rejects
+        .toThrow(/Path traversal attempt detected/);
+    });
+
+    it('copyFile should block traversal in destination path', async () => {
+      const src = join(testDir, 'source.txt');
+      await fs.writeFile(src, 'content');
+
+      await expect(copyFile(src, '../outside.txt', { baseDir: testDir }))
+        .rejects
+        .toThrow(/Path traversal attempt detected/);
+    });
+
+    it('copyDir should block traversal in destination path', async () => {
+      const srcDir = join(testDir, 'src');
+      await fs.ensureDir(srcDir);
+      await fs.writeFile(join(srcDir, 'file.txt'), 'content');
+
+      await expect(copyDir(srcDir, '../outside-dir', { baseDir: testDir }))
+        .rejects
+        .toThrow(/Path traversal attempt detected/);
     });
   });
 

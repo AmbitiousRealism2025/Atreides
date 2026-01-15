@@ -146,7 +146,7 @@ async function runTests() {
   console.log('\n--- copyFile() with baseDir Tests ---\n');
 
   // First create a source file
-  await writeFile(join(tempDir, 'source.txt'), 'source content');
+  await writeFile(join(tempDir, 'source.txt'), 'source content', { baseDir: tempDir });
 
   await test('copyFile: blocks dest path traversal with baseDir', async () => {
     await expectThrows(
@@ -165,7 +165,7 @@ async function runTests() {
   console.log('\n--- copyDir() with baseDir Tests ---\n');
 
   // Create a source directory
-  await writeFile(join(tempDir, 'src-dir', 'file.txt'), 'dir content');
+  await writeFile(join(tempDir, 'src-dir', 'file.txt'), 'dir content', { baseDir: tempDir });
 
   await test('copyDir: blocks dest path traversal with baseDir', async () => {
     await expectThrows(

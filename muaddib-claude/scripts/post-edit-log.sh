@@ -21,16 +21,28 @@ sanitize_for_log() {
     printf '%s' "$input" | tr -d '\000-\037\177' | head -c "$max_len"
 }
 
-# Get file path from environment
-FILE="${TOOL_INPUT:-}"
+# Accept $1 argument or fall back to TOOL_INPUT env var
+FILE="${1:-${TOOL_INPUT:-}}"
 
-if [ -z "$FILE" ]; then
+if [[ -z "$FILE" ]]; then
     exit 0
 fi
 
+SAFE_FILE=$(sanitize_for_log "$FILE")
+
+# Log to stderr for observability
+printf 'EDIT: %s\n' "$SAFE_FILE" >&2
+
+# Session log support
+if [[ -n "${MUADDIB_SESSION_LOG:-}" ]]; then
+    log_dir=$(dirname "${MUADDIB_SESSION_LOG}")
+    if [[ -d "$log_dir" ]] && [[ -w "$log_dir" ]]; then
+        printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SAFE_FILE" >> "$MUADDIB_SESSION_LOG"
+    fi
+fi
+
 # Check if file exists
-if [ ! -f "$FILE" ]; then
-    SAFE_FILE=$(sanitize_for_log "$FILE")
+if [[ ! -f "$FILE" ]]; then
     printf 'INFO: File does not exist (may have been deleted): %s\n' "$SAFE_FILE"
     exit 0
 fi
@@ -67,19 +79,21 @@ case "$EXTENSION" in
         ;;
 esac
 
-# Log the edit
+# Log the edit to persistent log
 LOG_DIR="${HOME}/.muaddib/logs"
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
 
 LOG_FILE="${LOG_DIR}/edits.log"
 # Sanitize file path before logging to prevent log injection
 LOG_ENTRY=$(sanitize_for_log "$FILE")
-printf '%s\n' "$(date -Iseconds) | EDIT | $LOG_ENTRY" >> "$LOG_FILE"
+if [[ -d "$LOG_DIR" && -w "$LOG_DIR" ]]; then
+    printf '%s\n' "$(date -Iseconds) | EDIT | $LOG_ENTRY" >> "$LOG_FILE" || true
+fi
 
 # Keep log file from growing too large (keep last 1000 lines)
-if [ -f "$LOG_FILE" ] && [ "$(wc -l < "$LOG_FILE")" -gt 1000 ]; then
-    tail -n 1000 "$LOG_FILE" > "${LOG_FILE}.tmp"
-    mv "${LOG_FILE}.tmp" "$LOG_FILE"
+if [[ -f "$LOG_FILE" ]] && [[ "$(wc -l < "$LOG_FILE")" -gt 1000 ]]; then
+    tail -n 1000 "$LOG_FILE" > "${LOG_FILE}.tmp" || true
+    mv "${LOG_FILE}.tmp" "$LOG_FILE" 2>/dev/null || true
 fi
 
 exit 0

@@ -360,6 +360,10 @@ Muad'Dib uses flexible wildcard patterns:
 }
 ```
 
+**Rationale**: Defaults intentionally keep `cat` and `npx` scoped to common, safe workflows.
+Use `Read(...)` for broader file inspection and add explicit permissions when needed.
+The deny list blocks `npx` usage that would chain shell or network primitives.
+
 ### Allowed Operations
 - Git commands
 - Package managers (npm, pip, cargo, go)

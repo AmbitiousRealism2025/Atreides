@@ -24,7 +24,8 @@ import {
   isSymlink,
   readSymlink,
   listFiles,
-  makeExecutable
+  makeExecutable,
+  cleanupBackups
 } from '../lib/file-manager.js';
 
 /**
@@ -38,6 +39,8 @@ export function doctorCommand() {
     .description("Check Muad'Dib installation health")
     .option('-v, --verbose', 'Show detailed check results')
     .option('--fix', 'Attempt to fix found issues')
+    .option('--cleanup-backups', 'Clean up backup files')
+    .option('--dry-run', 'Preview changes without making them')
     .action(async (options) => {
       try {
         await runDoctor(options);
@@ -57,6 +60,42 @@ export function doctorCommand() {
  */
 async function runDoctor(options) {
   logger.title("Muad'Dib Health Check");
+
+  // Handle --cleanup-backups option
+  if (options.cleanupBackups) {
+    const backupDir = GLOBAL_MUADDIB_DIR;
+    logger.info('Cleaning up Backup files...');
+
+    const result = await cleanupBackups(backupDir, {
+      dryRun: options.dryRun,
+      maxAgeDays: 30
+    });
+
+    if (options.dryRun) {
+      logger.info('Dry run - no files deleted');
+      if (result.deleted.length > 0) {
+        logger.info(`Would delete ${result.deleted.length} backup file(s):`);
+        result.deleted.forEach(f => logger.dim(`  - ${f}`));
+      } else {
+        logger.info('No backup files to clean up');
+      }
+    } else {
+      if (result.deleted.length > 0) {
+        logger.success(`Deleted ${result.deleted.length} backup file(s)`);
+        if (options.verbose) {
+          result.deleted.forEach(f => logger.dim(`  - ${f}`));
+        }
+      } else {
+        logger.info('No backup files to clean up');
+      }
+    }
+
+    if (result.errors.length > 0) {
+      result.errors.forEach(e => logger.warn(e));
+    }
+
+    return;
+  }
 
   const issues = [];
   const warnings = [];
@@ -84,7 +123,7 @@ async function runDoctor(options) {
     // Check templates
     const templatesExist = await exists(GLOBAL_TEMPLATES_DIR);
     if (templatesExist) {
-      const templates = await listFiles(GLOBAL_TEMPLATES_DIR, { extensions: ['.hbs'] });
+      const { files: templates } = await listFiles(GLOBAL_TEMPLATES_DIR, { extensions: ['.hbs'] });
       logger.success(`  Templates: ${templates.length} found`);
       if (options.verbose) {
         templates.forEach(t => logger.dim(`    - ${t.split('/').pop()}`));
@@ -100,7 +139,7 @@ async function runDoctor(options) {
     // Check scripts
     const scriptsExist = await exists(GLOBAL_SCRIPTS_DIR);
     if (scriptsExist) {
-      const scripts = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
+      const { files: scripts } = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
       logger.success(`  Scripts: ${scripts.length} found`);
 
       // Check if scripts are executable
@@ -210,7 +249,7 @@ async function runDoctor(options) {
       } catch {
         logger.error('  settings.json: Invalid JSON');
         issues.push({
-          name: 'settings.json is invalid JSON',
+          name: 'settings.json is Invalid JSON',
           fix: 'Fix JSON syntax or run: muaddib init --force'
         });
       }

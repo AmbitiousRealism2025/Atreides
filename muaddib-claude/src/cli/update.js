@@ -5,7 +5,7 @@
  */
 
 import { Command } from 'commander';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import logger from '../utils/logger.js';
 import { confirm } from '../utils/prompts.js';
 import {
@@ -23,8 +23,7 @@ import {
 import {
   exists,
   copyDir,
-  listFiles,
-  makeExecutable,
+  syncPackageAssets,
   readJson,
   writeFile
 } from '../lib/file-manager.js';
@@ -76,41 +75,31 @@ async function updateGlobal(options) {
   if (options.backup !== false) {
     const backupDir = `${GLOBAL_MUADDIB_DIR}.backup.${Date.now()}`;
     logger.info(`Creating backup: ${backupDir}`);
-    await copyDir(GLOBAL_MUADDIB_DIR, backupDir);
+    await copyDir(GLOBAL_MUADDIB_DIR, backupDir, {
+      sourceBaseDir: GLOBAL_MUADDIB_DIR,
+      destBaseDir: dirname(GLOBAL_MUADDIB_DIR)
+    });
     logger.success('Backup created');
   }
 
   logger.info('Updating global components...');
 
-  // Update templates
-  if (await exists(PACKAGE_TEMPLATES_DIR)) {
-    await copyDir(PACKAGE_TEMPLATES_DIR, GLOBAL_TEMPLATES_DIR, { overwrite: true });
-    logger.success('Updated templates');
-  }
+  const syncResult = await syncPackageAssets({
+    force: true
+  }, {
+    PACKAGE_TEMPLATES_DIR,
+    PACKAGE_SCRIPTS_DIR,
+    PACKAGE_LIB_CORE_DIR,
+    PACKAGE_SKILLS_DIR,
+    GLOBAL_TEMPLATES_DIR,
+    GLOBAL_SCRIPTS_DIR,
+    GLOBAL_LIB_DIR,
+    GLOBAL_SKILLS_DIR
+  });
 
-  // Update scripts
-  if (await exists(PACKAGE_SCRIPTS_DIR)) {
-    await copyDir(PACKAGE_SCRIPTS_DIR, GLOBAL_SCRIPTS_DIR, { overwrite: true });
-
-    // Make scripts executable
-    const scriptFiles = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
-    for (const scriptFile of scriptFiles) {
-      await makeExecutable(scriptFile);
-    }
-    logger.success('Updated scripts');
-  }
-
-  // Update lib/core
-  if (await exists(PACKAGE_LIB_CORE_DIR)) {
-    await copyDir(PACKAGE_LIB_CORE_DIR, join(GLOBAL_LIB_DIR, 'core'), { overwrite: true });
-    logger.success('Updated lib/core');
-  }
-
-  // Update skills
-  if (await exists(PACKAGE_SKILLS_DIR)) {
-    await copyDir(PACKAGE_SKILLS_DIR, GLOBAL_SKILLS_DIR, { overwrite: true });
-    logger.success('Updated skills');
-  }
+  syncResult.synced.forEach(item => logger.success(`Updated: ${item}`));
+  syncResult.skipped.forEach(item => logger.warn(item));
+  syncResult.errors.forEach(item => logger.warn(item));
 
   console.log();
   logger.success('Global update complete!');
@@ -254,6 +243,7 @@ function deepMergeSettings(newSettings, existingSettings) {
  */
 async function updateProject(options) {
   const paths = getProjectPaths();
+  const baseDir = paths.root;
 
   logger.title("Muad'Dib Project Update");
 
@@ -303,7 +293,10 @@ async function updateProject(options) {
       // Deep merge settings: new values fill gaps, existing customizations preserved
       const mergedSettings = deepMergeSettings(newSettingsObj, existingSettings);
 
-      await writeFile(paths.settingsJson, JSON.stringify(mergedSettings, null, 2), { backup: options.backup !== false });
+      await writeFile(paths.settingsJson, JSON.stringify(mergedSettings, null, 2), {
+        backup: options.backup !== false,
+        baseDir
+      });
       logger.success('Updated: .claude/settings.json');
     } catch (error) {
       logger.warn(`Could not update settings.json: ${error.message}`);
@@ -320,7 +313,10 @@ async function updateProject(options) {
   if (await exists(paths.projectConfig)) {
     try {
       projectConfig.updated = new Date().toISOString();
-      await writeFile(paths.projectConfig, JSON.stringify(projectConfig, null, 2), { backup: options.backup !== false });
+      await writeFile(paths.projectConfig, JSON.stringify(projectConfig, null, 2), {
+        backup: options.backup !== false,
+        baseDir
+      });
       logger.success('Updated: .muaddib/config.json');
     } catch (error) {
       logger.warn(`Could not update config: ${error.message}`);

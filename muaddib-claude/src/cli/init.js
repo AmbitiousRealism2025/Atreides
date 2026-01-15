@@ -18,9 +18,9 @@ import {
   ensureDir,
   exists,
   writeFile,
-  copyDir
+  syncPackageAssets
 } from '../lib/file-manager.js';
-import { renderNamedTemplate, getDefaultData } from '../lib/template-engine.js';
+import { renderNamedTemplate, getDefaultData, validateJson } from '../lib/template-engine.js';
 import { getDefaultProjectConfig } from '../lib/config-merger.js';
 
 /**
@@ -55,6 +55,7 @@ export function initCommand() {
  */
 async function runInit(options) {
   const paths = getProjectPaths();
+  const baseDir = paths.root;
 
   logger.title("Muad'Dib Project Initialization");
 
@@ -125,19 +126,21 @@ async function runInit(options) {
 
   logger.info('Creating project files...');
 
-  // Always create .claude directory
-  await ensureDir(paths.claudeDir);
+  // Only create .claude directory if not minimal mode
+  if (!isMinimal) {
+    await ensureDir(paths.claudeDir);
+  }
 
   // Create CLAUDE.md (always)
   try {
     const claudeMd = await renderNamedTemplate('CLAUDE.md', templateData);
-    await writeFile(paths.claudeMd, claudeMd, { backup: !options.force });
+    await writeFile(paths.claudeMd, claudeMd, { backup: !options.force, baseDir });
     logger.success('Created: CLAUDE.md');
   } catch (error) {
     logger.warn(`Could not create CLAUDE.md: ${error.message}`);
     // Create a basic CLAUDE.md if template fails
     const basicClaudeMd = createBasicClaudeMd(config);
-    await writeFile(paths.claudeMd, basicClaudeMd, { backup: !options.force });
+    await writeFile(paths.claudeMd, basicClaudeMd, { backup: !options.force, baseDir });
     logger.success('Created: CLAUDE.md (basic)');
   }
 
@@ -149,65 +152,85 @@ async function runInit(options) {
     // Create settings.json
     try {
       const settings = await renderNamedTemplate('settings.json', templateData);
-      await writeFile(paths.settingsJson, settings, { backup: !options.force });
+      const validation = validateJson(settings);
+      if (!validation.valid) {
+        throw new Error(`settings.json template rendered invalid JSON: ${validation.error}`);
+      }
+      await writeFile(paths.settingsJson, settings, { backup: !options.force, baseDir });
       logger.success('Created: .claude/settings.json');
     } catch (error) {
       logger.warn(`Could not create settings.json: ${error.message}`);
       const basicSettings = createBasicSettings(config);
-      await writeFile(paths.settingsJson, JSON.stringify(basicSettings, null, 2), { backup: !options.force });
+      await writeFile(paths.settingsJson, JSON.stringify(basicSettings, null, 2), { backup: !options.force, baseDir });
       logger.success('Created: .claude/settings.json (basic)');
     }
 
     // Create context.md
     try {
       const context = await renderNamedTemplate('context.md', templateData);
-      await writeFile(paths.contextMd, context, { backup: !options.force });
+      await writeFile(paths.contextMd, context, { backup: !options.force, baseDir });
       logger.success('Created: .claude/context.md');
     } catch (error) {
       logger.warn(`Could not create context.md: ${error.message}`);
       const basicContext = createBasicContext(config);
-      await writeFile(paths.contextMd, basicContext, { backup: !options.force });
+      await writeFile(paths.contextMd, basicContext, { backup: !options.force, baseDir });
       logger.success('Created: .claude/context.md (basic)');
     }
 
     // Create critical-context.md
     try {
       const criticalContext = await renderNamedTemplate('critical-context.md', templateData);
-      await writeFile(paths.criticalContextMd, criticalContext, { backup: !options.force });
+      await writeFile(paths.criticalContextMd, criticalContext, { backup: !options.force, baseDir });
       logger.success('Created: .claude/critical-context.md');
     } catch (error) {
       const basicCritical = createBasicCriticalContext();
-      await writeFile(paths.criticalContextMd, basicCritical, { backup: !options.force });
+      await writeFile(paths.criticalContextMd, basicCritical, { backup: !options.force, baseDir });
       logger.success('Created: .claude/critical-context.md (basic)');
     }
 
     // Create project config
     try {
       const projectConfig = await renderNamedTemplate('config.json', templateData);
-      await writeFile(paths.projectConfig, projectConfig, { backup: !options.force });
+      await writeFile(paths.projectConfig, projectConfig, { backup: !options.force, baseDir });
       logger.success('Created: .muaddib/config.json');
     } catch (error) {
       const basicConfig = getDefaultProjectConfig(config);
-      await writeFile(paths.projectConfig, JSON.stringify(basicConfig, null, 2), { backup: !options.force });
+      await writeFile(paths.projectConfig, JSON.stringify(basicConfig, null, 2), { backup: !options.force, baseDir });
       logger.success('Created: .muaddib/config.json (basic)');
     }
   }
 
-  // Copy scripts when hooks are enabled (scripts are required for hooks to work)
-  // Previously only copied in full mode, but standard mode with hooks needs them too
-  if (config.useHooks && await exists(GLOBAL_SCRIPTS_DIR)) {
+  // Copy scripts/skills from global install into the project
+  if (config.useHooks || isFull) {
     const projectScriptsDir = `${paths.claudeDir}/scripts`;
-    await ensureDir(projectScriptsDir);
-    await copyDir(GLOBAL_SCRIPTS_DIR, projectScriptsDir);
-    logger.success('Copied: .claude/scripts/');
-  }
-
-  // Copy skills if full mode
-  if (isFull && await exists(GLOBAL_SKILLS_DIR)) {
     const projectSkillsDir = `${paths.claudeDir}/skills`;
-    await ensureDir(projectSkillsDir);
-    await copyDir(GLOBAL_SKILLS_DIR, projectSkillsDir);
-    logger.success('Copied: .claude/skills/');
+
+    const syncResult = await syncPackageAssets({
+      templates: false,
+      lib: false,
+      scripts: config.useHooks,
+      skills: isFull,
+      force: true
+    }, {
+      PACKAGE_TEMPLATES_DIR: null,
+      GLOBAL_TEMPLATES_DIR: null,
+      PACKAGE_SCRIPTS_DIR: GLOBAL_SCRIPTS_DIR,
+      GLOBAL_SCRIPTS_DIR: projectScriptsDir,
+      PACKAGE_LIB_CORE_DIR: null,
+      GLOBAL_LIB_DIR: null,
+      PACKAGE_SKILLS_DIR: GLOBAL_SKILLS_DIR,
+      GLOBAL_SKILLS_DIR: projectSkillsDir
+    });
+
+    if (syncResult.synced.some(item => item.startsWith('scripts:'))) {
+      logger.success('Copied: .claude/scripts/');
+    }
+    if (syncResult.synced.some(item => item.startsWith('skills:'))) {
+      logger.success('Copied: .claude/skills/');
+    }
+
+    syncResult.skipped.forEach(item => logger.warn(item));
+    syncResult.errors.forEach(item => logger.warn(item));
   }
 
   // Success message

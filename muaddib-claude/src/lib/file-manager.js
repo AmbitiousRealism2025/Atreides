@@ -5,7 +5,7 @@
  */
 
 import fs from 'fs-extra';
-import { dirname, join, basename } from 'path';
+import { dirname, join, basename, resolve, sep, isAbsolute } from 'path';
 import { debug } from '../utils/logger.js';
 
 /**
@@ -25,6 +25,43 @@ const DEFAULT_MAX_BACKUPS = 5;
  * @type {RegExp}
  */
 const BACKUP_PATTERN = /\.(bak|backup|orig|\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})$/i;
+
+/**
+ * Normalize and validate base directory
+ * @param {string} baseDir - Base directory for safe path checks
+ * @returns {string} Resolved base directory
+ */
+function normalizeBaseDir(baseDir) {
+  if (!baseDir || typeof baseDir !== 'string') {
+    throw new Error('baseDir is required for safe file operations');
+  }
+  return resolve(baseDir);
+}
+
+/**
+ * Validate a path against a base directory to prevent traversal.
+ * Relative paths are resolved against the base directory.
+ * @param {string} filePath - Path to validate
+ * @param {string} baseDir - Allowed base directory
+ * @returns {string} Resolved safe path
+ */
+export function validatePath(filePath, baseDir) {
+  if (!filePath || typeof filePath !== 'string') {
+    throw new Error('filePath must be a non-empty string');
+  }
+
+  const resolvedBase = normalizeBaseDir(baseDir);
+  const candidate = isAbsolute(filePath) ? filePath : join(resolvedBase, filePath);
+  const resolvedPath = resolve(candidate);
+
+  const baseWithSep = resolvedBase.endsWith(sep) ? resolvedBase : resolvedBase + sep;
+
+  if (resolvedPath === resolvedBase || resolvedPath.startsWith(baseWithSep)) {
+    return resolvedPath;
+  }
+
+  throw new Error(`Path traversal attempt detected: ${filePath}`);
+}
 
 /**
  * Ensure a directory exists, creating it if necessary
@@ -69,23 +106,25 @@ export async function readJson(filePath) {
  * @param {string} content - Content to write
  * @param {object} [options] - Options
  * @param {boolean} [options.backup=false] - Create backup before overwriting
+ * @param {string} options.baseDir - Allowed base directory for write operations
  * @returns {Promise<void>}
  */
 export async function writeFile(filePath, content, options = {}) {
-  const { backup = false } = options;
+  const { backup = false, baseDir } = options;
+  const safePath = validatePath(filePath, baseDir);
 
   // Ensure parent directory exists
-  await ensureDir(dirname(filePath));
+  await ensureDir(dirname(safePath));
 
   // Create backup if requested and file exists
-  if (backup && await exists(filePath)) {
-    const backupPath = `${filePath}.backup.${Date.now()}`;
-    await fs.copy(filePath, backupPath);
+  if (backup && await exists(safePath)) {
+    const backupPath = validatePath(`${safePath}.backup.${Date.now()}`, baseDir);
+    await fs.copy(safePath, backupPath);
     debug(`Created backup: ${backupPath}`);
   }
 
-  await fs.writeFile(filePath, content, 'utf-8');
-  debug(`Wrote file: ${filePath}`);
+  await fs.writeFile(safePath, content, 'utf-8');
+  debug(`Wrote file: ${safePath}`);
 }
 
 /**
@@ -94,21 +133,23 @@ export async function writeFile(filePath, content, options = {}) {
  * @param {object} data - Data to write
  * @param {object} [options] - Options
  * @param {boolean} [options.backup=false] - Create backup before overwriting
+ * @param {string} options.baseDir - Allowed base directory for write operations
  * @returns {Promise<void>}
  */
 export async function writeJson(filePath, data, options = {}) {
-  const { backup = false } = options;
+  const { backup = false, baseDir } = options;
+  const safePath = validatePath(filePath, baseDir);
 
-  await ensureDir(dirname(filePath));
+  await ensureDir(dirname(safePath));
 
-  if (backup && await exists(filePath)) {
-    const backupPath = `${filePath}.backup.${Date.now()}`;
-    await fs.copy(filePath, backupPath);
+  if (backup && await exists(safePath)) {
+    const backupPath = validatePath(`${safePath}.backup.${Date.now()}`, baseDir);
+    await fs.copy(safePath, backupPath);
     debug(`Created backup: ${backupPath}`);
   }
 
-  await fs.writeJson(filePath, data, { spaces: 2 });
-  debug(`Wrote JSON: ${filePath}`);
+  await fs.writeJson(safePath, data, { spaces: 2 });
+  debug(`Wrote JSON: ${safePath}`);
 }
 
 /**
@@ -118,21 +159,34 @@ export async function writeJson(filePath, data, options = {}) {
  * @param {object} [options] - Options
  * @param {boolean} [options.backup=false] - Create backup before overwriting
  * @param {boolean} [options.overwrite=true] - Overwrite existing files
+ * @param {string} [options.baseDir] - Base directory applied to source and destination
+ * @param {string} [options.sourceBaseDir] - Allowed base directory for source path
+ * @param {string} [options.destBaseDir] - Allowed base directory for destination path
  * @returns {Promise<void>}
  */
 export async function copyFile(src, dest, options = {}) {
-  const { backup = false, overwrite = true } = options;
+  const {
+    backup = false,
+    overwrite = true,
+    baseDir,
+    sourceBaseDir,
+    destBaseDir
+  } = options;
+  const resolvedSourceBase = sourceBaseDir || baseDir;
+  const resolvedDestBase = destBaseDir || baseDir;
+  const safeSrc = validatePath(src, resolvedSourceBase);
+  const safeDest = validatePath(dest, resolvedDestBase);
 
-  await ensureDir(dirname(dest));
+  await ensureDir(dirname(safeDest));
 
-  if (backup && await exists(dest)) {
-    const backupPath = `${dest}.backup.${Date.now()}`;
-    await fs.copy(dest, backupPath);
+  if (backup && await exists(safeDest)) {
+    const backupPath = validatePath(`${safeDest}.backup.${Date.now()}`, resolvedDestBase);
+    await fs.copy(safeDest, backupPath);
     debug(`Created backup: ${backupPath}`);
   }
 
-  await fs.copy(src, dest, { overwrite });
-  debug(`Copied: ${src} → ${dest}`);
+  await fs.copy(safeSrc, safeDest, { overwrite });
+  debug(`Copied: ${safeSrc} → ${safeDest}`);
 }
 
 /**
@@ -144,10 +198,26 @@ export async function copyFile(src, dest, options = {}) {
  * @param {number} [options.maxDepth=10] - Maximum directory depth to prevent DoS
  * @param {number} [options.maxFiles=10000] - Maximum file count to prevent DoS
  * @param {number} [options.currentDepth=0] - Current recursion depth (internal)
+ * @param {string} [options.baseDir] - Base directory applied to source and destination
+ * @param {string} [options.sourceBaseDir] - Allowed base directory for source path
+ * @param {string} [options.destBaseDir] - Allowed base directory for destination path
  * @returns {Promise<void>}
  */
 export async function copyDir(src, dest, options = {}) {
-  const { overwrite = true, maxDepth = 10, maxFiles = 10000, currentDepth = 0 } = options;
+  const {
+    overwrite = true,
+    maxDepth = 10,
+    maxFiles = 10000,
+    currentDepth = 0,
+    baseDir,
+    sourceBaseDir,
+    destBaseDir
+  } = options;
+
+  const resolvedSourceBase = sourceBaseDir || baseDir;
+  const resolvedDestBase = destBaseDir || baseDir;
+  const safeSrc = validatePath(src, resolvedSourceBase);
+  const safeDest = validatePath(dest, resolvedDestBase);
 
   // Track file count via shared counter (initialized on first call)
   if (!options._fileCount) {
@@ -159,8 +229,8 @@ export async function copyDir(src, dest, options = {}) {
     throw new Error(`Maximum directory depth (${maxDepth}) exceeded`);
   }
 
-  const entries = await fs.readdir(src, { withFileTypes: true });
-  await ensureDir(dest);
+  const entries = await fs.readdir(safeSrc, { withFileTypes: true });
+  await ensureDir(safeDest);
 
   for (const entry of entries) {
     // Increment and check file count
@@ -169,20 +239,22 @@ export async function copyDir(src, dest, options = {}) {
       throw new Error(`Maximum file count (${maxFiles}) exceeded`);
     }
 
-    const srcPath = join(src, entry.name);
-    const destPath = join(dest, entry.name);
+    const srcPath = join(safeSrc, entry.name);
+    const destPath = join(safeDest, entry.name);
 
     if (entry.isDirectory()) {
       await copyDir(srcPath, destPath, {
         ...options,
-        currentDepth: currentDepth + 1
+        currentDepth: currentDepth + 1,
+        sourceBaseDir: resolvedSourceBase,
+        destBaseDir: resolvedDestBase
       });
     } else {
       await fs.copy(srcPath, destPath, { overwrite });
     }
   }
 
-  debug(`Copied directory: ${src} → ${dest}`);
+  debug(`Copied directory: ${safeSrc} → ${safeDest}`);
 }
 
 /**
@@ -252,12 +324,35 @@ export async function readSymlink(linkPath) {
 
 /**
  * List files in a directory with optional filtering and limits.
+ *
+ * **IMPORTANT:** This function returns an OBJECT `{ files, limitReached }`, NOT an array.
+ * Always destructure the result or access the `.files` property.
+ *
  * @param {string} dirPath - Directory path to list files from
  * @param {Object} options - Listing options
  * @param {boolean} [options.recursive=false] - Whether to list files recursively
  * @param {string[]} [options.extensions=[]] - File extensions to filter by (e.g., ['.js', '.ts'])
- * @param {number} [options.maxFiles=10000] - Maximum number of files to return
+ * @param {number} [options.maxFiles=10000] - Maximum number of files to return (DoS protection)
  * @returns {Promise<{files: string[], limitReached: boolean}>} Object containing file paths and limit status
+ *
+ * @example
+ * // Correct usage - destructure the result
+ * const { files, limitReached } = await listFiles(dir, { extensions: ['.sh'] });
+ * for (const file of files) {
+ *   console.log(file);
+ * }
+ *
+ * @example
+ * // Correct usage - access .files property
+ * const result = await listFiles(dir, { recursive: true });
+ * console.log(`Found ${result.files.length} files`);
+ *
+ * @example
+ * // WRONG - will cause "TypeError: scriptFiles is not iterable"
+ * // const files = await listFiles(dir);
+ * // for (const f of files) { ... }  // ERROR!
+ *
+ * @see docs/API-FILE-MANAGER.md for full documentation
  */
 export async function listFiles(dirPath, options = {}) {
   const {
@@ -670,7 +765,11 @@ export async function syncPackageAssets(options = {}, paths) {
     }
 
     try {
-      await fs.copy(srcDir, destDir, { overwrite: force });
+      await copyDir(srcDir, destDir, {
+        overwrite: force,
+        sourceBaseDir: srcDir,
+        destBaseDir: destDir
+      });
       synced.push(`${name}: ${srcDir} -> ${destDir}`);
 
       if (makeScriptsExecutable) {
@@ -749,5 +848,6 @@ export default {
   getDefaultMaxBackups,
   rotateBackups,
   cleanupBackups,
-  syncPackageAssets
+  syncPackageAssets,
+  validatePath
 };

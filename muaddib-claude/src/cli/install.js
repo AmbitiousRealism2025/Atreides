@@ -21,10 +21,8 @@ import {
 import {
   ensureDir,
   exists,
-  copyDir,
+  syncPackageAssets,
   symlink,
-  listFiles,
-  makeExecutable,
   remove
 } from '../lib/file-manager.js';
 import { join } from 'path';
@@ -58,7 +56,7 @@ export function installCommand() {
  * @param {object} options - Command options
  */
 async function runInstall(options) {
-  const totalSteps = options.skills !== false ? 5 : 4;
+  const totalSteps = options.skills !== false ? 4 : 3;
   let currentStep = 0;
 
   logger.title("Muad'Dib Installation");
@@ -102,45 +100,25 @@ async function runInstall(options) {
   currentStep++;
   logger.step(currentStep, totalSteps, 'Copying files...');
 
-  // Copy templates
-  if (await exists(PACKAGE_TEMPLATES_DIR)) {
-    await copyDir(PACKAGE_TEMPLATES_DIR, GLOBAL_TEMPLATES_DIR);
-    logger.debug('Copied templates');
-  } else {
-    logger.warn('No templates directory found in package');
-  }
+  const syncResult = await syncPackageAssets({
+    force: true,
+    skills: options.skills !== false
+  }, {
+    PACKAGE_TEMPLATES_DIR,
+    PACKAGE_SCRIPTS_DIR,
+    PACKAGE_LIB_CORE_DIR,
+    PACKAGE_SKILLS_DIR,
+    GLOBAL_TEMPLATES_DIR,
+    GLOBAL_SCRIPTS_DIR,
+    GLOBAL_LIB_DIR,
+    GLOBAL_SKILLS_DIR
+  });
 
-  // Copy scripts
-  if (await exists(PACKAGE_SCRIPTS_DIR)) {
-    await copyDir(PACKAGE_SCRIPTS_DIR, GLOBAL_SCRIPTS_DIR);
-    logger.debug('Copied scripts');
-  } else {
-    logger.warn('No scripts directory found in package');
-  }
+  syncResult.synced.forEach(item => logger.debug(`Synced: ${item}`));
+  syncResult.skipped.forEach(item => logger.warn(item));
+  syncResult.errors.forEach(item => logger.warn(item));
 
-  // Copy lib/core
-  if (await exists(PACKAGE_LIB_CORE_DIR)) {
-    await copyDir(PACKAGE_LIB_CORE_DIR, join(GLOBAL_LIB_DIR, 'core'));
-    logger.debug('Copied lib/core');
-  }
-
-  // Copy skills
-  if (await exists(PACKAGE_SKILLS_DIR)) {
-    await copyDir(PACKAGE_SKILLS_DIR, GLOBAL_SKILLS_DIR);
-    logger.debug('Copied skills');
-  }
-
-  // Step 4: Make scripts executable
-  currentStep++;
-  logger.step(currentStep, totalSteps, 'Setting permissions...');
-
-  const scriptFiles = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
-  for (const scriptFile of scriptFiles) {
-    await makeExecutable(scriptFile);
-    logger.debug(`Made executable: ${scriptFile}`);
-  }
-
-  // Step 5: Create skill symlink (optional)
+  // Step 4: Create skill symlink (optional)
   if (options.skills !== false) {
     currentStep++;
     logger.step(currentStep, totalSteps, 'Creating skill symlink...');
@@ -161,6 +139,7 @@ async function runInstall(options) {
   // Success message
   console.log();
   logger.success("Muad'Dib installed successfully!");
+  logger.info('Installation complete');
   logger.dim(`Location: ${GLOBAL_MUADDIB_DIR}`);
   console.log();
   logger.info('Next steps:');
