@@ -1,27 +1,39 @@
 /**
  * Init Command
  *
- * Initialize Muad'Dib in the current project directory.
+ * Initialize a project with Muad'Dib configuration files.
+ * Supports full and minimal modes with JSON validation.
  */
 
 import { Command } from 'commander';
-import { basename } from 'path';
+import { join } from 'path';
+import fs from 'fs-extra';
 import logger from '../utils/logger.js';
-import { confirm, projectInit } from '../utils/prompts.js';
 import {
-  GLOBAL_MUADDIB_DIR,
-  GLOBAL_SCRIPTS_DIR,
-  GLOBAL_SKILLS_DIR,
-  getProjectPaths
+  getProjectPaths,
+  GLOBAL_TEMPLATES_DIR
 } from '../utils/paths.js';
+import { exists } from '../lib/file-manager.js';
 import {
-  ensureDir,
-  exists,
-  writeFile,
-  copyDir
-} from '../lib/file-manager.js';
-import { renderTemplate, getDefaultData } from '../lib/template-engine.js';
-import { getDefaultProjectConfig } from '../lib/config-merger.js';
+  renderTemplateFile,
+  validateJson
+} from '../lib/template-engine.js';
+
+/**
+ * Default fallback settings when JSON validation fails
+ * @type {object}
+ */
+const FALLBACK_SETTINGS = {
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/.claude/settings.schema.json",
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Read(**/.env*)",
+      "Write(**/.env*)"
+    ]
+  }
+};
 
 /**
  * Create the init command
@@ -31,11 +43,10 @@ export function initCommand() {
   const cmd = new Command('init');
 
   cmd
-    .description("Initialize Muad'Dib in current project")
-    .option('-m, --minimal', 'Minimal initialization (CLAUDE.md only)')
-    .option('-f, --full', 'Full initialization with all features')
-    .option('-y, --yes', 'Accept all defaults (non-interactive)')
-    .option('--force', 'Overwrite existing files without confirmation')
+    .description('Initialize a project with Muad\'Dib configuration')
+    .option('-m, --minimal', 'Create only CLAUDE.md (skip .claude directory)')
+    .option('-f, --force', 'Overwrite existing files')
+    .option('-y, --yes', 'Skip confirmation prompts')
     .action(async (options) => {
       try {
         await runInit(options);
@@ -55,336 +66,148 @@ export function initCommand() {
  */
 async function runInit(options) {
   const paths = getProjectPaths();
+  const isMinimal = options.minimal || false;
+  const isForce = options.force || false;
 
   logger.title("Muad'Dib Project Initialization");
 
-  // Validate environment and check for existing files
-  const shouldProceed = await validateEnvironment(paths, options);
-  if (!shouldProceed) {
+  // Check for existing files
+  const existingFiles = [];
+  if (await exists(paths.claudeMd)) {
+    existingFiles.push('CLAUDE.md');
+  }
+  if (!isMinimal && await exists(paths.settingsJson)) {
+    existingFiles.push('.claude/settings.json');
+  }
+
+  if (existingFiles.length > 0 && !isForce) {
+    logger.warn('Existing files found:');
+    existingFiles.forEach(f => logger.list([f]));
+    logger.info('Use --force to overwrite existing files.');
     return;
   }
 
-  // Gather configuration from options or prompts
-  const config = await gatherConfiguration(options);
+  // Track created files
+  const createdFiles = [];
 
-  // Create all project files
-  await createProjectFiles(paths, config, options);
+  // Step 1: Create CLAUDE.md
+  logger.step(1, isMinimal ? 1 : 2, 'Creating CLAUDE.md...');
 
-  // Display success message
-  displaySuccessMessage(config);
-}
-
-/**
- * Validate the environment for initialization
- * Checks global installation and existing files
- * @param {object} paths - Project paths
- * @param {object} options - Command options
- * @returns {Promise<boolean>} Whether to proceed with initialization
- */
-async function validateEnvironment(paths, options) {
-  // Check global installation
-  if (!await exists(GLOBAL_MUADDIB_DIR)) {
-    logger.error("Muad'Dib is not installed globally.");
-    logger.info("Run: muaddib install");
-    process.exit(1);
-  }
-
-  // Check for existing files
-  const existingFiles = [];
-  if (await exists(paths.claudeMd)) existingFiles.push('CLAUDE.md');
-  if (await exists(paths.claudeDir)) existingFiles.push('.claude/');
-  if (await exists(paths.muaddibDir)) existingFiles.push('.muaddib/');
-
-  if (existingFiles.length > 0 && !options.force) {
-    logger.warn("Existing Muad'Dib files detected:");
-    logger.list(existingFiles);
-
-    const proceed = await confirm('Overwrite existing files?', false);
-
-    if (!proceed) {
-      logger.info('Initialization cancelled.');
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Gather configuration from options or interactive prompts
- * @param {object} options - Command options
- * @returns {Promise<object>} Configuration object
- */
-async function gatherConfiguration(options) {
-  let config;
-
-  if (options.yes) {
-    // Use defaults
-    config = {
-      projectName: basename(process.cwd()),
-      description: '',
-      projectType: 'node',
-      orchestrationLevel: options.minimal ? 'minimal' : options.full ? 'full' : 'standard',
-      codebaseMaturity: 'TRANSITIONAL',
-      useHooks: !options.minimal,
-      useAgentDelegation: options.full
+  const claudeMdTemplate = join(GLOBAL_TEMPLATES_DIR, 'CLAUDE.md.hbs');
+  if (await exists(claudeMdTemplate)) {
+    const context = {
+      projectName: getProjectName(paths.root),
+      timestamp: new Date().toISOString()
     };
+
+    try {
+      const content = await renderTemplateFile(claudeMdTemplate, context);
+      await fs.outputFile(paths.claudeMd, content);
+      createdFiles.push('CLAUDE.md');
+      logger.success('  Created CLAUDE.md');
+    } catch (err) {
+      // Fallback to basic CLAUDE.md
+      logger.warn(`  Template rendering failed: ${err.message}`);
+      const basicContent = `# ${getProjectName(paths.root)}\n\nProject configuration for Claude Code.\n`;
+      await fs.outputFile(paths.claudeMd, basicContent);
+      createdFiles.push('CLAUDE.md');
+      logger.success('  Created CLAUDE.md (basic)');
+    }
   } else {
-    // Interactive prompts
-    config = await projectInit();
-    if (options.minimal) config.orchestrationLevel = 'minimal';
-    if (options.full) config.orchestrationLevel = 'full';
+    const basicContent = `# ${getProjectName(paths.root)}\n\nProject configuration for Claude Code.\n`;
+    await fs.outputFile(paths.claudeMd, basicContent);
+    createdFiles.push('CLAUDE.md');
+    logger.success('  Created CLAUDE.md');
   }
 
-  return config;
-}
-
-/**
- * Create all project files based on configuration
- * @param {object} paths - Project paths
- * @param {object} config - Project configuration
- * @param {object} options - Command options
- */
-async function createProjectFiles(paths, config, options) {
-  // Add template defaults
-  const templateData = {
-    ...getDefaultData(),
-    ...config,
-    ...getDefaultProjectConfig(config)
-  };
-
-  // Determine what to create based on orchestration level
-  const isMinimal = config.orchestrationLevel === 'minimal';
-  const isFull = config.orchestrationLevel === 'full';
-
-  logger.info('Creating project files...');
-
-  // Always create .claude directory
-  await ensureDir(paths.claudeDir);
-
-  // Create CLAUDE.md (always)
-  try {
-    const claudeMd = await renderTemplate('CLAUDE.md', templateData);
-    await writeFile(paths.claudeMd, claudeMd, { backup: !options.force });
-    logger.success('Created: CLAUDE.md');
-  } catch (error) {
-    logger.warn(`Could not create CLAUDE.md: ${error.message}`);
-    // Create a basic CLAUDE.md if template fails
-    const basicClaudeMd = createBasicClaudeMd(config);
-    await writeFile(paths.claudeMd, basicClaudeMd, { backup: !options.force });
-    logger.success('Created: CLAUDE.md (basic)');
-  }
-
+  // Step 2: Create .claude directory and settings.json (full mode only)
   if (!isMinimal) {
-    // Create .muaddib directory
-    await ensureDir(paths.muaddibDir);
-    await ensureDir(paths.stateDir);
+    logger.step(2, 2, 'Creating .claude/settings.json...');
 
-    // Create settings.json
-    try {
-      const settings = await renderTemplate('settings.json', templateData);
-      await writeFile(paths.settingsJson, settings, { backup: !options.force });
-      logger.success('Created: .claude/settings.json');
-    } catch (error) {
-      logger.warn(`Could not create settings.json: ${error.message}`);
-      const basicSettings = createBasicSettings(config);
-      await writeFile(paths.settingsJson, JSON.stringify(basicSettings, null, 2), { backup: !options.force });
-      logger.success('Created: .claude/settings.json (basic)');
-    }
+    // Ensure .claude directory exists
+    await fs.ensureDir(paths.claudeDir);
 
-    // Create context.md
-    try {
-      const context = await renderTemplate('context.md', templateData);
-      await writeFile(paths.contextMd, context, { backup: !options.force });
-      logger.success('Created: .claude/context.md');
-    } catch (error) {
-      logger.warn(`Could not create context.md: ${error.message}`);
-      const basicContext = createBasicContext(config);
-      await writeFile(paths.contextMd, basicContext, { backup: !options.force });
-      logger.success('Created: .claude/context.md (basic)');
-    }
+    const settingsTemplate = join(GLOBAL_TEMPLATES_DIR, 'settings.json.hbs');
+    if (await exists(settingsTemplate)) {
+      const context = {
+        projectName: getProjectName(paths.root),
+        timestamp: new Date().toISOString()
+      };
 
-    // Create critical-context.md
-    try {
-      const criticalContext = await renderTemplate('critical-context.md', templateData);
-      await writeFile(paths.criticalContextMd, criticalContext, { backup: !options.force });
-      logger.success('Created: .claude/critical-context.md');
-    } catch (error) {
-      const basicCritical = createBasicCriticalContext();
-      await writeFile(paths.criticalContextMd, basicCritical, { backup: !options.force });
-      logger.success('Created: .claude/critical-context.md (basic)');
-    }
+      try {
+        const renderedContent = await renderTemplateFile(settingsTemplate, context);
 
-    // Create project config
-    try {
-      const projectConfig = await renderTemplate('config.json', templateData);
-      await writeFile(paths.projectConfig, projectConfig, { backup: !options.force });
-      logger.success('Created: .muaddib/config.json');
-    } catch (error) {
-      const basicConfig = getDefaultProjectConfig(config);
-      await writeFile(paths.projectConfig, JSON.stringify(basicConfig, null, 2), { backup: !options.force });
-      logger.success('Created: .muaddib/config.json (basic)');
+        // MED-10: Validate JSON after template rendering
+        const validation = validateJson(renderedContent);
+
+        if (!validation.valid) {
+          // JSON validation failed - log error and use fallback
+          logger.warn(`  Template rendered invalid JSON: ${validation.error}`);
+          logger.debug(`  Rendered content preview: ${renderedContent.substring(0, 200)}...`);
+          logger.info('  Using fallback settings...');
+
+          await fs.outputFile(
+            paths.settingsJson,
+            JSON.stringify(FALLBACK_SETTINGS, null, 2)
+          );
+          createdFiles.push('.claude/settings.json (fallback)');
+          logger.success('  Created .claude/settings.json (fallback)');
+        } else {
+          // JSON is valid - write it
+          await fs.outputFile(paths.settingsJson, renderedContent);
+          createdFiles.push('.claude/settings.json');
+          logger.success('  Created .claude/settings.json');
+        }
+      } catch (err) {
+        // Template rendering failed - use fallback
+        logger.warn(`  Template rendering failed: ${err.message}`);
+        logger.info('  Using fallback settings...');
+
+        await fs.outputFile(
+          paths.settingsJson,
+          JSON.stringify(FALLBACK_SETTINGS, null, 2)
+        );
+        createdFiles.push('.claude/settings.json (fallback)');
+        logger.success('  Created .claude/settings.json (fallback)');
+      }
+    } else {
+      // No template found - use fallback
+      logger.dim('  Template not found, using fallback settings');
+      await fs.outputFile(
+        paths.settingsJson,
+        JSON.stringify(FALLBACK_SETTINGS, null, 2)
+      );
+      createdFiles.push('.claude/settings.json');
+      logger.success('  Created .claude/settings.json');
     }
   }
 
-  // Copy scripts when hooks are enabled (scripts are required for hooks to work)
-  // Previously only copied in full mode, but standard mode with hooks needs them too
-  if (config.useHooks && await exists(GLOBAL_SCRIPTS_DIR)) {
-    const projectScriptsDir = `${paths.claudeDir}/scripts`;
-    await ensureDir(projectScriptsDir);
-    await copyDir(GLOBAL_SCRIPTS_DIR, projectScriptsDir);
-    logger.success('Copied: .claude/scripts/');
+  // Summary
+  console.log();
+  console.log('-'.repeat(50));
+  console.log();
+
+  if (createdFiles.length > 0) {
+    logger.success(`Initialization complete! Created ${createdFiles.length} file(s):`);
+    createdFiles.forEach(f => logger.list([f]));
+  } else {
+    logger.info('No files were created.');
   }
 
-  // Copy skills if full mode
-  if (isFull && await exists(GLOBAL_SKILLS_DIR)) {
-    const projectSkillsDir = `${paths.claudeDir}/skills`;
-    await ensureDir(projectSkillsDir);
-    await copyDir(GLOBAL_SKILLS_DIR, projectSkillsDir);
-    logger.success('Copied: .claude/skills/');
+  if (isMinimal) {
+    logger.dim('\nMinimal mode: Only CLAUDE.md was created.');
+    logger.dim('Run without --minimal for full configuration.');
   }
 }
 
 /**
- * Display success message with list of created files
- * @param {object} config - Project configuration
+ * Get project name from directory path
+ * @param {string} projectPath - Path to project root
+ * @returns {string} Project name
  */
-function displaySuccessMessage(config) {
-  const isMinimal = config.orchestrationLevel === 'minimal';
-  const isFull = config.orchestrationLevel === 'full';
-
-  console.log();
-  logger.success("Muad'Dib initialized successfully!");
-  console.log();
-  logger.info('Files created:');
-  logger.list([
-    'CLAUDE.md',
-    ...(isMinimal ? [] : [
-      '.claude/settings.json',
-      '.claude/context.md',
-      '.claude/critical-context.md',
-      '.muaddib/config.json'
-    ]),
-    ...(config.useHooks ? ['.claude/scripts/'] : []),
-    ...(isFull ? ['.claude/skills/muaddib/'] : [])
-  ]);
-  console.log();
-  logger.info("You're all set! Claude Code will now use Muad'Dib orchestration.");
+function getProjectName(projectPath) {
+  const parts = projectPath.split(/[/\\]/);
+  return parts[parts.length - 1] || 'project';
 }
 
-/**
- * Create basic CLAUDE.md content
- * @param {object} config - Project config
- * @returns {string}
- */
-function createBasicClaudeMd(config) {
-  return `# ${config.projectName}
-
-## Project Overview
-
-**Project**: ${config.projectName}
-**Type**: ${config.projectType}
-**Description**: ${config.description || 'A project using Muad\'Dib orchestration'}
-
----
-
-## Orchestration Rules
-
-### Task Management
-
-1. **Use TodoWrite for any task with 3+ steps**
-2. **Mark todos complete only when fully verified**
-3. **Never stop with incomplete todos**
-4. **Break complex work into atomic tasks**
-
-### 3-Strikes Error Recovery
-
-After **3 consecutive failures** on same operation:
-
-1. **STOP** - Halt modifications
-2. **REVERT** - \`git checkout\` to working state
-3. **DOCUMENT** - Record failure details
-4. **ASK** - Request user guidance
-
----
-
-## Quality Standards
-
-- Write clean, maintainable code
-- Follow existing project patterns
-- Test changes before committing
-- Document significant decisions
-
----
-
-*Generated by Muad'Dib - OmO-style orchestration for Claude Code*
-*Initialized: ${new Date().toISOString().split('T')[0]}*
-`;
-}
-
-/**
- * Create basic settings.json content
- * @param {object} config - Project config
- * @returns {object}
- */
-function createBasicSettings(_config) {
-  return {
-    hooks: {},
-    permissions: {
-      allow: [],
-      deny: [
-        "Bash(rm -rf *)",
-        "Bash(sudo *)",
-        "Bash(env *)",
-        "Bash(chmod 777 *)"
-      ]
-    }
-  };
-}
-
-/**
- * Create basic context.md content
- * @param {object} config - Project config
- * @returns {string}
- */
-function createBasicContext(config) {
-  return `# Project Context
-
-## Overview
-
-**Project**: ${config.projectName}
-**Type**: ${config.projectType}
-
-## Key Information
-
-Add project-specific context here that Claude should know about.
-
-## Important Patterns
-
-Document any important patterns or conventions used in this project.
-
----
-
-*Updated: ${new Date().toISOString().split('T')[0]}*
-`;
-}
-
-/**
- * Create basic critical-context.md content
- * @returns {string}
- */
-function createBasicCriticalContext() {
-  return `# Critical Context
-
-This file contains information that must survive context compaction.
-
-## Must Remember
-
-- Add critical information here
-- This content persists through long sessions
-
----
-
-*Updated: ${new Date().toISOString().split('T')[0]}*
-`;
-}
+export default initCommand;

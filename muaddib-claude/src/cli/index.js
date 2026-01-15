@@ -12,6 +12,7 @@ import { dirname, join } from 'path';
 
 // Import commands
 import { doctorCommand } from './doctor.js';
+import { initCommand } from './init.js';
 
 // Get package version
 const __filename = fileURLToPath(import.meta.url);
@@ -47,6 +48,7 @@ export async function run() {
 
   // Register commands
   program.addCommand(doctorCommand());
+  program.addCommand(initCommand());
 
   // Custom help formatting
   program.configureHelp({
@@ -58,6 +60,12 @@ export async function run() {
   program.addHelpText('after', `
 
 ${chalk.bold('Examples:')}
+  ${chalk.gray('# Initialize a project')}
+  $ muaddib init
+
+  ${chalk.gray('# Initialize with minimal setup (CLAUDE.md only)')}
+  $ muaddib init --minimal
+
   ${chalk.gray('# Check installation health')}
   $ muaddib doctor
 
