@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-01-15
+
+### Changed
+
+#### Repository Structure Cleanup
+- **Consolidated package location** - All code now lives exclusively in `muaddib-claude/` directory
+- **Removed duplicate files** - Deleted 169 redundant files from root that were superseded by `muaddib-claude/` versions
+- **Cleaned development artifacts** - Removed planning, research, and review documents (archived in `MVP-Lock-Archive` branch)
+
+#### Branch Management
+- **Merged `dev-contributors` into `main`** - Unified divergent histories from PR-based and AutoClaude development
+- **Created `MVP-Lock-Archive` branch** - Preserves complete v1.0.2 state with all development history
+- **Synced `main` and `dev-contributors`** - Both branches now share identical clean structure
+
+### Removed
+
+#### Root-Level Duplicates (moved to muaddib-claude/)
+- `__tests__/`, `bin/`, `lib/`, `scripts/`, `src/`, `templates/`
+- `package.json`, `package-lock.json`, `.eslintrc.json`, `.npmignore`
+
+#### Planning & Development Documentation
+- `implementation-phase-0/` through `implementation-phase-5/`
+- `research-archive/` (17 planning context documents)
+- `MASTER-PLAN.md`, `progress.md`, `MVP-REMEDIATION-TASKS.md`
+
+#### Review Documents
+- `MVP-reviews/`, `mid-point-reviews/`, `rc-reviews/`, `remediation-reviews/`
+- `code-field-eval/`
+
+#### Session/Working Files
+- `HANDOFF-SESSION-STATE.md`, `AGENTS.md`
+- `.auto-claude/`, `.auto-claude-status`, `.auto-claude-security.json`
+- `.claude_settings.json`
+
+### Repository Structure (Post-Cleanup)
+```
+atreides/
+├── .github/PR_REQUEST_TEMPLATE.md
+├── .gitignore
+├── CLAUDE.md
+├── LICENSE
+├── README.md
+└── muaddib-claude/    # All package code
+    ├── __tests__/     # 456 tests
+    ├── bin/
+    ├── docs/
+    ├── lib/
+    ├── scripts/
+    ├── src/
+    ├── templates/
+    └── package.json
+```
+
+---
+
 ## [1.0.2] - 2026-01-15
 
 ### Added
@@ -139,6 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[1.0.2]: https://github.com/muaddib-claude/muaddib-claude/releases/tag/v1.0.2
-[1.0.1]: https://github.com/muaddib-claude/muaddib-claude/releases/tag/v1.0.1
-[1.0.0]: https://github.com/muaddib-claude/muaddib-claude/releases/tag/v1.0.0
+[1.0.3]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.3
+[1.0.2]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.2
+[1.0.1]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.1
+[1.0.0]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.0
