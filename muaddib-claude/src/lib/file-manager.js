@@ -17,6 +17,105 @@ import path from 'path';
 const DEFAULT_MAX_FILES = 10000;
 
 /**
+ * Check if a file or directory exists
+ * @param {string} filePath - Path to check
+ * @returns {Promise<boolean>}
+ */
+export async function exists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Read and parse a JSON file
+ * @param {string} filePath - Path to JSON file
+ * @returns {Promise<object>} Parsed JSON content
+ */
+export async function readJson(filePath) {
+  const content = await fs.readFile(filePath, 'utf8');
+  return JSON.parse(content);
+}
+
+/**
+ * Check if a path is a symbolic link
+ * @param {string} linkPath - Path to check
+ * @returns {Promise<boolean>}
+ */
+export async function isSymlink(linkPath) {
+  try {
+    const stats = await fs.lstat(linkPath);
+    return stats.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Read the target of a symbolic link
+ * @param {string} linkPath - Path to symlink
+ * @returns {Promise<string>} Target path
+ */
+export async function readSymlink(linkPath) {
+  return fs.readlink(linkPath);
+}
+
+/**
+ * Make a file executable (chmod +x)
+ * @param {string} filePath - Path to file
+ * @returns {Promise<void>}
+ */
+export async function makeExecutable(filePath) {
+  const stats = await fs.stat(filePath);
+  // Add execute permission for owner, group, and others
+  const newMode = stats.mode | 0o111;
+  await fs.chmod(filePath, newMode);
+}
+
+/**
+ * Find backup files for a given file
+ * @param {string} dirPath - Directory to search
+ * @param {string} [pattern] - Optional filename pattern to match
+ * @returns {Promise<string[]>} Array of backup file paths
+ */
+export async function findBackups(dirPath, pattern = null) {
+  const backups = [];
+
+  try {
+    const stat = await fs.stat(dirPath);
+    if (!stat.isDirectory()) {
+      return backups;
+    }
+  } catch {
+    return backups;
+  }
+
+  const BACKUP_PATTERN_LOCAL = /\.(bak|backup|orig|\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})$/i;
+
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      if (!BACKUP_PATTERN_LOCAL.test(entry.name)) continue;
+
+      if (pattern) {
+        const baseName = entry.name.replace(BACKUP_PATTERN_LOCAL, '');
+        if (!baseName.includes(pattern)) continue;
+      }
+
+      backups.push(path.join(dirPath, entry.name));
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  return backups;
+}
+
+/**
  * Default maximum number of backups to retain
  * @type {number}
  */
@@ -382,6 +481,12 @@ export async function cleanupBackups(backupDir, options = {}) {
 }
 
 export default {
+  exists,
+  readJson,
+  isSymlink,
+  readSymlink,
+  makeExecutable,
+  findBackups,
   listFiles,
   getDefaultMaxFiles,
   getDefaultMaxBackups,
