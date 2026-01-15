@@ -127,6 +127,31 @@ function registerHelpers() {
     return content.split('\n').map(line => indent + line).join('\n');
   });
 
+  // Switch/case helper for flattening deeply nested conditionals
+  // Usage: {{#switch value}}{{#case "a"}}A{{/case}}{{#case "b"}}B{{/case}}{{#default}}Other{{/default}}{{/switch}}
+  hbs.registerHelper('switch', function (value, options) {
+    this._switch_value_ = value;
+    this._switch_matched_ = false;
+    const result = options.fn(this);
+    delete this._switch_value_;
+    delete this._switch_matched_;
+    return result;
+  });
+
+  hbs.registerHelper('case', function (value, options) {
+    if (this._switch_matched_) return '';
+    if (value === this._switch_value_) {
+      this._switch_matched_ = true;
+      return options.fn(this);
+    }
+    return '';
+  });
+
+  hbs.registerHelper('default', function (options) {
+    if (this._switch_matched_) return '';
+    return options.fn(this);
+  });
+
   debug('Registered Handlebars helpers');
 }
 
