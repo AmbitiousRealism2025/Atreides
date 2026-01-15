@@ -1,295 +1,275 @@
 /**
- * Template Engine for Muad'Dib CLI
+ * Template Engine Module
  *
- * Handlebars-based template rendering with custom helpers and partials.
+ * Core template rendering and validation for Muad'Dib CLI.
+ * Handles input validation, template processing, and output verification.
+ *
+ * @module template-engine
  */
 
 import Handlebars from 'handlebars';
-import { join } from 'path';
-import { readFileSync } from 'fs';
-import { readFile, listFiles, exists } from './file-manager.js';
-import { PACKAGE_TEMPLATES_DIR, PACKAGE_ROOT } from '../utils/paths.js';
-import { debug } from '../utils/logger.js';
-
-// Read package version at module load
-let packageVersion = '1.0.0';
-try {
-  const packageJson = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
-  packageVersion = packageJson.version || '1.0.0';
-} catch (error) {
-  // Fallback to default version if package.json can't be read
-  debug(`Error reading package.json, using default version: ${error.message}`);
-}
-
-// Create a separate Handlebars instance to avoid polluting global
-const hbs = Handlebars.create();
-
-// Track registered partials
-const registeredPartials = new Set();
+import fs from 'fs-extra';
+import path from 'path';
 
 /**
- * Register custom Handlebars helpers
+ * Default maximum input length in characters
+ * @type {number}
  */
-function registerHelpers() {
-  // Conditional helper: {{#if-eq a b}}
-  hbs.registerHelper('if-eq', function (a, b, options) {
-    return a === b ? options.fn(this) : options.inverse(this);
-  });
-
-  // Not equal: {{#if-ne a b}}
-  hbs.registerHelper('if-ne', function (a, b, options) {
-    return a !== b ? options.fn(this) : options.inverse(this);
-  });
-
-  // Greater than: {{#if-gt a b}}
-  hbs.registerHelper('if-gt', function (a, b, options) {
-    return a > b ? options.fn(this) : options.inverse(this);
-  });
-
-  // Contains: {{#if-contains array value}}
-  hbs.registerHelper('if-contains', function (array, value, options) {
-    if (!Array.isArray(array)) return options.inverse(this);
-    return array.includes(value) ? options.fn(this) : options.inverse(this);
-  });
-
-  // Current date: {{current-date}}
-  hbs.registerHelper('current-date', function () {
-    return new Date().toISOString().split('T')[0];
-  });
-
-  // Current timestamp: {{current-timestamp}}
-  hbs.registerHelper('current-timestamp', function () {
-    return new Date().toISOString();
-  });
-
-  // JSON stringify: {{json-stringify obj}}
-  hbs.registerHelper('json-stringify', function (obj) {
-    return JSON.stringify(obj, null, 2);
-  });
-
-  // Uppercase: {{uppercase str}}
-  hbs.registerHelper('uppercase', function (str) {
-    return str ? str.toUpperCase() : '';
-  });
-
-  // Lowercase: {{lowercase str}}
-  hbs.registerHelper('lowercase', function (str) {
-    return str ? str.toLowerCase() : '';
-  });
-
-  // Capitalize: {{capitalize str}}
-  hbs.registerHelper('capitalize', function (str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  });
-
-  // Kebab case: {{kebab-case str}}
-  hbs.registerHelper('kebab-case', function (str) {
-    if (!str) return '';
-    return str
-      .replace(/([a-z])([A-Z])/g, '$1-$2')
-      .replace(/[\s_]+/g, '-')
-      .toLowerCase();
-  });
-
-  // Each with index: {{#each-index array}}{{@index}} {{this}}{{/each-index}}
-  hbs.registerHelper('each-index', function (array, options) {
-    if (!Array.isArray(array)) return '';
-    return array.map((item, index) =>
-      options.fn(item, { data: { index, first: index === 0, last: index === array.length - 1 } })
-    ).join('');
-  });
-
-  // Repeat: {{#repeat n}}content{{/repeat}}
-  hbs.registerHelper('repeat', function (n, options) {
-    let result = '';
-    for (let i = 0; i < n; i++) {
-      result += options.fn(this);
-    }
-    return result;
-  });
-
-  // Default value: {{default value fallback}}
-  hbs.registerHelper('default', function (value, defaultValue) {
-    return value !== undefined && value !== null && value !== '' ? value : defaultValue;
-  });
-
-  // Join array: {{join array separator}}
-  hbs.registerHelper('join', function (array, separator) {
-    if (!Array.isArray(array)) return '';
-    return array.join(separator || ', ');
-  });
-
-  // Indent: {{indent content spaces}}
-  hbs.registerHelper('indent', function (content, spaces) {
-    if (!content) return '';
-    const indent = ' '.repeat(spaces || 2);
-    return content.split('\n').map(line => indent + line).join('\n');
-  });
-
-  // Switch/case helper for flattening deeply nested conditionals
-  // Usage: {{#switch value}}{{#case "a"}}A{{/case}}{{#case "b"}}B{{/case}}{{#default}}Other{{/default}}{{/switch}}
-  hbs.registerHelper('switch', function (value, options) {
-    this._switch_value_ = value;
-    this._switch_matched_ = false;
-    const result = options.fn(this);
-    delete this._switch_value_;
-    delete this._switch_matched_;
-    return result;
-  });
-
-  hbs.registerHelper('case', function (value, options) {
-    if (this._switch_matched_) return '';
-    if (value === this._switch_value_) {
-      this._switch_matched_ = true;
-      return options.fn(this);
-    }
-    return '';
-  });
-
-  hbs.registerHelper('default', function (options) {
-    if (this._switch_matched_) return '';
-    return options.fn(this);
-  });
-
-  debug('Registered Handlebars helpers');
-}
+const DEFAULT_MAX_INPUT_LENGTH = 100000;
 
 /**
- * Load and register all partials from the partials directory
- * @param {string} [partialsDir] - Path to partials directory
- * @returns {Promise<void>}
+ * Validate that input data doesn't exceed the maximum allowed length.
+ * Calculates the size of the serialized input data and throws an error
+ * if it exceeds the configured limit.
+ *
+ * @param {*} data - Input data to validate (any JSON-serializable type)
+ * @param {Object} options - Validation options
+ * @param {number} [options.maxLength=100000] - Maximum allowed length in characters
+ * @throws {Error} If input exceeds maxLength with descriptive message
+ * @returns {boolean} True if validation passes
+ *
+ * @example
+ * // Validate context before template rendering
+ * try {
+ *   validateInputLength(context, { maxLength: 50000 });
+ * } catch (err) {
+ *   console.error('Context too large:', err.message);
+ * }
  */
-export async function loadPartials(partialsDir) {
-  const dir = partialsDir || join(PACKAGE_TEMPLATES_DIR, 'partials');
+export function validateInputLength(data, options = {}) {
+  const { maxLength = DEFAULT_MAX_INPUT_LENGTH } = options;
 
-  if (!await exists(dir)) {
-    debug(`No partials directory found at: ${dir}`);
-    return;
+  // Validate maxLength parameter
+  if (typeof maxLength !== 'number' || maxLength < 1) {
+    throw new Error(`maxLength must be a positive number, got: ${maxLength}`);
   }
 
-  const partialFiles = await listFiles(dir, { extensions: ['.hbs'] });
+  // Handle null/undefined as valid (empty) input
+  if (data === null || data === undefined) {
+    return true;
+  }
 
-  for (const filePath of partialFiles) {
-    const name = filePath.split('/').pop().replace('.hbs', '');
-    if (!registeredPartials.has(name)) {
-      const content = await readFile(filePath);
-      hbs.registerPartial(name, content);
-      registeredPartials.add(name);
-      debug(`Registered partial: ${name}`);
-    }
+  let serialized;
+  try {
+    serialized = typeof data === 'string' ? data : JSON.stringify(data);
+  } catch (err) {
+    throw new Error(`Input data is not serializable: ${err.message}`);
+  }
+
+  const inputLength = serialized.length;
+
+  if (inputLength > maxLength) {
+    const truncatedPreview = serialized.substring(0, 100);
+    throw new Error(
+      `Input data exceeds maximum allowed length. ` +
+      `Got ${inputLength.toLocaleString()} characters, maximum is ${maxLength.toLocaleString()}. ` +
+      `Preview: "${truncatedPreview}..."`
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Get the default maximum input length
+ * @returns {number} The default maximum input length in characters
+ */
+export function getDefaultMaxInputLength() {
+  return DEFAULT_MAX_INPUT_LENGTH;
+}
+
+/**
+ * Validate that a string is valid JSON
+ *
+ * @param {string} content - String content to validate as JSON
+ * @returns {{valid: boolean, error?: string, parsed?: object}} Validation result
+ *
+ * @example
+ * const result = validateJson('{"key": "value"}');
+ * if (!result.valid) {
+ *   console.error('Invalid JSON:', result.error);
+ * }
+ */
+export function validateJson(content) {
+  if (typeof content !== 'string') {
+    return {
+      valid: false,
+      error: 'Content must be a string'
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(content);
+    return {
+      valid: true,
+      parsed
+    };
+  } catch (err) {
+    return {
+      valid: false,
+      error: err.message
+    };
   }
 }
 
 /**
- * Register a single partial
- * @param {string} name - Partial name
- * @param {string} content - Partial content
+ * Render a Handlebars template with context data.
+ * Validates input length before rendering.
+ *
+ * @param {string} templateContent - Handlebars template string
+ * @param {Object} context - Data context for template rendering
+ * @param {Object} options - Rendering options
+ * @param {number} [options.maxInputLength=100000] - Maximum input length
+ * @param {boolean} [options.validateInput=true] - Whether to validate input length
+ * @returns {string} Rendered template output
+ * @throws {Error} If input validation fails or template rendering fails
+ *
+ * @example
+ * const output = renderTemplate('Hello {{name}}!', { name: 'World' });
+ * console.log(output); // 'Hello World!'
+ */
+export function renderTemplate(templateContent, context = {}, options = {}) {
+  const {
+    maxInputLength = DEFAULT_MAX_INPUT_LENGTH,
+    validateInput = true
+  } = options;
+
+  // Validate template content
+  if (typeof templateContent !== 'string') {
+    throw new Error('Template content must be a string');
+  }
+
+  // Validate input length if enabled
+  if (validateInput) {
+    validateInputLength(context, { maxLength: maxInputLength });
+  }
+
+  try {
+    const template = Handlebars.compile(templateContent);
+    return template(context);
+  } catch (err) {
+    throw new Error(`Template rendering failed: ${err.message}`);
+  }
+}
+
+/**
+ * Load and render a template file with context data.
+ *
+ * @param {string} templatePath - Path to the template file
+ * @param {Object} context - Data context for template rendering
+ * @param {Object} options - Rendering options
+ * @param {number} [options.maxInputLength=100000] - Maximum input length
+ * @param {boolean} [options.validateInput=true] - Whether to validate input length
+ * @returns {Promise<string>} Rendered template output
+ * @throws {Error} If file read fails, input validation fails, or template rendering fails
+ *
+ * @example
+ * const output = await renderTemplateFile('./templates/config.hbs', { name: 'project' });
+ */
+export async function renderTemplateFile(templatePath, context = {}, options = {}) {
+  // Read template file
+  let templateContent;
+  try {
+    templateContent = await fs.readFile(templatePath, 'utf8');
+  } catch (err) {
+    throw new Error(`Failed to read template file: ${templatePath} (${err.message})`);
+  }
+
+  return renderTemplate(templateContent, context, options);
+}
+
+/**
+ * Register a Handlebars partial for use in templates.
+ *
+ * @param {string} name - Name of the partial
+ * @param {string} content - Partial template content
+ *
+ * @example
+ * registerPartial('header', '<header>{{title}}</header>');
  */
 export function registerPartial(name, content) {
-  hbs.registerPartial(name, content);
-  registeredPartials.add(name);
-  debug(`Registered partial: ${name}`);
+  Handlebars.registerPartial(name, content);
 }
 
 /**
- * Compile a template string
- * @param {string} template - The template string
- * @returns {HandlebarsTemplateDelegate}
+ * Register a Handlebars helper function.
+ *
+ * @param {string} name - Name of the helper
+ * @param {Function} fn - Helper function
+ *
+ * @example
+ * registerHelper('uppercase', (str) => str.toUpperCase());
  */
-export function compile(template) {
-  return hbs.compile(template);
+export function registerHelper(name, fn) {
+  Handlebars.registerHelper(name, fn);
 }
 
 /**
- * Render a template string with data
- * @param {string} template - The template string
- * @param {object} data - Data to render with
- * @returns {string}
+ * Render a JSON template and validate the output.
+ * Combines template rendering with JSON validation.
+ *
+ * @param {string} templateContent - Handlebars template string
+ * @param {Object} context - Data context for template rendering
+ * @param {Object} options - Rendering options
+ * @param {number} [options.maxInputLength=100000] - Maximum input length
+ * @param {Object} [options.fallback=null] - Fallback object if JSON validation fails
+ * @returns {{output: string, parsed: Object|null, usedFallback: boolean, error?: string}}
+ *
+ * @example
+ * const result = renderJsonTemplate('{"name": "{{name}}"}', { name: 'test' });
+ * if (result.usedFallback) {
+ *   console.warn('Used fallback config due to:', result.error);
+ * }
  */
-export function render(template, data = {}) {
-  const compiled = compile(template);
-  return compiled(data);
-}
+export function renderJsonTemplate(templateContent, context = {}, options = {}) {
+  const {
+    maxInputLength = DEFAULT_MAX_INPUT_LENGTH,
+    fallback = null
+  } = options;
 
-/**
- * Load and render a template file
- * @param {string} templatePath - Path to the template file
- * @param {object} data - Data to render with
- * @returns {Promise<string>}
- */
-export async function renderFile(templatePath, data = {}) {
-  const template = await readFile(templatePath);
-  return render(template, data);
-}
+  let output;
+  try {
+    output = renderTemplate(templateContent, context, { maxInputLength });
+  } catch (err) {
+    if (fallback !== null) {
+      return {
+        output: JSON.stringify(fallback, null, 2),
+        parsed: fallback,
+        usedFallback: true,
+        error: err.message
+      };
+    }
+    throw err;
+  }
 
-/**
- * Load and render a template by name from the templates directory
- * @param {string} templateName - Template name (with or without .hbs extension)
- * @param {object} data - Data to render with
- * @param {string} [templatesDir] - Optional templates directory
- * @returns {Promise<string>}
- */
-export async function renderTemplate(templateName, data = {}, templatesDir) {
-  const dir = templatesDir || PACKAGE_TEMPLATES_DIR;
-  const name = templateName.endsWith('.hbs') ? templateName : `${templateName}.hbs`;
-  const templatePath = join(dir, name);
+  const validation = validateJson(output);
 
-  // Ensure partials are loaded
-  await loadPartials(join(dir, 'partials'));
+  if (!validation.valid) {
+    if (fallback !== null) {
+      return {
+        output: JSON.stringify(fallback, null, 2),
+        parsed: fallback,
+        usedFallback: true,
+        error: validation.error
+      };
+    }
+    throw new Error(`Rendered template is not valid JSON: ${validation.error}`);
+  }
 
-  return renderFile(templatePath, data);
-}
-
-/**
- * Get default template data with common values
- * @param {object} [overrides] - Values to override defaults
- * @returns {object}
- */
-export function getDefaultData(overrides = {}) {
   return {
-    date: new Date().toISOString().split('T')[0],
-    timestamp: new Date().toISOString(),
-    year: new Date().getFullYear(),
-    version: packageVersion,
-    ...overrides
+    output,
+    parsed: validation.parsed,
+    usedFallback: false
   };
 }
 
-/**
- * List available templates
- * @param {string} [templatesDir] - Templates directory
- * @returns {Promise<string[]>}
- */
-export async function listTemplates(templatesDir) {
-  const dir = templatesDir || PACKAGE_TEMPLATES_DIR;
-  const files = await listFiles(dir, { extensions: ['.hbs'] });
-  return files.map(f => f.split('/').pop().replace('.hbs', ''));
-}
-
-/**
- * Check if a template exists
- * @param {string} templateName - Template name
- * @param {string} [templatesDir] - Templates directory
- * @returns {Promise<boolean>}
- */
-export async function templateExists(templateName, templatesDir) {
-  const dir = templatesDir || PACKAGE_TEMPLATES_DIR;
-  const name = templateName.endsWith('.hbs') ? templateName : `${templateName}.hbs`;
-  return exists(join(dir, name));
-}
-
-// Initialize helpers on module load
-registerHelpers();
-
 export default {
-  loadPartials,
-  registerPartial,
-  compile,
-  render,
-  renderFile,
+  validateInputLength,
+  getDefaultMaxInputLength,
+  validateJson,
   renderTemplate,
-  getDefaultData,
-  listTemplates,
-  templateExists
+  renderTemplateFile,
+  registerPartial,
+  registerHelper,
+  renderJsonTemplate
 };
