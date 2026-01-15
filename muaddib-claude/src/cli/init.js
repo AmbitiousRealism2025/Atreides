@@ -282,7 +282,12 @@ function createBasicSettings(_config) {
     hooks: {},
     permissions: {
       allow: [],
-      deny: []
+      deny: [
+        "Bash(rm -rf *)",
+        "Bash(sudo *)",
+        "Bash(env *)",
+        "Bash(chmod 777 *)"
+      ]
     }
   };
 }
