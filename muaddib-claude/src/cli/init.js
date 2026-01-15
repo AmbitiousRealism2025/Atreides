@@ -3,6 +3,21 @@
  *
  * Initialize a project with Muad'Dib configuration files.
  * Supports full and minimal modes with JSON validation.
+ *
+ * ## Modes
+ *
+ * **Full Mode (default):**
+ * - Creates CLAUDE.md in project root
+ * - Creates .claude/settings.json with permissions config
+ *
+ * **Minimal Mode (--minimal):**
+ * - Creates ONLY CLAUDE.md in project root
+ * - Does NOT create .claude directory or settings.json
+ * - Use when you only need basic Claude Code instructions
+ *
+ * MED-2: The .claude directory is explicitly skipped in minimal mode.
+ * This is intentional - minimal mode is for projects that only need
+ * the CLAUDE.md instructions file without permission configurations.
  */
 
 import { Command } from 'commander';
@@ -44,7 +59,7 @@ export function initCommand() {
 
   cmd
     .description('Initialize a project with Muad\'Dib configuration')
-    .option('-m, --minimal', 'Create only CLAUDE.md (skip .claude directory)')
+    .option('-m, --minimal', 'Create only CLAUDE.md (no .claude directory or settings.json)')
     .option('-f, --force', 'Overwrite existing files')
     .option('-y, --yes', 'Skip confirmation prompts')
     .action(async (options) => {
@@ -121,6 +136,8 @@ async function runInit(options) {
   }
 
   // Step 2: Create .claude directory and settings.json (full mode only)
+  // MED-2: In minimal mode, we explicitly skip creating the .claude directory.
+  // This is the expected behavior - minimal mode only creates CLAUDE.md.
   if (!isMinimal) {
     logger.step(2, 2, 'Creating .claude/settings.json...');
 
