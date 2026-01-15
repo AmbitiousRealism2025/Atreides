@@ -4,6 +4,7 @@
  * Tests for file-manager.js library functions including:
  * - MED-9: listFiles() with maxFiles limit
  * - MED-6: rotateBackups() and cleanupBackups()
+ * - MED-11: syncPackageAssets() for asset synchronization
  */
 
 import { jest } from '@jest/globals';
@@ -24,7 +25,8 @@ import {
   getDefaultMaxFiles,
   getDefaultMaxBackups,
   rotateBackups,
-  cleanupBackups
+  cleanupBackups,
+  syncPackageAssets
 } from '../src/lib/file-manager.js';
 
 // Get the directory of this test file
@@ -666,6 +668,324 @@ describe('File Manager', () => {
         // Files should still exist
         const remaining = await fs.readdir(testDir);
         expect(remaining).toHaveLength(2);
+      });
+    });
+  });
+
+  describe('syncPackageAssets() - MED-11', () => {
+    let srcDir;
+    let destDir;
+    let mockPaths;
+
+    /**
+     * Create mock paths configuration for testing
+     */
+    function createMockPaths(src, dest) {
+      return {
+        PACKAGE_TEMPLATES_DIR: join(src, 'templates'),
+        PACKAGE_SCRIPTS_DIR: join(src, 'scripts'),
+        PACKAGE_LIB_CORE_DIR: join(src, 'lib', 'core'),
+        PACKAGE_SKILLS_DIR: join(src, 'skills'),
+        GLOBAL_TEMPLATES_DIR: join(dest, 'templates'),
+        GLOBAL_SCRIPTS_DIR: join(dest, 'scripts'),
+        GLOBAL_LIB_DIR: join(dest, 'lib'),
+        GLOBAL_SKILLS_DIR: join(dest, 'skills')
+      };
+    }
+
+    /**
+     * Create source asset directories with sample files
+     */
+    async function createSourceAssets(src) {
+      // Templates
+      await fs.ensureDir(join(src, 'templates'));
+      await fs.writeFile(join(src, 'templates', 'CLAUDE.md.hbs'), '# Template');
+      await fs.writeFile(join(src, 'templates', 'settings.json.hbs'), '{}');
+
+      // Scripts
+      await fs.ensureDir(join(src, 'scripts'));
+      await fs.writeFile(join(src, 'scripts', 'hook.sh'), '#!/bin/bash\necho "hook"');
+      await fs.writeFile(join(src, 'scripts', 'setup.sh'), '#!/bin/bash\necho "setup"');
+
+      // Lib/core
+      await fs.ensureDir(join(src, 'lib', 'core'));
+      await fs.writeFile(join(src, 'lib', 'core', 'README.md'), '# Core');
+
+      // Skills
+      await fs.ensureDir(join(src, 'skills'));
+      await fs.writeFile(join(src, 'skills', 'orchestrate.md'), '# Skill');
+    }
+
+    beforeEach(async () => {
+      srcDir = join(testDir, 'package');
+      destDir = join(testDir, 'global');
+      mockPaths = createMockPaths(srcDir, destDir);
+
+      await fs.ensureDir(srcDir);
+      await fs.ensureDir(destDir);
+    });
+
+    describe('basic functionality', () => {
+      it('should sync all asset types by default', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({}, mockPaths);
+
+        expect(result.synced).toHaveLength(4);
+        expect(result.errors).toHaveLength(0);
+
+        // Verify files were copied
+        expect(await exists(join(destDir, 'templates', 'CLAUDE.md.hbs'))).toBe(true);
+        expect(await exists(join(destDir, 'scripts', 'hook.sh'))).toBe(true);
+        expect(await exists(join(destDir, 'lib', 'README.md'))).toBe(true);
+        expect(await exists(join(destDir, 'skills', 'orchestrate.md'))).toBe(true);
+      });
+
+      it('should throw error when paths configuration is missing', async () => {
+        await expect(syncPackageAssets({})).rejects.toThrow(
+          'paths configuration is required'
+        );
+      });
+
+      it('should return synced paths in result', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({}, mockPaths);
+
+        // Check that synced entries contain expected info
+        expect(result.synced.some(s => s.includes('templates'))).toBe(true);
+        expect(result.synced.some(s => s.includes('scripts'))).toBe(true);
+        expect(result.synced.some(s => s.includes('lib'))).toBe(true);
+        expect(result.synced.some(s => s.includes('skills'))).toBe(true);
+      });
+    });
+
+    describe('selective sync', () => {
+      it('should sync only templates when specified', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.synced[0]).toContain('templates');
+
+        expect(await exists(join(destDir, 'templates'))).toBe(true);
+        expect(await exists(join(destDir, 'scripts'))).toBe(false);
+        expect(await exists(join(destDir, 'lib'))).toBe(false);
+        expect(await exists(join(destDir, 'skills'))).toBe(false);
+      });
+
+      it('should sync only scripts when specified', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: false,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.synced[0]).toContain('scripts');
+      });
+
+      it('should sync multiple selected asset types', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: true,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(2);
+        expect(result.synced.some(s => s.includes('templates'))).toBe(true);
+        expect(result.synced.some(s => s.includes('lib'))).toBe(true);
+      });
+    });
+
+    describe('force overwrite', () => {
+      it('should skip existing directories when force is false', async () => {
+        await createSourceAssets(srcDir);
+
+        // Pre-create destination directories
+        await fs.ensureDir(join(destDir, 'templates'));
+        await fs.writeFile(join(destDir, 'templates', 'existing.txt'), 'old content');
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false,
+          force: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(0);
+        expect(result.skipped).toHaveLength(1);
+        expect(result.skipped[0]).toContain('already exists');
+
+        // Original file should still exist
+        expect(await exists(join(destDir, 'templates', 'existing.txt'))).toBe(true);
+        // New file should NOT exist
+        expect(await exists(join(destDir, 'templates', 'CLAUDE.md.hbs'))).toBe(false);
+      });
+
+      it('should overwrite existing directories when force is true', async () => {
+        await createSourceAssets(srcDir);
+
+        // Pre-create destination directories
+        await fs.ensureDir(join(destDir, 'templates'));
+        await fs.writeFile(join(destDir, 'templates', 'existing.txt'), 'old content');
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false,
+          force: true
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.skipped).toHaveLength(0);
+
+        // New files should exist
+        expect(await exists(join(destDir, 'templates', 'CLAUDE.md.hbs'))).toBe(true);
+        expect(await exists(join(destDir, 'templates', 'settings.json.hbs'))).toBe(true);
+      });
+    });
+
+    describe('source not found handling', () => {
+      it('should skip and report when source directory does not exist', async () => {
+        // Don't create source assets
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(0);
+        expect(result.skipped).toHaveLength(1);
+        expect(result.skipped[0]).toContain('source not found');
+      });
+
+      it('should handle partial source availability', async () => {
+        // Only create templates
+        await fs.ensureDir(join(srcDir, 'templates'));
+        await fs.writeFile(join(srcDir, 'templates', 'test.hbs'), 'content');
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.synced[0]).toContain('templates');
+        expect(result.skipped).toHaveLength(1);
+        expect(result.skipped[0]).toContain('scripts');
+        expect(result.skipped[0]).toContain('source not found');
+      });
+    });
+
+    describe('script executable permissions', () => {
+      it('should make shell scripts executable after sync', async () => {
+        await createSourceAssets(srcDir);
+
+        await syncPackageAssets({
+          templates: false,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        // Check that scripts are executable
+        const hookPath = join(destDir, 'scripts', 'hook.sh');
+        const setupPath = join(destDir, 'scripts', 'setup.sh');
+
+        const hookStats = await fs.stat(hookPath);
+        const setupStats = await fs.stat(setupPath);
+
+        // Check execute bit is set
+        expect(hookStats.mode & 0o100).toBeTruthy();
+        expect(setupStats.mode & 0o100).toBeTruthy();
+      });
+
+      it('should not make non-shell files executable', async () => {
+        await fs.ensureDir(join(srcDir, 'scripts'));
+        await fs.writeFile(join(srcDir, 'scripts', 'config.json'), '{}');
+
+        await syncPackageAssets({
+          templates: false,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        const configPath = join(destDir, 'scripts', 'config.json');
+        const stats = await fs.stat(configPath);
+
+        // JSON files should not have execute bit
+        expect(stats.mode & 0o100).toBeFalsy();
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should handle empty source directories', async () => {
+        // Create empty source directories
+        await fs.ensureDir(join(srcDir, 'templates'));
+        await fs.ensureDir(join(srcDir, 'scripts'));
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(2);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should handle nested directories in assets', async () => {
+        // Create nested structure
+        await fs.ensureDir(join(srcDir, 'templates', 'partials'));
+        await fs.writeFile(join(srcDir, 'templates', 'partials', 'header.hbs'), 'header');
+        await fs.writeFile(join(srcDir, 'templates', 'main.hbs'), 'main');
+
+        await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        // Check nested files were copied
+        expect(await exists(join(destDir, 'templates', 'main.hbs'))).toBe(true);
+        expect(await exists(join(destDir, 'templates', 'partials', 'header.hbs'))).toBe(true);
+      });
+
+      it('should return empty arrays when all options are false', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: false,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(0);
+        expect(result.skipped).toHaveLength(0);
+        expect(result.errors).toHaveLength(0);
       });
     });
   });
