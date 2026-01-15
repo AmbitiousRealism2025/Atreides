@@ -16,8 +16,9 @@ let packageVersion = '1.0.0';
 try {
   const packageJson = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
   packageVersion = packageJson.version || '1.0.0';
-} catch {
+} catch (error) {
   // Fallback to default version if package.json can't be read
+  debug(`Error reading package.json, using default version: ${error.message}`);
 }
 
 // Create a separate Handlebars instance to avoid polluting global
