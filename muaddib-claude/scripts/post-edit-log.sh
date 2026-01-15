@@ -12,6 +12,15 @@
 
 set -euo pipefail
 
+# Sanitize input by removing control characters and limiting length
+# Prevents log injection attacks via embedded newlines/control chars
+sanitize_for_log() {
+    local input="$1"
+    local max_len="${2:-500}"
+    # Remove control characters (0x00-0x1F and 0x7F), limit length
+    printf '%s' "$input" | tr -d '\000-\037\177' | head -c "$max_len"
+}
+
 # Get file path from environment
 FILE="${TOOL_INPUT:-}"
 
@@ -21,7 +30,8 @@ fi
 
 # Check if file exists
 if [ ! -f "$FILE" ]; then
-    echo "INFO: File does not exist (may have been deleted): $FILE"
+    SAFE_FILE=$(sanitize_for_log "$FILE")
+    printf 'INFO: File does not exist (may have been deleted): %s\n' "$SAFE_FILE"
     exit 0
 fi
 
@@ -62,7 +72,9 @@ LOG_DIR="${HOME}/.muaddib/logs"
 mkdir -p "$LOG_DIR"
 
 LOG_FILE="${LOG_DIR}/edits.log"
-echo "$(date -Iseconds) | EDIT | $FILE" >> "$LOG_FILE"
+# Sanitize file path before logging to prevent log injection
+LOG_ENTRY=$(sanitize_for_log "$FILE")
+printf '%s\n' "$(date -Iseconds) | EDIT | $LOG_ENTRY" >> "$LOG_FILE"
 
 # Keep log file from growing too large (keep last 1000 lines)
 if [ -f "$LOG_FILE" ] && [ "$(wc -l < "$LOG_FILE")" -gt 1000 ]; then
