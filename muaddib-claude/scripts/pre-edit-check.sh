@@ -1,65 +1,83 @@
 #!/bin/bash
-#
 # pre-edit-check.sh
+# Validates files before editing
+# Exit 1 to block, Exit 0 to allow
 #
-# PreToolUse hook for Edit/Write operations
-# Validates file operations before execution
-#
-# Exit codes:
-#   0 - Operation allowed
-#   1 - Operation blocked
-#   2 - Error in validation
+# Arguments:
+#   $1 - File path (optional, falls back to TOOL_INPUT env var)
 
 set -euo pipefail
 
-# Get file path from environment
-FILE="${TOOL_INPUT:-}"
+# Accept $1 argument or fall back to TOOL_INPUT env var
+FILE="${1:-${TOOL_INPUT:-}}"
 
-if [ -z "$FILE" ]; then
-    # No file specified, allow (let the tool handle it)
-    exit 0
+# If no file provided, allow
+if [[ -z "$FILE" ]]; then
+  exit 0
 fi
 
-# Blocked file patterns
-BLOCKED_FILES=(
-    ".env"
-    ".env.local"
-    ".env.production"
-    "secrets"
-    "credentials"
-    "id_rsa"
-    "id_ed25519"
-    ".ssh/config"
-    ".aws/credentials"
-    ".npmrc"
-    ".pypirc"
-)
+# === BLOCKED FILES ===
 
-# Check if file matches any blocked pattern
-FILE_LOWER=$(echo "$FILE" | tr '[:upper:]' '[:lower:]')
+# Environment files with secrets
+if [[ "$FILE" =~ \.env$ ]] || \
+   [[ "$FILE" =~ \.env\. ]] || \
+   [[ "$FILE" =~ /\.env$ ]] || \
+   [[ "$FILE" =~ \.envrc$ ]]; then
+  echo "BLOCKED: Cannot edit .env/.envrc files - may contain secrets"
+  exit 1
+fi
 
-for pattern in "${BLOCKED_FILES[@]}"; do
-    if [[ "$FILE_LOWER" == *"$pattern"* ]]; then
-        echo "BLOCKED: Cannot edit file matching pattern: $pattern"
-        exit 1
-    fi
-done
+# Secrets directories
+if [[ "$FILE" =~ /secrets/ ]] || \
+   [[ "$FILE" =~ /\.secrets/ ]]; then
+  echo "BLOCKED: Cannot edit files in secrets directory"
+  exit 1
+fi
 
-# Warn about important configuration files
-WARN_FILES=(
-    "package.json"
-    "package-lock.json"
-    "tsconfig.json"
-    "Cargo.toml"
-    "go.mod"
-    "pyproject.toml"
-)
+# Private keys
+if [[ "$FILE" =~ \.pem$ ]] || \
+   [[ "$FILE" =~ \.key$ ]] || \
+   [[ "$FILE" =~ id_rsa ]] || \
+   [[ "$FILE" =~ id_ed25519 ]]; then
+  echo "BLOCKED: Cannot edit private key files"
+  exit 1
+fi
 
-for pattern in "${WARN_FILES[@]}"; do
-    if [[ "$FILE" == *"$pattern"* ]]; then
-        echo "INFO: Editing configuration file: $FILE"
-    fi
-done
+# Credential files
+if [[ "$FILE" =~ credentials\.json$ ]] || \
+   [[ "$FILE" =~ service-account\.json$ ]] || \
+   [[ "$FILE" =~ \.credentials$ ]]; then
+  echo "BLOCKED: Cannot edit credential files"
+  exit 1
+fi
 
-# File is allowed
+# Terraform/Kubernetes sensitive files (MED-4 additions)
+if [[ "$FILE" =~ kubeconfig ]] || \
+   [[ "$FILE" =~ \.tfvars$ ]] || \
+   [[ "$FILE" =~ \.tfstate$ ]] || \
+   [[ "$FILE" =~ \.tfstate\. ]]; then
+  echo "BLOCKED: Cannot edit infrastructure secrets file"
+  exit 1
+fi
+
+# === WARNINGS ===
+
+# New file creation
+if [[ ! -f "$FILE" ]]; then
+  echo "INFO: Creating new file: $FILE"
+fi
+
+# Lock files
+if [[ "$FILE" =~ \.lock$ ]] || \
+   [[ "$FILE" =~ lock\.json$ ]]; then
+  echo "WARNING: Editing lock file - may cause dependency issues"
+fi
+
+# Config files
+if [[ "$FILE" =~ package\.json$ ]] || \
+   [[ "$FILE" =~ tsconfig\.json$ ]]; then
+  echo "INFO: Editing configuration file"
+fi
+
+# Allow the edit
 exit 0
