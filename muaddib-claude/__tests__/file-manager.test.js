@@ -409,6 +409,120 @@ describe('File Manager', () => {
       const linkTarget = await readSymlink(linkPath);
       expect(linkTarget).toBe(target);
     });
+
+    // HIGH-2: Atomic operation tests for TOCTOU race condition prevention
+    describe('atomic operations (TOCTOU prevention)', () => {
+      it('should handle EEXIST error with force option atomically', async () => {
+        const target = join(testDir, 'atomic-target.txt');
+        const linkPath = join(testDir, 'atomic-link.txt');
+        await fs.writeFile(target, 'target content');
+
+        // Create an existing symlink (triggers EEXIST path)
+        await fs.symlink(target, linkPath);
+
+        // Should atomically replace the existing symlink
+        await symlink(target, linkPath, { force: true });
+
+        expect(await isSymlink(linkPath)).toBe(true);
+        const resolvedTarget = await readSymlink(linkPath);
+        expect(resolvedTarget).toBe(target);
+      });
+
+      it('should throw EEXIST when file exists and force is false', async () => {
+        const target = join(testDir, 'target-eexist.txt');
+        const linkPath = join(testDir, 'link-eexist.txt');
+        await fs.writeFile(target, 'content');
+        await fs.writeFile(linkPath, 'existing file');
+
+        // Should throw EEXIST error
+        await expect(symlink(target, linkPath)).rejects.toMatchObject({
+          code: 'EEXIST'
+        });
+      });
+
+      it('should replace existing directory when force is true', async () => {
+        const target = join(testDir, 'target-replace-dir.txt');
+        const linkPath = join(testDir, 'link-replace-dir');
+        await fs.writeFile(target, 'content');
+
+        // Create a directory at the link path
+        await fs.ensureDir(linkPath);
+        await fs.writeFile(join(linkPath, 'inner.txt'), 'inner content');
+
+        // Should replace the directory with a symlink
+        await symlink(target, linkPath, { force: true });
+
+        expect(await isSymlink(linkPath)).toBe(true);
+        const resolvedTarget = await readSymlink(linkPath);
+        expect(resolvedTarget).toBe(target);
+      });
+
+      it('should propagate non-EEXIST errors', async () => {
+        // Try to create symlink in non-existent deep path where parent can't be created
+        // We'll simulate by using an invalid path
+        const target = join(testDir, 'target.txt');
+        await fs.writeFile(target, 'content');
+
+        // Path with null byte (invalid on most filesystems)
+        const invalidPath = join(testDir, 'valid\x00invalid', 'link.txt');
+
+        // Should throw an error (not EEXIST)
+        await expect(symlink(target, invalidPath)).rejects.toThrow();
+      });
+
+      it('should handle replacing symlink pointing to different target', async () => {
+        const target1 = join(testDir, 'target1.txt');
+        const target2 = join(testDir, 'target2.txt');
+        const linkPath = join(testDir, 'multi-target-link.txt');
+        await fs.writeFile(target1, 'target1 content');
+        await fs.writeFile(target2, 'target2 content');
+
+        // Create initial symlink to target1
+        await symlink(target1, linkPath);
+        expect(await readSymlink(linkPath)).toBe(target1);
+
+        // Replace with symlink to target2
+        await symlink(target2, linkPath, { force: true });
+        expect(await readSymlink(linkPath)).toBe(target2);
+      });
+
+      it('should succeed on first try when path does not exist', async () => {
+        const target = join(testDir, 'first-try-target.txt');
+        const linkPath = join(testDir, 'first-try-link.txt');
+        await fs.writeFile(target, 'content');
+
+        // No existing file, should succeed immediately
+        await symlink(target, linkPath);
+
+        expect(await isSymlink(linkPath)).toBe(true);
+        expect(await readSymlink(linkPath)).toBe(target);
+      });
+
+      it('should handle concurrent symlink creation attempts gracefully', async () => {
+        const target = join(testDir, 'concurrent-target.txt');
+        const linkPath = join(testDir, 'concurrent-link.txt');
+        await fs.writeFile(target, 'content');
+
+        // Attempt multiple concurrent symlink creations with force
+        // This tests that the atomic approach handles race conditions
+        const promises = [
+          symlink(target, linkPath, { force: true }),
+          symlink(target, linkPath, { force: true }),
+          symlink(target, linkPath, { force: true })
+        ];
+
+        // All should complete (some may fail, but at least one succeeds)
+        const results = await Promise.allSettled(promises);
+
+        // At least one should succeed
+        const succeeded = results.filter(r => r.status === 'fulfilled');
+        expect(succeeded.length).toBeGreaterThan(0);
+
+        // Final state should be a valid symlink
+        expect(await isSymlink(linkPath)).toBe(true);
+        expect(await readSymlink(linkPath)).toBe(target);
+      });
+    });
   });
 
   describe('isSymlink', () => {
