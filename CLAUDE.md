@@ -181,7 +181,7 @@ After **3 consecutive failures** on same operation:
 - **commander.js** for CLI
 - **handlebars** for templates
 - **ESLint** for linting
-- **Jest** for testing (53 tests passing)
+- **Jest** for testing (188 tests passing)
 
 ### File Standards
 

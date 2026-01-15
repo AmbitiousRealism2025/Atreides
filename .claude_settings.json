@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/**)",
+      "Write(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/**)",
+      "Edit(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/**)",
+      "Glob(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/**)",
+      "Grep(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/**)",
+      "Read(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/.auto-claude/specs/004-mvp-remediation-low/**)",
+      "Write(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/.auto-claude/specs/004-mvp-remediation-low/**)",
+      "Edit(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/worktrees/tasks/004-mvp-remediation-low/.auto-claude/specs/004-mvp-remediation-low/**)",
+      "Read(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/**)",
+      "Write(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/**)",
+      "Edit(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/**)",
+      "Glob(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/**)",
+      "Grep(/Users/ambrealismwork/Desktop/Coding-Projects/Atreides/.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

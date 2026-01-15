@@ -5,8 +5,32 @@
  */
 
 import fs from 'fs-extra';
-import { dirname, join, basename } from 'path';
+import { dirname, join, basename, resolve } from 'path';
 import { debug } from '../utils/logger.js';
+
+/**
+ * Validate a file path against path traversal attacks
+ * @param {string} filePath - Path to validate
+ * @param {string} baseDir - Allowed base directory
+ * @returns {string} Resolved safe path
+ * @throws {Error} If path attempts to escape baseDir or parameters are invalid
+ */
+export function validatePath(filePath, baseDir) {
+  if (!filePath || !baseDir) {
+    throw new Error('Both filePath and baseDir are required');
+  }
+
+  const resolvedBase = resolve(baseDir);
+  const resolvedPath = resolve(resolvedBase, filePath);
+
+  // Ensure the resolved path starts with the base directory
+  // Check for exact match OR starts with baseDir + path separator
+  if (resolvedPath !== resolvedBase && !resolvedPath.startsWith(resolvedBase + '/')) {
+    throw new Error(`Path traversal attempt detected: ${filePath}`);
+  }
+
+  return resolvedPath;
+}
 
 /**
  * Ensure a directory exists, creating it if necessary
@@ -171,7 +195,8 @@ export async function isSymlink(path) {
   try {
     const stats = await fs.lstat(path);
     return stats.isSymbolicLink();
-  } catch {
+  } catch (error) {
+    debug(`Failed to check symlink status for ${path}: ${error.message}`);
     return false;
   }
 }
@@ -184,7 +209,8 @@ export async function isSymlink(path) {
 export async function readSymlink(linkPath) {
   try {
     return await fs.readlink(linkPath);
-  } catch {
+  } catch (error) {
+    debug(`Failed to read symlink target for ${linkPath}: ${error.message}`);
     return null;
   }
 }
@@ -231,7 +257,8 @@ export async function listFiles(dirPath, options = {}) {
 export async function getStats(filePath) {
   try {
     return await fs.stat(filePath);
-  } catch {
+  } catch (error) {
+    debug(`Failed to get stats for ${filePath}: ${error.message}`);
     return null;
   }
 }
@@ -285,6 +312,7 @@ export async function restoreFromBackup(filePath) {
 }
 
 export default {
+  validatePath,
   ensureDir,
   exists,
   readFile,
