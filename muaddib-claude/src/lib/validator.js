@@ -78,7 +78,8 @@ export async function validateGlobalInstallation() {
     try {
       await readJson(configPath);
       details.components.config = true;
-    } catch {
+    } catch (error) {
+      debug(`Failed to parse global config: ${error.message}`);
       errors.push('Global config is not valid JSON');
       details.components.config = false;
     }
@@ -152,7 +153,8 @@ export async function validateProjectInit(projectDir) {
     try {
       await readJson(paths.settingsJson);
       details.components.settingsJson = true;
-    } catch {
+    } catch (error) {
+      debug(`Failed to parse settings.json: ${error.message}`);
       errors.push('settings.json is not valid JSON');
       details.components.settingsJson = false;
     }
@@ -174,7 +176,8 @@ export async function validateProjectInit(projectDir) {
     try {
       await readJson(paths.projectConfig);
       details.components.projectConfig = true;
-    } catch {
+    } catch (error) {
+      debug(`Failed to parse project config: ${error.message}`);
       errors.push('Project config is not valid JSON');
       details.components.projectConfig = false;
     }
@@ -291,7 +294,8 @@ export async function isScriptExecutable(scriptPath) {
     const stats = statSync(scriptPath);
     // Check if any execute bit is set
     return (stats.mode & 0o111) !== 0;
-  } catch {
+  } catch (error) {
+    debug(`Failed to check script executable status: ${error.message}`);
     return false;
   }
 }
