@@ -167,6 +167,40 @@ export function registerPartial(name, content) {
 }
 
 /**
+ * Sanitize user-provided string for safe template rendering
+ * Escapes Handlebars special characters that could execute code
+ * @param {string} input - User input to sanitize
+ * @returns {string} - Sanitized string safe for template context
+ */
+function sanitizeTemplateInput(input) {
+  if (typeof input !== 'string') return input;
+  // Escape Handlebars special sequences
+  // Order matters: escape triple braces before double braces
+  return input
+    .replace(/\{\{\{/g, '&#123;&#123;&#123;')  // Triple opening braces
+    .replace(/\}\}\}/g, '&#125;&#125;&#125;')  // Triple closing braces
+    .replace(/\{\{/g, '&#123;&#123;')          // Double opening braces
+    .replace(/\}\}/g, '&#125;&#125;');         // Double closing braces
+}
+
+/**
+ * Recursively sanitize all string values in an object
+ * @param {*} data - Template context data
+ * @returns {*} - Sanitized data object
+ */
+export function sanitizeTemplateData(data) {
+  if (typeof data !== 'object' || data === null) {
+    return typeof data === 'string' ? sanitizeTemplateInput(data) : data;
+  }
+
+  const sanitized = Array.isArray(data) ? [] : {};
+  for (const key of Object.keys(data)) {
+    sanitized[key] = sanitizeTemplateData(data[key]);
+  }
+  return sanitized;
+}
+
+/**
  * Compile a template string
  * @param {string} template - The template string
  * @returns {HandlebarsTemplateDelegate}
@@ -179,32 +213,46 @@ export function compile(template) {
  * Render a template string with data
  * @param {string} template - The template string
  * @param {object} data - Data to render with
+ * @param {object} [options] - Render options
+ * @param {boolean} [options.sanitize=true] - Whether to sanitize user input (default: true)
  * @returns {string}
  */
-export function render(template, data = {}) {
+export function render(template, data = {}, options = {}) {
+  const { sanitize = true } = options;
+  const safeData = sanitize ? sanitizeTemplateData(data) : data;
   const compiled = compile(template);
-  return compiled(data);
+  return compiled(safeData);
 }
 
 /**
  * Load and render a template file
  * @param {string} templatePath - Path to the template file
  * @param {object} data - Data to render with
+ * @param {object} [options] - Render options
+ * @param {boolean} [options.sanitize=true] - Whether to sanitize user input (default: true)
  * @returns {Promise<string>}
  */
-export async function renderFile(templatePath, data = {}) {
+export async function renderFile(templatePath, data = {}, options = {}) {
   const template = await readFile(templatePath);
-  return render(template, data);
+  return render(template, data, options);
 }
 
 /**
  * Load and render a template by name from the templates directory
  * @param {string} templateName - Template name (with or without .hbs extension)
  * @param {object} data - Data to render with
- * @param {string} [templatesDir] - Optional templates directory
+ * @param {object} [options] - Render options
+ * @param {string} [options.templatesDir] - Optional templates directory
+ * @param {boolean} [options.sanitize=true] - Whether to sanitize user input (default: true)
  * @returns {Promise<string>}
  */
-export async function renderTemplate(templateName, data = {}, templatesDir) {
+export async function renderTemplate(templateName, data = {}, options = {}) {
+  // Support legacy third argument as templatesDir string
+  const resolvedOptions = typeof options === 'string'
+    ? { templatesDir: options }
+    : options;
+  const { templatesDir, sanitize = true } = resolvedOptions;
+
   const dir = templatesDir || PACKAGE_TEMPLATES_DIR;
   const name = templateName.endsWith('.hbs') ? templateName : `${templateName}.hbs`;
   const templatePath = join(dir, name);
@@ -212,7 +260,7 @@ export async function renderTemplate(templateName, data = {}, templatesDir) {
   // Ensure partials are loaded
   await loadPartials(join(dir, 'partials'));
 
-  return renderFile(templatePath, data);
+  return renderFile(templatePath, data, { sanitize });
 }
 
 /**
@@ -265,5 +313,6 @@ export default {
   renderTemplate,
   getDefaultData,
   listTemplates,
-  templateExists
+  templateExists,
+  sanitizeTemplateData
 };

@@ -7,7 +7,8 @@ import {
   compile,
   render,
   getDefaultData,
-  registerPartial
+  registerPartial,
+  sanitizeTemplateData
 } from '../src/lib/template-engine.js';
 
 describe('Template Engine', () => {
@@ -101,6 +102,98 @@ describe('Template Engine', () => {
       registerPartial('test-greeting', 'Hello {{name}}!');
       const result = render('{{> test-greeting}}', { name: 'Test' });
       expect(result).toBe('Hello Test!');
+    });
+  });
+
+  describe('sanitizeTemplateData', () => {
+    it('should escape double braces in strings', () => {
+      const result = sanitizeTemplateData('{{malicious}}');
+      expect(result).toBe('&#123;&#123;malicious&#125;&#125;');
+    });
+
+    it('should escape triple braces in strings', () => {
+      const result = sanitizeTemplateData('{{{unescaped}}}');
+      expect(result).toBe('&#123;&#123;&#123;unescaped&#125;&#125;&#125;');
+    });
+
+    it('should recursively sanitize object values', () => {
+      const input = {
+        name: '{{constructor}}',
+        nested: {
+          value: '{{__proto__}}'
+        }
+      };
+      const result = sanitizeTemplateData(input);
+      expect(result.name).toBe('&#123;&#123;constructor&#125;&#125;');
+      expect(result.nested.value).toBe('&#123;&#123;__proto__&#125;&#125;');
+    });
+
+    it('should recursively sanitize array values', () => {
+      const input = ['{{a}}', '{{b}}', { item: '{{c}}' }];
+      const result = sanitizeTemplateData(input);
+      expect(result[0]).toBe('&#123;&#123;a&#125;&#125;');
+      expect(result[1]).toBe('&#123;&#123;b&#125;&#125;');
+      expect(result[2].item).toBe('&#123;&#123;c&#125;&#125;');
+    });
+
+    it('should preserve non-string values unchanged', () => {
+      const input = {
+        number: 42,
+        boolean: true,
+        nullValue: null,
+        array: [1, 2, 3]
+      };
+      const result = sanitizeTemplateData(input);
+      expect(result.number).toBe(42);
+      expect(result.boolean).toBe(true);
+      expect(result.nullValue).toBe(null);
+      expect(result.array).toEqual([1, 2, 3]);
+    });
+
+    it('should handle null input', () => {
+      expect(sanitizeTemplateData(null)).toBe(null);
+    });
+
+    it('should handle undefined input', () => {
+      expect(sanitizeTemplateData(undefined)).toBe(undefined);
+    });
+  });
+
+  describe('template injection prevention', () => {
+    it('should prevent template injection via user input', () => {
+      const maliciousInput = '{{constructor.constructor("return this")()}}';
+      const result = render('Hello {{name}}!', { name: maliciousInput });
+      // The malicious code should be escaped, not executed
+      expect(result).not.toContain('constructor');
+      expect(result).toContain('&#123;&#123;');
+    });
+
+    it('should prevent helper injection in user data', () => {
+      const maliciousInput = '{{#each items}}{{this}}{{/each}}';
+      const result = render('Message: {{message}}', { message: maliciousInput });
+      // The helper syntax should be escaped
+      expect(result).toContain('&#123;&#123;');
+      expect(result).not.toContain('<each>');
+    });
+
+    it('should allow disabling sanitization when needed', () => {
+      const trustedTemplate = '{{name}}';
+      const result = render('Result: {{template}}', { template: trustedTemplate }, { sanitize: false });
+      // Without sanitization, the braces are preserved
+      expect(result).toBe('Result: {{name}}');
+    });
+
+    it('should sanitize by default', () => {
+      const result = render('Output: {{input}}', { input: '{{dangerous}}' });
+      // Should be escaped by default
+      expect(result).toContain('&#123;&#123;dangerous&#125;&#125;');
+    });
+
+    it('should prevent prototype access attacks', () => {
+      const maliciousInput = '{{constructor.constructor}}';
+      const result = render('Test: {{val}}', { val: maliciousInput });
+      expect(result).not.toContain('[object Function]');
+      expect(result).toContain('&#123;&#123;');
     });
   });
 });
