@@ -59,11 +59,10 @@ export function validateInputLength(data, options = {}) {
   const inputLength = serialized.length;
 
   if (inputLength > maxLength) {
-    const truncatedPreview = serialized.substring(0, 100);
+    // MED-5: Don't include data preview in error message to avoid sensitive data exposure
     throw new Error(
       `Input data exceeds maximum allowed length. ` +
-      `Got ${inputLength.toLocaleString()} characters, maximum is ${maxLength.toLocaleString()}. ` +
-      `Preview: "${truncatedPreview}..."`
+      `Got ${inputLength.toLocaleString()} characters, maximum is ${maxLength.toLocaleString()}.`
     );
   }
 

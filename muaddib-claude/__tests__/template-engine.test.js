@@ -157,11 +157,12 @@ describe('Template Engine', () => {
           .toThrow('100');
       });
 
-      it('should include preview in error message', () => {
+      it('should NOT include preview in error message (MED-5 security fix)', () => {
         const input = 'abcdefghij'.repeat(20);
 
+        // MED-5: Error messages should not include data previews to avoid sensitive data exposure
         expect(() => validateInputLength(input, { maxLength: 100 }))
-          .toThrow('Preview:');
+          .not.toThrow('Preview:');
       });
     });
 

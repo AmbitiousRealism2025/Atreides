@@ -160,7 +160,8 @@ async function runInit(options) {
         if (!validation.valid) {
           // JSON validation failed - log error and use fallback
           logger.warn(`  Template rendered invalid JSON: ${validation.error}`);
-          logger.debug(`  Rendered content preview: ${renderedContent.substring(0, 200)}...`);
+          // MED-5: Don't log rendered content to avoid potential sensitive data exposure
+          logger.debug(`  Rendered content length: ${renderedContent.length} chars`);
           logger.info('  Using fallback settings...');
 
           await fs.outputFile(
