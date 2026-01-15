@@ -65,7 +65,11 @@ Strike 3 → Retry again
     └────┬────┘
          │
     ┌─────────┐
-    │ REVERT  │ → git checkout (return to last working state)
+    │ STATUS  │ → Run git status to assess current state
+    └────┬────┘
+         │
+    ┌─────────┐
+    │ REVERT  │ → Use git restore (safer than git checkout)
     └────┬────┘
          │
     ┌─────────┐
@@ -86,10 +90,58 @@ Strike 3 → Retry again
 | Action | What To Do |
 |--------|------------|
 | **STOP** | Immediately halt all file modifications. Do not attempt any more changes. |
-| **REVERT** | Run `git checkout .` or `git checkout <file>` to restore last working state. |
+| **STATUS** | Run `git status` to see what files are modified before reverting. |
+| **REVERT** | Run `git restore .` or `git restore <file>` to discard changes (safer than `git checkout`). For staged changes, run `git restore --staged .` first. |
 | **DOCUMENT** | In your response, clearly state: what was attempted, what failed, error messages. |
 | **CONSULT** | Use `Task(subagent_type="Plan", model="opus")` to get alternative approach. |
 | **ESCALATE** | Use `AskUserQuestion` to get user guidance on how to proceed. |
+
+#### Safe Recovery Commands (Git Projects)
+
+Always follow this sequence when reverting:
+
+```bash
+# Step 1: Check current state
+git status
+
+# Step 2: Unstage any staged changes
+git restore --staged .
+
+# Step 3: Discard working directory changes
+git restore .
+
+# Alternative: Restore specific file only
+git restore --staged <file>
+git restore <file>
+```
+
+**Why `git restore` instead of `git checkout`?**
+- `git restore` is the modern replacement (Git 2.23+)
+- Clearer intent: restore is explicitly for restoring files
+- Safer: `git checkout` can switch branches if used incorrectly
+- Avoids accidental branch operations when recovering from errors
+
+#### Recovery for Non-Git Projects
+
+If the project is not using git version control:
+
+1. **Check for backups**: Look for `.bak` files created by Muad'Dib or your editor
+2. **List recent backups**:
+   ```bash
+   find . -name "*.bak" -mmin -60    # Backups from last hour
+   find . -name "*.backup" -type f   # Alternative backup extension
+   ```
+3. **Restore from backup**:
+   ```bash
+   cp file.bak file                  # Restore single file
+   ```
+4. **If no backups exist**: Use AskUserQuestion immediately to get guidance
+5. **Be extra cautious**: Without version control, changes are harder to recover
+
+**Important**: For non-git projects, consider creating manual backups before risky operations:
+```bash
+cp important-file.js important-file.js.bak
+```
 
 #### What Counts as a Failure
 
