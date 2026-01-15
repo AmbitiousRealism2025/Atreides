@@ -337,6 +337,171 @@ describe('File Manager', () => {
       expect(await fs.pathExists(join(dest, 'file2.txt'))).toBe(true);
       expect(await fs.pathExists(join(dest, 'subdir', 'nested.txt'))).toBe(true);
     });
+
+    // HIGH-6: Depth and file count limits tests (DoS prevention)
+    describe('depth and file count limits (DoS prevention)', () => {
+      it('should throw when maxDepth is exceeded', async () => {
+        const src = join(testDir, 'deep-src');
+        const dest = join(testDir, 'deep-dest');
+
+        // Create a directory structure 5 levels deep
+        let currentPath = src;
+        for (let i = 0; i < 5; i++) {
+          currentPath = join(currentPath, `level${i}`);
+          await fs.ensureDir(currentPath);
+          await fs.writeFile(join(currentPath, 'file.txt'), 'content');
+        }
+
+        // Should throw with maxDepth of 3
+        await expect(copyDir(src, dest, { maxDepth: 3 }))
+          .rejects.toThrow('Maximum directory depth (3) exceeded');
+      });
+
+      it('should throw when maxFiles is exceeded', async () => {
+        const src = join(testDir, 'many-files-src');
+        const dest = join(testDir, 'many-files-dest');
+        await fs.ensureDir(src);
+
+        // Create 10 files
+        for (let i = 0; i < 10; i++) {
+          await fs.writeFile(join(src, `file${i}.txt`), `content${i}`);
+        }
+
+        // Should throw with maxFiles of 5
+        await expect(copyDir(src, dest, { maxFiles: 5 }))
+          .rejects.toThrow('Maximum file count (5) exceeded');
+      });
+
+      it('should succeed when within depth limits', async () => {
+        const src = join(testDir, 'within-depth-src');
+        const dest = join(testDir, 'within-depth-dest');
+
+        // Create structure 2 levels deep
+        await fs.ensureDir(join(src, 'level1', 'level2'));
+        await fs.writeFile(join(src, 'root.txt'), 'root');
+        await fs.writeFile(join(src, 'level1', 'mid.txt'), 'mid');
+        await fs.writeFile(join(src, 'level1', 'level2', 'deep.txt'), 'deep');
+
+        // Should succeed with maxDepth of 5
+        await copyDir(src, dest, { maxDepth: 5 });
+
+        expect(await fs.pathExists(join(dest, 'root.txt'))).toBe(true);
+        expect(await fs.pathExists(join(dest, 'level1', 'mid.txt'))).toBe(true);
+        expect(await fs.pathExists(join(dest, 'level1', 'level2', 'deep.txt'))).toBe(true);
+      });
+
+      it('should succeed when within file count limits', async () => {
+        const src = join(testDir, 'within-count-src');
+        const dest = join(testDir, 'within-count-dest');
+        await fs.ensureDir(src);
+
+        // Create 5 files
+        for (let i = 0; i < 5; i++) {
+          await fs.writeFile(join(src, `file${i}.txt`), `content${i}`);
+        }
+
+        // Should succeed with maxFiles of 10
+        await copyDir(src, dest, { maxFiles: 10 });
+
+        for (let i = 0; i < 5; i++) {
+          expect(await fs.pathExists(join(dest, `file${i}.txt`))).toBe(true);
+        }
+      });
+
+      it('should use default maxDepth of 10', async () => {
+        const src = join(testDir, 'default-depth-src');
+        const dest = join(testDir, 'default-depth-dest');
+
+        // Create structure 8 levels deep (within default limit)
+        let currentPath = src;
+        for (let i = 0; i < 8; i++) {
+          currentPath = join(currentPath, `level${i}`);
+          await fs.ensureDir(currentPath);
+        }
+        await fs.writeFile(join(currentPath, 'file.txt'), 'content');
+
+        // Should succeed with default maxDepth of 10
+        await copyDir(src, dest);
+
+        let destPath = dest;
+        for (let i = 0; i < 8; i++) {
+          destPath = join(destPath, `level${i}`);
+        }
+        expect(await fs.pathExists(join(destPath, 'file.txt'))).toBe(true);
+      });
+
+      it('should count files across nested directories', async () => {
+        const src = join(testDir, 'nested-count-src');
+        const dest = join(testDir, 'nested-count-dest');
+
+        // Create structure with files in nested directories
+        // Total: 3 dirs + 6 files = 9 entries
+        await fs.ensureDir(join(src, 'sub1', 'sub2'));
+        await fs.writeFile(join(src, 'file1.txt'), 'content');
+        await fs.writeFile(join(src, 'file2.txt'), 'content');
+        await fs.writeFile(join(src, 'sub1', 'file3.txt'), 'content');
+        await fs.writeFile(join(src, 'sub1', 'file4.txt'), 'content');
+        await fs.writeFile(join(src, 'sub1', 'sub2', 'file5.txt'), 'content');
+        await fs.writeFile(join(src, 'sub1', 'sub2', 'file6.txt'), 'content');
+
+        // Should throw when count is exceeded (counting dirs + files)
+        await expect(copyDir(src, dest, { maxFiles: 4 }))
+          .rejects.toThrow('Maximum file count (4) exceeded');
+      });
+
+      it('should preserve overwrite option behavior', async () => {
+        const src = join(testDir, 'overwrite-src');
+        const dest = join(testDir, 'overwrite-dest');
+        await fs.ensureDir(src);
+        await fs.ensureDir(dest);
+
+        await fs.writeFile(join(src, 'file.txt'), 'new content');
+        await fs.writeFile(join(dest, 'file.txt'), 'old content');
+
+        // Should overwrite by default
+        await copyDir(src, dest);
+
+        const content = await fs.readFile(join(dest, 'file.txt'), 'utf-8');
+        expect(content).toBe('new content');
+      });
+
+      it('should handle empty directories', async () => {
+        const src = join(testDir, 'empty-src');
+        const dest = join(testDir, 'empty-dest');
+        await fs.ensureDir(src);
+
+        await copyDir(src, dest, { maxFiles: 1 });
+
+        expect(await fs.pathExists(dest)).toBe(true);
+      });
+
+      it('should throw descriptive error for depth with custom limit', async () => {
+        const src = join(testDir, 'custom-depth-src');
+        const dest = join(testDir, 'custom-depth-dest');
+
+        // Create 3 levels
+        await fs.ensureDir(join(src, 'a', 'b', 'c'));
+        await fs.writeFile(join(src, 'a', 'b', 'c', 'file.txt'), 'content');
+
+        // Custom limit of 2
+        await expect(copyDir(src, dest, { maxDepth: 2 }))
+          .rejects.toThrow('Maximum directory depth (2) exceeded');
+      });
+
+      it('should throw descriptive error for file count with custom limit', async () => {
+        const src = join(testDir, 'custom-count-src');
+        const dest = join(testDir, 'custom-count-dest');
+        await fs.ensureDir(src);
+
+        for (let i = 0; i < 15; i++) {
+          await fs.writeFile(join(src, `file${i}.txt`), 'content');
+        }
+
+        // Custom limit of 10
+        await expect(copyDir(src, dest, { maxFiles: 10 }))
+          .rejects.toThrow('Maximum file count (10) exceeded');
+      });
+    });
   });
 
   describe('remove', () => {

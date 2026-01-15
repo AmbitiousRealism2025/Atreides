@@ -118,16 +118,52 @@ export async function copyFile(src, dest, options = {}) {
 }
 
 /**
- * Copy a directory recursively
+ * Copy a directory recursively with depth and file count limits
  * @param {string} src - Source directory
  * @param {string} dest - Destination directory
  * @param {object} [options] - Options
  * @param {boolean} [options.overwrite=true] - Overwrite existing files
+ * @param {number} [options.maxDepth=10] - Maximum directory depth to prevent DoS
+ * @param {number} [options.maxFiles=10000] - Maximum file count to prevent DoS
+ * @param {number} [options.currentDepth=0] - Current recursion depth (internal)
  * @returns {Promise<void>}
  */
 export async function copyDir(src, dest, options = {}) {
-  const { overwrite = true } = options;
-  await fs.copy(src, dest, { overwrite });
+  const { overwrite = true, maxDepth = 10, maxFiles = 10000, currentDepth = 0 } = options;
+
+  // Track file count via shared counter (initialized on first call)
+  if (!options._fileCount) {
+    options._fileCount = { count: 0 };
+  }
+
+  // Check depth limit
+  if (currentDepth > maxDepth) {
+    throw new Error(`Maximum directory depth (${maxDepth}) exceeded`);
+  }
+
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  await ensureDir(dest);
+
+  for (const entry of entries) {
+    // Increment and check file count
+    options._fileCount.count++;
+    if (options._fileCount.count > maxFiles) {
+      throw new Error(`Maximum file count (${maxFiles}) exceeded`);
+    }
+
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyDir(srcPath, destPath, {
+        ...options,
+        currentDepth: currentDepth + 1
+      });
+    } else {
+      await fs.copy(srcPath, destPath, { overwrite });
+    }
+  }
+
   debug(`Copied directory: ${src} → ${dest}`);
 }
 
