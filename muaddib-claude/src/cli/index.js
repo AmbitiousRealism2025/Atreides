@@ -11,11 +11,10 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 // Import commands
-import { installCommand } from './install.js';
-import { initCommand } from './init.js';
-import { updateCommand } from './update.js';
 import { doctorCommand } from './doctor.js';
-import { uninstallCommand } from './uninstall.js';
+import { initCommand } from './init.js';
+import { installCommand } from './install.js';
+import { updateCommand } from './update.js';
 
 // Get package version
 const __filename = fileURLToPath(import.meta.url);
@@ -50,11 +49,10 @@ export async function run() {
     .helpOption('-h, --help', 'Display help for command');
 
   // Register commands
-  program.addCommand(installCommand());
-  program.addCommand(initCommand());
-  program.addCommand(updateCommand());
   program.addCommand(doctorCommand());
-  program.addCommand(uninstallCommand());
+  program.addCommand(initCommand());
+  program.addCommand(installCommand());
+  program.addCommand(updateCommand());
 
   // Custom help formatting
   program.configureHelp({
@@ -66,17 +64,23 @@ export async function run() {
   program.addHelpText('after', `
 
 ${chalk.bold('Examples:')}
-  ${chalk.gray("# Install Muad'Dib globally")}
+  ${chalk.gray('# Install global components')}
   $ muaddib install
 
-  ${chalk.gray('# Initialize in current project')}
+  ${chalk.gray('# Update to latest version')}
+  $ muaddib update
+
+  ${chalk.gray('# Initialize a project')}
   $ muaddib init
 
-  ${chalk.gray('# Initialize with minimal setup')}
+  ${chalk.gray('# Initialize with minimal setup (CLAUDE.md only)')}
   $ muaddib init --minimal
 
   ${chalk.gray('# Check installation health')}
   $ muaddib doctor
+
+  ${chalk.gray('# Clean up old backup files')}
+  $ muaddib doctor --cleanup-backups
 
 ${chalk.bold('Documentation:')}
   ${chalk.blue('https://github.com/AmbitiousRealism2025/muad-dib')}

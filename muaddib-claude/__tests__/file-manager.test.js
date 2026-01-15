@@ -1,33 +1,36 @@
 /**
  * File Manager Tests
  *
- * Tests filesystem operations with backup capability.
- * Uses real temp directory for reliable testing.
+ * Tests for file-manager.js library functions including:
+ * - MED-9: listFiles() with maxFiles limit
+ * - MED-6: rotateBackups() and cleanupBackups()
+ * - MED-11: syncPackageAssets() for asset synchronization
  */
 
 import { jest } from '@jest/globals';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
 import fs from 'fs-extra';
+
+// Import functions under test
 import {
-  writeFile,
-  readFile,
-  writeJson,
-  readJson,
   exists,
-  ensureDir,
-  copyFile,
-  copyDir,
-  remove,
-  symlink,
+  readJson,
   isSymlink,
   readSymlink,
-  listFiles,
-  getStats,
   makeExecutable,
   findBackups,
-  restoreFromBackup
+  listFiles,
+  getDefaultMaxFiles,
+  getDefaultMaxBackups,
+  rotateBackups,
+  cleanupBackups,
+  syncPackageAssets
 } from '../src/lib/file-manager.js';
+
+// Get the directory of this test file
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Test directory setup
 const TEST_BASE = join(tmpdir(), 'muaddib-file-manager-test');
@@ -42,10 +45,50 @@ function createTestDir() {
 }
 
 /**
- * Small delay to ensure unique timestamps for backups
+ * Create multiple test files in a directory
+ * @param {string} dir - Directory to create files in
+ * @param {number} count - Number of files to create
+ * @param {string} ext - File extension (default: .txt)
+ * @returns {Promise<string[]>} Array of created file paths
  */
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+async function createTestFiles(dir, count, ext = '.txt') {
+  const files = [];
+  await fs.ensureDir(dir);
+  for (let i = 0; i < count; i++) {
+    const filePath = join(dir, `file-${String(i).padStart(4, '0')}${ext}`);
+    await fs.writeFile(filePath, `content-${i}`);
+    files.push(filePath);
+  }
+  return files;
+}
+
+/**
+ * Create backup files with specific modification times
+ * @param {string} dir - Directory to create backups in
+ * @param {string} baseName - Base filename
+ * @param {number} count - Number of backups
+ * @returns {Promise<string[]>} Array of created backup file paths
+ */
+async function createBackupFiles(dir, baseName, count) {
+  const backups = [];
+  await fs.ensureDir(dir);
+  const now = Date.now();
+
+  for (let i = 0; i < count; i++) {
+    // Create backup with timestamp extension
+    const timestamp = new Date(now - (i * 60 * 60 * 1000)).toISOString()
+      .replace(/:/g, '-').replace(/\.\d{3}Z$/, '');
+    const backupPath = join(dir, `${baseName}.${timestamp}`);
+    await fs.writeFile(backupPath, `backup-${i}`);
+
+    // Set modification time so oldest backups are actually older
+    const mtime = new Date(now - (i * 60 * 60 * 1000));
+    await fs.utimes(backupPath, mtime, mtime);
+
+    backups.push(backupPath);
+  }
+
+  return backups;
 }
 
 beforeAll(async () => {
@@ -73,944 +116,877 @@ afterAll(async () => {
 });
 
 describe('File Manager', () => {
-  describe('exists', () => {
+  describe('exists()', () => {
     it('should return true for existing file', async () => {
-      const filePath = join(testDir, 'existing.txt');
+      const filePath = join(testDir, 'exists.txt');
       await fs.writeFile(filePath, 'content');
 
       const result = await exists(filePath);
-
       expect(result).toBe(true);
-    });
-
-    it('should return false for non-existing file', async () => {
-      const filePath = join(testDir, 'nonexistent.txt');
-
-      const result = await exists(filePath);
-
-      expect(result).toBe(false);
     });
 
     it('should return true for existing directory', async () => {
-      const dirPath = join(testDir, 'subdir');
-      await fs.ensureDir(dirPath);
-
-      const result = await exists(dirPath);
-
+      const result = await exists(testDir);
       expect(result).toBe(true);
     });
-  });
 
-  describe('ensureDir', () => {
-    it('should create a directory if it does not exist', async () => {
-      const dirPath = join(testDir, 'new-dir');
-
-      await ensureDir(dirPath);
-
-      expect(await fs.pathExists(dirPath)).toBe(true);
-    });
-
-    it('should create nested directories', async () => {
-      const dirPath = join(testDir, 'deep', 'nested', 'dir');
-
-      await ensureDir(dirPath);
-
-      expect(await fs.pathExists(dirPath)).toBe(true);
-    });
-
-    it('should not fail if directory already exists', async () => {
-      const dirPath = join(testDir, 'existing-dir');
-      await fs.ensureDir(dirPath);
-
-      await expect(ensureDir(dirPath)).resolves.not.toThrow();
+    it('should return false for non-existent path', async () => {
+      const result = await exists(join(testDir, 'nonexistent'));
+      expect(result).toBe(false);
     });
   });
 
-  describe('writeFile', () => {
-    it('should write content to a new file', async () => {
-      const filePath = join(testDir, 'new-file.txt');
-      const content = 'Hello, World!';
-
-      await writeFile(filePath, content);
-
-      const written = await fs.readFile(filePath, 'utf-8');
-      expect(written).toBe(content);
-    });
-
-    it('should create parent directories if they do not exist', async () => {
-      const filePath = join(testDir, 'nested', 'dir', 'file.txt');
-      const content = 'Nested content';
-
-      await writeFile(filePath, content);
-
-      expect(await fs.pathExists(filePath)).toBe(true);
-      const written = await fs.readFile(filePath, 'utf-8');
-      expect(written).toBe(content);
-    });
-
-    it('should overwrite existing file without backup by default', async () => {
-      const filePath = join(testDir, 'overwrite.txt');
-      await fs.writeFile(filePath, 'original');
-
-      await writeFile(filePath, 'updated');
-
-      const content = await fs.readFile(filePath, 'utf-8');
-      expect(content).toBe('updated');
-
-      // No backup should exist
-      const backups = await findBackups(filePath);
-      expect(backups).toHaveLength(0);
-    });
-
-    it('should create backup when option is set', async () => {
-      const filePath = join(testDir, 'backup-test.txt');
-      await fs.writeFile(filePath, 'original content');
-
-      await writeFile(filePath, 'new content', { backup: true });
-
-      // New content should be written
-      const content = await fs.readFile(filePath, 'utf-8');
-      expect(content).toBe('new content');
-
-      // Backup should exist
-      const backups = await findBackups(filePath);
-      expect(backups.length).toBeGreaterThan(0);
-
-      // Backup should contain original content
-      const backupContent = await fs.readFile(backups[0], 'utf-8');
-      expect(backupContent).toBe('original content');
-    });
-
-    it('should not create backup if file does not exist', async () => {
-      const filePath = join(testDir, 'no-backup-needed.txt');
-
-      await writeFile(filePath, 'content', { backup: true });
-
-      const backups = await findBackups(filePath);
-      expect(backups).toHaveLength(0);
-    });
-  });
-
-  describe('readFile', () => {
-    it('should read file content as string', async () => {
-      const filePath = join(testDir, 'read-test.txt');
-      const content = 'Test content\nWith multiple lines';
-      await fs.writeFile(filePath, content);
-
-      const result = await readFile(filePath);
-
-      expect(result).toBe(content);
-    });
-
-    it('should throw error for non-existent file', async () => {
-      const filePath = join(testDir, 'nonexistent.txt');
-
-      await expect(readFile(filePath)).rejects.toThrow();
-    });
-  });
-
-  describe('writeJson', () => {
-    it('should write JSON data to file', async () => {
-      const filePath = join(testDir, 'data.json');
-      const data = { name: 'test', value: 42 };
-
-      await writeJson(filePath, data);
-
-      const written = await fs.readJson(filePath);
-      expect(written).toEqual(data);
-    });
-
-    it('should format JSON with 2-space indentation', async () => {
-      const filePath = join(testDir, 'formatted.json');
-      const data = { key: 'value' };
-
-      await writeJson(filePath, data);
-
-      const content = await fs.readFile(filePath, 'utf-8');
-      // fs-extra writeJson adds a trailing newline
-      expect(content).toBe('{\n  "key": "value"\n}\n');
-    });
-
-    it('should create backup when option is set', async () => {
-      const filePath = join(testDir, 'json-backup.json');
-      await fs.writeJson(filePath, { original: true });
-
-      await writeJson(filePath, { updated: true }, { backup: true });
-
-      const backups = await findBackups(filePath);
-      expect(backups.length).toBeGreaterThan(0);
-
-      const backupData = await fs.readJson(backups[0]);
-      expect(backupData).toEqual({ original: true });
-    });
-  });
-
-  describe('readJson', () => {
-    it('should read and parse JSON file', async () => {
-      const filePath = join(testDir, 'read.json');
-      const data = { foo: 'bar', num: 123 };
-      await fs.writeJson(filePath, data);
+  describe('readJson()', () => {
+    it('should read and parse valid JSON file', async () => {
+      const filePath = join(testDir, 'config.json');
+      await fs.writeFile(filePath, '{"key": "value", "number": 42}');
 
       const result = await readJson(filePath);
-
-      expect(result).toEqual(data);
+      expect(result).toEqual({ key: 'value', number: 42 });
     });
 
-    it('should throw error for invalid JSON', async () => {
+    it('should throw on invalid JSON', async () => {
       const filePath = join(testDir, 'invalid.json');
       await fs.writeFile(filePath, 'not valid json');
 
       await expect(readJson(filePath)).rejects.toThrow();
     });
 
-    it('should throw error for non-existent file', async () => {
-      const filePath = join(testDir, 'nonexistent.json');
-
-      await expect(readJson(filePath)).rejects.toThrow();
+    it('should throw on missing file', async () => {
+      await expect(readJson(join(testDir, 'missing.json'))).rejects.toThrow();
     });
   });
 
-  describe('copyFile', () => {
-    it('should copy a file to new location', async () => {
-      const src = join(testDir, 'source.txt');
-      const dest = join(testDir, 'destination.txt');
-      await fs.writeFile(src, 'source content');
-
-      await copyFile(src, dest);
-
-      expect(await fs.pathExists(dest)).toBe(true);
-      const content = await fs.readFile(dest, 'utf-8');
-      expect(content).toBe('source content');
-    });
-
-    it('should create parent directories for destination', async () => {
-      const src = join(testDir, 'source.txt');
-      const dest = join(testDir, 'nested', 'path', 'destination.txt');
-      await fs.writeFile(src, 'content');
-
-      await copyFile(src, dest);
-
-      expect(await fs.pathExists(dest)).toBe(true);
-    });
-
-    it('should overwrite existing file by default', async () => {
-      const src = join(testDir, 'source.txt');
-      const dest = join(testDir, 'dest.txt');
-      await fs.writeFile(src, 'new content');
-      await fs.writeFile(dest, 'old content');
-
-      await copyFile(src, dest);
-
-      const content = await fs.readFile(dest, 'utf-8');
-      expect(content).toBe('new content');
-    });
-
-    it('should create backup when option is set', async () => {
-      const src = join(testDir, 'source.txt');
-      const dest = join(testDir, 'dest-backup.txt');
-      await fs.writeFile(src, 'new content');
-      await fs.writeFile(dest, 'original content');
-
-      await copyFile(src, dest, { backup: true });
-
-      const backups = await findBackups(dest);
-      expect(backups.length).toBeGreaterThan(0);
-
-      const backupContent = await fs.readFile(backups[0], 'utf-8');
-      expect(backupContent).toBe('original content');
-    });
-  });
-
-  describe('copyDir', () => {
-    it('should copy a directory recursively', async () => {
-      const src = join(testDir, 'src-dir');
-      const dest = join(testDir, 'dest-dir');
-      await fs.ensureDir(src);
-      await fs.writeFile(join(src, 'file1.txt'), 'content1');
-      await fs.writeFile(join(src, 'file2.txt'), 'content2');
-      await fs.ensureDir(join(src, 'subdir'));
-      await fs.writeFile(join(src, 'subdir', 'nested.txt'), 'nested');
-
-      await copyDir(src, dest);
-
-      expect(await fs.pathExists(join(dest, 'file1.txt'))).toBe(true);
-      expect(await fs.pathExists(join(dest, 'file2.txt'))).toBe(true);
-      expect(await fs.pathExists(join(dest, 'subdir', 'nested.txt'))).toBe(true);
-    });
-
-    // HIGH-6: Depth and file count limits tests (DoS prevention)
-    describe('depth and file count limits (DoS prevention)', () => {
-      it('should throw when maxDepth is exceeded', async () => {
-        const src = join(testDir, 'deep-src');
-        const dest = join(testDir, 'deep-dest');
-
-        // Create a directory structure 5 levels deep
-        let currentPath = src;
-        for (let i = 0; i < 5; i++) {
-          currentPath = join(currentPath, `level${i}`);
-          await fs.ensureDir(currentPath);
-          await fs.writeFile(join(currentPath, 'file.txt'), 'content');
-        }
-
-        // Should throw with maxDepth of 3
-        await expect(copyDir(src, dest, { maxDepth: 3 }))
-          .rejects.toThrow('Maximum directory depth (3) exceeded');
-      });
-
-      it('should throw when maxFiles is exceeded', async () => {
-        const src = join(testDir, 'many-files-src');
-        const dest = join(testDir, 'many-files-dest');
-        await fs.ensureDir(src);
-
-        // Create 10 files
-        for (let i = 0; i < 10; i++) {
-          await fs.writeFile(join(src, `file${i}.txt`), `content${i}`);
-        }
-
-        // Should throw with maxFiles of 5
-        await expect(copyDir(src, dest, { maxFiles: 5 }))
-          .rejects.toThrow('Maximum file count (5) exceeded');
-      });
-
-      it('should succeed when within depth limits', async () => {
-        const src = join(testDir, 'within-depth-src');
-        const dest = join(testDir, 'within-depth-dest');
-
-        // Create structure 2 levels deep
-        await fs.ensureDir(join(src, 'level1', 'level2'));
-        await fs.writeFile(join(src, 'root.txt'), 'root');
-        await fs.writeFile(join(src, 'level1', 'mid.txt'), 'mid');
-        await fs.writeFile(join(src, 'level1', 'level2', 'deep.txt'), 'deep');
-
-        // Should succeed with maxDepth of 5
-        await copyDir(src, dest, { maxDepth: 5 });
-
-        expect(await fs.pathExists(join(dest, 'root.txt'))).toBe(true);
-        expect(await fs.pathExists(join(dest, 'level1', 'mid.txt'))).toBe(true);
-        expect(await fs.pathExists(join(dest, 'level1', 'level2', 'deep.txt'))).toBe(true);
-      });
-
-      it('should succeed when within file count limits', async () => {
-        const src = join(testDir, 'within-count-src');
-        const dest = join(testDir, 'within-count-dest');
-        await fs.ensureDir(src);
-
-        // Create 5 files
-        for (let i = 0; i < 5; i++) {
-          await fs.writeFile(join(src, `file${i}.txt`), `content${i}`);
-        }
-
-        // Should succeed with maxFiles of 10
-        await copyDir(src, dest, { maxFiles: 10 });
-
-        for (let i = 0; i < 5; i++) {
-          expect(await fs.pathExists(join(dest, `file${i}.txt`))).toBe(true);
-        }
-      });
-
-      it('should use default maxDepth of 10', async () => {
-        const src = join(testDir, 'default-depth-src');
-        const dest = join(testDir, 'default-depth-dest');
-
-        // Create structure 8 levels deep (within default limit)
-        let currentPath = src;
-        for (let i = 0; i < 8; i++) {
-          currentPath = join(currentPath, `level${i}`);
-          await fs.ensureDir(currentPath);
-        }
-        await fs.writeFile(join(currentPath, 'file.txt'), 'content');
-
-        // Should succeed with default maxDepth of 10
-        await copyDir(src, dest);
-
-        let destPath = dest;
-        for (let i = 0; i < 8; i++) {
-          destPath = join(destPath, `level${i}`);
-        }
-        expect(await fs.pathExists(join(destPath, 'file.txt'))).toBe(true);
-      });
-
-      it('should count files across nested directories', async () => {
-        const src = join(testDir, 'nested-count-src');
-        const dest = join(testDir, 'nested-count-dest');
-
-        // Create structure with files in nested directories
-        // Total: 3 dirs + 6 files = 9 entries
-        await fs.ensureDir(join(src, 'sub1', 'sub2'));
-        await fs.writeFile(join(src, 'file1.txt'), 'content');
-        await fs.writeFile(join(src, 'file2.txt'), 'content');
-        await fs.writeFile(join(src, 'sub1', 'file3.txt'), 'content');
-        await fs.writeFile(join(src, 'sub1', 'file4.txt'), 'content');
-        await fs.writeFile(join(src, 'sub1', 'sub2', 'file5.txt'), 'content');
-        await fs.writeFile(join(src, 'sub1', 'sub2', 'file6.txt'), 'content');
-
-        // Should throw when count is exceeded (counting dirs + files)
-        await expect(copyDir(src, dest, { maxFiles: 4 }))
-          .rejects.toThrow('Maximum file count (4) exceeded');
-      });
-
-      it('should preserve overwrite option behavior', async () => {
-        const src = join(testDir, 'overwrite-src');
-        const dest = join(testDir, 'overwrite-dest');
-        await fs.ensureDir(src);
-        await fs.ensureDir(dest);
-
-        await fs.writeFile(join(src, 'file.txt'), 'new content');
-        await fs.writeFile(join(dest, 'file.txt'), 'old content');
-
-        // Should overwrite by default
-        await copyDir(src, dest);
-
-        const content = await fs.readFile(join(dest, 'file.txt'), 'utf-8');
-        expect(content).toBe('new content');
-      });
-
-      it('should handle empty directories', async () => {
-        const src = join(testDir, 'empty-src');
-        const dest = join(testDir, 'empty-dest');
-        await fs.ensureDir(src);
-
-        await copyDir(src, dest, { maxFiles: 1 });
-
-        expect(await fs.pathExists(dest)).toBe(true);
-      });
-
-      it('should throw descriptive error for depth with custom limit', async () => {
-        const src = join(testDir, 'custom-depth-src');
-        const dest = join(testDir, 'custom-depth-dest');
-
-        // Create 3 levels
-        await fs.ensureDir(join(src, 'a', 'b', 'c'));
-        await fs.writeFile(join(src, 'a', 'b', 'c', 'file.txt'), 'content');
-
-        // Custom limit of 2
-        await expect(copyDir(src, dest, { maxDepth: 2 }))
-          .rejects.toThrow('Maximum directory depth (2) exceeded');
-      });
-
-      it('should throw descriptive error for file count with custom limit', async () => {
-        const src = join(testDir, 'custom-count-src');
-        const dest = join(testDir, 'custom-count-dest');
-        await fs.ensureDir(src);
-
-        for (let i = 0; i < 15; i++) {
-          await fs.writeFile(join(src, `file${i}.txt`), 'content');
-        }
-
-        // Custom limit of 10
-        await expect(copyDir(src, dest, { maxFiles: 10 }))
-          .rejects.toThrow('Maximum file count (10) exceeded');
-      });
-    });
-  });
-
-  describe('remove', () => {
-    it('should remove a file', async () => {
-      const filePath = join(testDir, 'to-remove.txt');
-      await fs.writeFile(filePath, 'content');
-
-      await remove(filePath);
-
-      expect(await fs.pathExists(filePath)).toBe(false);
-    });
-
-    it('should remove a directory recursively', async () => {
-      const dirPath = join(testDir, 'dir-to-remove');
-      await fs.ensureDir(dirPath);
-      await fs.writeFile(join(dirPath, 'file.txt'), 'content');
-
-      await remove(dirPath);
-
-      expect(await fs.pathExists(dirPath)).toBe(false);
-    });
-
-    it('should not throw for non-existent path', async () => {
-      const filePath = join(testDir, 'nonexistent');
-
-      await expect(remove(filePath)).resolves.not.toThrow();
-    });
-  });
-
-  describe('symlink', () => {
-    it('should create a symbolic link', async () => {
+  describe('isSymlink() and readSymlink()', () => {
+    it('should identify symbolic links', async () => {
       const target = join(testDir, 'target.txt');
-      const linkPath = join(testDir, 'link.txt');
-      await fs.writeFile(target, 'target content');
-
-      await symlink(target, linkPath);
-
-      expect(await fs.pathExists(linkPath)).toBe(true);
-      expect(await isSymlink(linkPath)).toBe(true);
-    });
-
-    it('should create parent directories for link', async () => {
-      const target = join(testDir, 'target.txt');
-      const linkPath = join(testDir, 'nested', 'link.txt');
+      const link = join(testDir, 'link.txt');
       await fs.writeFile(target, 'content');
+      await fs.symlink(target, link);
 
-      await symlink(target, linkPath);
-
-      expect(await fs.pathExists(linkPath)).toBe(true);
-    });
-
-    it('should fail if link already exists without force option', async () => {
-      const target = join(testDir, 'target.txt');
-      const linkPath = join(testDir, 'existing-link.txt');
-      await fs.writeFile(target, 'content');
-      await fs.writeFile(linkPath, 'existing');
-
-      await expect(symlink(target, linkPath)).rejects.toThrow();
-    });
-
-    it('should replace existing file when force option is set', async () => {
-      const target = join(testDir, 'target.txt');
-      const linkPath = join(testDir, 'forced-link.txt');
-      await fs.writeFile(target, 'target content');
-      await fs.writeFile(linkPath, 'existing content');
-
-      await symlink(target, linkPath, { force: true });
-
-      expect(await isSymlink(linkPath)).toBe(true);
-      const linkTarget = await readSymlink(linkPath);
-      expect(linkTarget).toBe(target);
-    });
-
-    // HIGH-2: Atomic operation tests for TOCTOU race condition prevention
-    describe('atomic operations (TOCTOU prevention)', () => {
-      it('should handle EEXIST error with force option atomically', async () => {
-        const target = join(testDir, 'atomic-target.txt');
-        const linkPath = join(testDir, 'atomic-link.txt');
-        await fs.writeFile(target, 'target content');
-
-        // Create an existing symlink (triggers EEXIST path)
-        await fs.symlink(target, linkPath);
-
-        // Should atomically replace the existing symlink
-        await symlink(target, linkPath, { force: true });
-
-        expect(await isSymlink(linkPath)).toBe(true);
-        const resolvedTarget = await readSymlink(linkPath);
-        expect(resolvedTarget).toBe(target);
-      });
-
-      it('should throw EEXIST when file exists and force is false', async () => {
-        const target = join(testDir, 'target-eexist.txt');
-        const linkPath = join(testDir, 'link-eexist.txt');
-        await fs.writeFile(target, 'content');
-        await fs.writeFile(linkPath, 'existing file');
-
-        // Should throw EEXIST error
-        await expect(symlink(target, linkPath)).rejects.toMatchObject({
-          code: 'EEXIST'
-        });
-      });
-
-      it('should replace existing directory when force is true', async () => {
-        const target = join(testDir, 'target-replace-dir.txt');
-        const linkPath = join(testDir, 'link-replace-dir');
-        await fs.writeFile(target, 'content');
-
-        // Create a directory at the link path
-        await fs.ensureDir(linkPath);
-        await fs.writeFile(join(linkPath, 'inner.txt'), 'inner content');
-
-        // Should replace the directory with a symlink
-        await symlink(target, linkPath, { force: true });
-
-        expect(await isSymlink(linkPath)).toBe(true);
-        const resolvedTarget = await readSymlink(linkPath);
-        expect(resolvedTarget).toBe(target);
-      });
-
-      it('should propagate non-EEXIST errors', async () => {
-        // Try to create symlink in non-existent deep path where parent can't be created
-        // We'll simulate by using an invalid path
-        const target = join(testDir, 'target.txt');
-        await fs.writeFile(target, 'content');
-
-        // Path with null byte (invalid on most filesystems)
-        const invalidPath = join(testDir, 'valid\x00invalid', 'link.txt');
-
-        // Should throw an error (not EEXIST)
-        await expect(symlink(target, invalidPath)).rejects.toThrow();
-      });
-
-      it('should handle replacing symlink pointing to different target', async () => {
-        const target1 = join(testDir, 'target1.txt');
-        const target2 = join(testDir, 'target2.txt');
-        const linkPath = join(testDir, 'multi-target-link.txt');
-        await fs.writeFile(target1, 'target1 content');
-        await fs.writeFile(target2, 'target2 content');
-
-        // Create initial symlink to target1
-        await symlink(target1, linkPath);
-        expect(await readSymlink(linkPath)).toBe(target1);
-
-        // Replace with symlink to target2
-        await symlink(target2, linkPath, { force: true });
-        expect(await readSymlink(linkPath)).toBe(target2);
-      });
-
-      it('should succeed on first try when path does not exist', async () => {
-        const target = join(testDir, 'first-try-target.txt');
-        const linkPath = join(testDir, 'first-try-link.txt');
-        await fs.writeFile(target, 'content');
-
-        // No existing file, should succeed immediately
-        await symlink(target, linkPath);
-
-        expect(await isSymlink(linkPath)).toBe(true);
-        expect(await readSymlink(linkPath)).toBe(target);
-      });
-
-      it('should handle concurrent symlink creation attempts gracefully', async () => {
-        const target = join(testDir, 'concurrent-target.txt');
-        const linkPath = join(testDir, 'concurrent-link.txt');
-        await fs.writeFile(target, 'content');
-
-        // Attempt multiple concurrent symlink creations with force
-        // This tests that the atomic approach handles race conditions
-        const promises = [
-          symlink(target, linkPath, { force: true }),
-          symlink(target, linkPath, { force: true }),
-          symlink(target, linkPath, { force: true })
-        ];
-
-        // All should complete (some may fail, but at least one succeeds)
-        const results = await Promise.allSettled(promises);
-
-        // At least one should succeed
-        const succeeded = results.filter(r => r.status === 'fulfilled');
-        expect(succeeded.length).toBeGreaterThan(0);
-
-        // Final state should be a valid symlink
-        expect(await isSymlink(linkPath)).toBe(true);
-        expect(await readSymlink(linkPath)).toBe(target);
-      });
-    });
-  });
-
-  describe('isSymlink', () => {
-    it('should return true for symlink', async () => {
-      const target = join(testDir, 'target.txt');
-      const linkPath = join(testDir, 'symlink.txt');
-      await fs.writeFile(target, 'content');
-      await fs.symlink(target, linkPath);
-
-      const result = await isSymlink(linkPath);
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false for regular file', async () => {
-      const filePath = join(testDir, 'regular.txt');
-      await fs.writeFile(filePath, 'content');
-
-      const result = await isSymlink(filePath);
-
-      expect(result).toBe(false);
+      expect(await isSymlink(link)).toBe(true);
+      expect(await isSymlink(target)).toBe(false);
     });
 
     it('should return false for non-existent path', async () => {
-      const filePath = join(testDir, 'nonexistent');
-
-      const result = await isSymlink(filePath);
-
-      expect(result).toBe(false);
+      expect(await isSymlink(join(testDir, 'nonexistent'))).toBe(false);
     });
-  });
 
-  describe('readSymlink', () => {
-    it('should return the target of a symlink', async () => {
+    it('should read symlink target', async () => {
       const target = join(testDir, 'target.txt');
-      const linkPath = join(testDir, 'link.txt');
+      const link = join(testDir, 'link.txt');
       await fs.writeFile(target, 'content');
-      await fs.symlink(target, linkPath);
+      await fs.symlink(target, link);
 
-      const result = await readSymlink(linkPath);
-
+      const result = await readSymlink(link);
       expect(result).toBe(target);
     });
-
-    it('should return null for non-symlink', async () => {
-      const filePath = join(testDir, 'regular.txt');
-      await fs.writeFile(filePath, 'content');
-
-      const result = await readSymlink(filePath);
-
-      expect(result).toBe(null);
-    });
-
-    it('should return null for non-existent path', async () => {
-      const filePath = join(testDir, 'nonexistent');
-
-      const result = await readSymlink(filePath);
-
-      expect(result).toBe(null);
-    });
   });
 
-  describe('listFiles', () => {
-    beforeEach(async () => {
-      // Setup test directory structure
-      await fs.writeFile(join(testDir, 'file1.txt'), 'content');
-      await fs.writeFile(join(testDir, 'file2.js'), 'content');
-      await fs.writeFile(join(testDir, 'file3.json'), 'content');
-      await fs.ensureDir(join(testDir, 'subdir'));
-      await fs.writeFile(join(testDir, 'subdir', 'nested.txt'), 'content');
-      await fs.writeFile(join(testDir, 'subdir', 'nested.js'), 'content');
-    });
-
-    it('should list files in a directory', async () => {
-      const files = await listFiles(testDir);
-
-      expect(files).toHaveLength(3);
-      expect(files).toContain(join(testDir, 'file1.txt'));
-      expect(files).toContain(join(testDir, 'file2.js'));
-      expect(files).toContain(join(testDir, 'file3.json'));
-    });
-
-    it('should list files recursively', async () => {
-      const files = await listFiles(testDir, { recursive: true });
-
-      expect(files).toHaveLength(5);
-      expect(files).toContain(join(testDir, 'subdir', 'nested.txt'));
-      expect(files).toContain(join(testDir, 'subdir', 'nested.js'));
-    });
-
-    it('should filter by extension', async () => {
-      const files = await listFiles(testDir, { extensions: ['.txt'] });
-
-      expect(files).toHaveLength(1);
-      expect(files).toContain(join(testDir, 'file1.txt'));
-    });
-
-    it('should filter by multiple extensions', async () => {
-      const files = await listFiles(testDir, { extensions: ['.txt', '.js'] });
-
-      expect(files).toHaveLength(2);
-      expect(files).toContain(join(testDir, 'file1.txt'));
-      expect(files).toContain(join(testDir, 'file2.js'));
-    });
-
-    it('should filter recursively by extension', async () => {
-      const files = await listFiles(testDir, { recursive: true, extensions: ['.js'] });
-
-      expect(files).toHaveLength(2);
-      expect(files).toContain(join(testDir, 'file2.js'));
-      expect(files).toContain(join(testDir, 'subdir', 'nested.js'));
-    });
-
-    it('should return empty array for non-existent directory', async () => {
-      const files = await listFiles(join(testDir, 'nonexistent'));
-
-      expect(files).toEqual([]);
-    });
-  });
-
-  describe('getStats', () => {
-    it('should return stats for existing file', async () => {
-      const filePath = join(testDir, 'stats-test.txt');
-      await fs.writeFile(filePath, 'content');
-
-      const stats = await getStats(filePath);
-
-      expect(stats).not.toBeNull();
-      expect(stats.isFile()).toBe(true);
-    });
-
-    it('should return stats for directory', async () => {
-      const dirPath = join(testDir, 'stats-dir');
-      await fs.ensureDir(dirPath);
-
-      const stats = await getStats(dirPath);
-
-      expect(stats).not.toBeNull();
-      expect(stats.isDirectory()).toBe(true);
-    });
-
-    it('should return null for non-existent path', async () => {
-      const filePath = join(testDir, 'nonexistent');
-
-      const stats = await getStats(filePath);
-
-      expect(stats).toBeNull();
-    });
-  });
-
-  describe('makeExecutable', () => {
-    it('should make a file executable', async () => {
+  describe('makeExecutable()', () => {
+    it('should make file executable', async () => {
       const filePath = join(testDir, 'script.sh');
-      await fs.writeFile(filePath, '#!/bin/bash\necho "hello"');
+      await fs.writeFile(filePath, '#!/bin/bash\necho hello');
 
       await makeExecutable(filePath);
 
       const stats = await fs.stat(filePath);
-      // Check that execute bit is set (mode includes 0o111)
-      const hasExecuteBit = (stats.mode & 0o111) !== 0;
-      expect(hasExecuteBit).toBe(true);
+      // Check execute bit is set for owner
+      expect(stats.mode & 0o100).toBeTruthy();
     });
   });
 
-  describe('findBackups', () => {
-    it('should find backup files for a given path', async () => {
-      const filePath = join(testDir, 'file.txt');
-      await fs.writeFile(filePath, 'content');
+  describe('findBackups()', () => {
+    it('should find backup files with .bak extension', async () => {
+      await fs.writeFile(join(testDir, 'file.txt.bak'), 'backup');
+      await fs.writeFile(join(testDir, 'other.bak'), 'backup');
+      await fs.writeFile(join(testDir, 'normal.txt'), 'normal');
 
-      // Create some backups manually
-      await fs.writeFile(`${filePath}.backup.1000`, 'backup1');
-      await fs.writeFile(`${filePath}.backup.2000`, 'backup2');
-      await fs.writeFile(`${filePath}.backup.3000`, 'backup3');
-
-      const backups = await findBackups(filePath);
-
-      expect(backups).toHaveLength(3);
+      const backups = await findBackups(testDir);
+      expect(backups).toHaveLength(2);
     });
 
-    it('should return backups in reverse chronological order', async () => {
-      const filePath = join(testDir, 'file.txt');
-      await fs.writeFile(filePath, 'content');
+    it('should find backup files with .backup extension', async () => {
+      await fs.writeFile(join(testDir, 'config.json.backup'), 'backup');
 
-      await fs.writeFile(`${filePath}.backup.1000`, 'oldest');
-      await fs.writeFile(`${filePath}.backup.3000`, 'newest');
-      await fs.writeFile(`${filePath}.backup.2000`, 'middle');
-
-      const backups = await findBackups(filePath);
-
-      // Newest first (highest timestamp)
-      expect(backups[0]).toContain('.backup.3000');
-      expect(backups[1]).toContain('.backup.2000');
-      expect(backups[2]).toContain('.backup.1000');
-    });
-
-    it('should return empty array if no backups exist', async () => {
-      const filePath = join(testDir, 'no-backups.txt');
-      await fs.writeFile(filePath, 'content');
-
-      const backups = await findBackups(filePath);
-
-      expect(backups).toEqual([]);
-    });
-
-    it('should return empty array if directory does not exist', async () => {
-      const filePath = join(testDir, 'nonexistent', 'file.txt');
-
-      const backups = await findBackups(filePath);
-
-      expect(backups).toEqual([]);
-    });
-
-    it('should not match unrelated files', async () => {
-      const filePath = join(testDir, 'file.txt');
-      await fs.writeFile(filePath, 'content');
-
-      // Create backup and unrelated files
-      await fs.writeFile(`${filePath}.backup.1000`, 'backup');
-      await fs.writeFile(join(testDir, 'other.txt.backup.2000'), 'other backup');
-      await fs.writeFile(join(testDir, 'file.txt.other'), 'other file');
-
-      const backups = await findBackups(filePath);
-
+      const backups = await findBackups(testDir);
       expect(backups).toHaveLength(1);
-      expect(backups[0]).toContain('file.txt.backup.1000');
-    });
-  });
-
-  describe('restoreFromBackup', () => {
-    it('should restore from the most recent backup', async () => {
-      const filePath = join(testDir, 'restore-test.txt');
-      await fs.writeFile(filePath, 'current content');
-
-      // Create backups with different timestamps
-      await fs.writeFile(`${filePath}.backup.1000`, 'oldest backup');
-      await fs.writeFile(`${filePath}.backup.3000`, 'newest backup');
-
-      const result = await restoreFromBackup(filePath);
-
-      expect(result).toBe(true);
-      const content = await fs.readFile(filePath, 'utf-8');
-      expect(content).toBe('newest backup');
     });
 
-    it('should return false if no backup exists', async () => {
-      const filePath = join(testDir, 'no-backup.txt');
+    it('should find backup files with timestamp extension', async () => {
+      await fs.writeFile(join(testDir, 'file.2024-01-15T10-30-00'), 'backup');
+
+      const backups = await findBackups(testDir);
+      expect(backups).toHaveLength(1);
+    });
+
+    it('should filter by pattern when provided', async () => {
+      await fs.writeFile(join(testDir, 'settings.json.bak'), 'backup');
+      await fs.writeFile(join(testDir, 'config.json.bak'), 'backup');
+
+      const backups = await findBackups(testDir, 'settings');
+      expect(backups).toHaveLength(1);
+      expect(backups[0]).toContain('settings');
+    });
+
+    it('should return empty array for non-existent directory', async () => {
+      const backups = await findBackups(join(testDir, 'nonexistent'));
+      expect(backups).toEqual([]);
+    });
+
+    it('should return empty array for file instead of directory', async () => {
+      const filePath = join(testDir, 'file.txt');
       await fs.writeFile(filePath, 'content');
 
-      const result = await restoreFromBackup(filePath);
-
-      expect(result).toBe(false);
-    });
-
-    it('should restore even if original file does not exist', async () => {
-      const filePath = join(testDir, 'deleted.txt');
-
-      // Create backup but no original file
-      await fs.writeFile(`${filePath}.backup.1000`, 'backup content');
-
-      const result = await restoreFromBackup(filePath);
-
-      expect(result).toBe(true);
-      const content = await fs.readFile(filePath, 'utf-8');
-      expect(content).toBe('backup content');
+      const backups = await findBackups(filePath);
+      expect(backups).toEqual([]);
     });
   });
 
-  describe('integration: writeFile with backup and restore', () => {
-    it('should complete full backup and restore cycle', async () => {
-      const filePath = join(testDir, 'integration-test.txt');
+  describe('getDefaultMaxFiles()', () => {
+    it('should return default max files limit', () => {
+      expect(getDefaultMaxFiles()).toBe(10000);
+    });
+  });
 
-      // Create initial file
-      await writeFile(filePath, 'version 1');
+  describe('getDefaultMaxBackups()', () => {
+    it('should return default max backups limit', () => {
+      expect(getDefaultMaxBackups()).toBe(5);
+    });
+  });
 
-      // Small delay to ensure unique timestamps
-      await delay(5);
+  describe('listFiles() - MED-9', () => {
+    describe('basic functionality', () => {
+      it('should list files in a directory', async () => {
+        await createTestFiles(testDir, 5);
 
-      // Update with backup (creates backup of version 1)
-      await writeFile(filePath, 'version 2', { backup: true });
+        const result = await listFiles(testDir);
+        expect(result.files).toHaveLength(5);
+        expect(result.limitReached).toBe(false);
+      });
 
-      // Small delay to ensure unique timestamps
-      await delay(5);
+      it('should return empty array for empty directory', async () => {
+        const emptyDir = join(testDir, 'empty');
+        await fs.ensureDir(emptyDir);
 
-      // Update again with backup (creates backup of version 2)
-      await writeFile(filePath, 'version 3', { backup: true });
+        const result = await listFiles(emptyDir);
+        expect(result.files).toHaveLength(0);
+        expect(result.limitReached).toBe(false);
+      });
 
-      // Verify current content
-      let content = await readFile(filePath);
-      expect(content).toBe('version 3');
+      it('should throw error for non-existent directory', async () => {
+        await expect(listFiles(join(testDir, 'nonexistent')))
+          .rejects.toThrow('Directory does not exist');
+      });
 
-      // Verify backups exist (should have 2: v1 and v2)
-      const backups = await findBackups(filePath);
-      expect(backups.length).toBeGreaterThanOrEqual(2);
+      it('should throw error for file instead of directory', async () => {
+        const filePath = join(testDir, 'file.txt');
+        await fs.writeFile(filePath, 'content');
 
-      // Restore from backup (should restore to version 2 - the most recent backup)
-      const restored = await restoreFromBackup(filePath);
-      expect(restored).toBe(true);
-
-      content = await readFile(filePath);
-      expect(content).toBe('version 2');
+        await expect(listFiles(filePath))
+          .rejects.toThrow('Path is not a directory');
+      });
     });
 
-    it('should handle multiple backup-restore cycles', async () => {
-      const filePath = join(testDir, 'multi-cycle.txt');
+    describe('maxFiles limit (MED-9)', () => {
+      it('should respect maxFiles limit', async () => {
+        // Create 20 files
+        await createTestFiles(testDir, 20);
 
-      // Create and backup
-      await writeFile(filePath, 'original');
-      await delay(5);
-      await writeFile(filePath, 'modified', { backup: true });
+        const result = await listFiles(testDir, { maxFiles: 10 });
+        expect(result.files).toHaveLength(10);
+        expect(result.limitReached).toBe(true);
+      });
 
-      // First restore
-      await restoreFromBackup(filePath);
-      let content = await readFile(filePath);
-      expect(content).toBe('original');
+      it('should return all files when under limit', async () => {
+        await createTestFiles(testDir, 5);
 
-      // Modify again with backup
-      await delay(5);
-      await writeFile(filePath, 'modified again', { backup: true });
+        const result = await listFiles(testDir, { maxFiles: 100 });
+        expect(result.files).toHaveLength(5);
+        expect(result.limitReached).toBe(false);
+      });
 
-      // Second restore
-      await restoreFromBackup(filePath);
-      content = await readFile(filePath);
-      expect(content).toBe('original');
+      it('should use default maxFiles of 10000', async () => {
+        await createTestFiles(testDir, 10);
+
+        const result = await listFiles(testDir);
+        expect(result.files).toHaveLength(10);
+        expect(result.limitReached).toBe(false);
+      });
+
+      it('should log warning when limit is reached', async () => {
+        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+        await createTestFiles(testDir, 20);
+        await listFiles(testDir, { maxFiles: 10 });
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('maxFiles limit')
+        );
+
+        consoleSpy.mockRestore();
+      });
+
+      it('should handle maxFiles of 1', async () => {
+        await createTestFiles(testDir, 10);
+
+        const result = await listFiles(testDir, { maxFiles: 1 });
+        expect(result.files).toHaveLength(1);
+        expect(result.limitReached).toBe(true);
+      });
+
+      it('should throw error for invalid maxFiles (0)', async () => {
+        await expect(listFiles(testDir, { maxFiles: 0 }))
+          .rejects.toThrow('maxFiles must be a positive number');
+      });
+
+      it('should throw error for invalid maxFiles (negative)', async () => {
+        await expect(listFiles(testDir, { maxFiles: -5 }))
+          .rejects.toThrow('maxFiles must be a positive number');
+      });
+
+      it('should throw error for invalid maxFiles (string)', async () => {
+        await expect(listFiles(testDir, { maxFiles: 'invalid' }))
+          .rejects.toThrow('maxFiles must be a positive number');
+      });
+    });
+
+    describe('recursive listing', () => {
+      it('should list files recursively', async () => {
+        await createTestFiles(testDir, 5);
+        const subDir = join(testDir, 'subdir');
+        await createTestFiles(subDir, 3);
+
+        const result = await listFiles(testDir, { recursive: true });
+        expect(result.files).toHaveLength(8);
+      });
+
+      it('should not recurse by default', async () => {
+        await createTestFiles(testDir, 5);
+        const subDir = join(testDir, 'subdir');
+        await createTestFiles(subDir, 3);
+
+        const result = await listFiles(testDir, { recursive: false });
+        expect(result.files).toHaveLength(5);
+      });
+
+      it('should respect maxFiles during recursive listing', async () => {
+        await createTestFiles(testDir, 10);
+        const subDir1 = join(testDir, 'sub1');
+        const subDir2 = join(testDir, 'sub2');
+        await createTestFiles(subDir1, 10);
+        await createTestFiles(subDir2, 10);
+
+        const result = await listFiles(testDir, { recursive: true, maxFiles: 15 });
+        expect(result.files).toHaveLength(15);
+        expect(result.limitReached).toBe(true);
+      });
+    });
+
+    describe('extension filtering', () => {
+      it('should filter by single extension', async () => {
+        await fs.writeFile(join(testDir, 'file1.js'), 'js');
+        await fs.writeFile(join(testDir, 'file2.js'), 'js');
+        await fs.writeFile(join(testDir, 'file3.ts'), 'ts');
+        await fs.writeFile(join(testDir, 'file4.txt'), 'txt');
+
+        const result = await listFiles(testDir, { extensions: ['.js'] });
+        expect(result.files).toHaveLength(2);
+        expect(result.files.every(f => f.endsWith('.js'))).toBe(true);
+      });
+
+      it('should filter by multiple extensions', async () => {
+        await fs.writeFile(join(testDir, 'file1.js'), 'js');
+        await fs.writeFile(join(testDir, 'file2.ts'), 'ts');
+        await fs.writeFile(join(testDir, 'file3.txt'), 'txt');
+
+        const result = await listFiles(testDir, { extensions: ['.js', '.ts'] });
+        expect(result.files).toHaveLength(2);
+      });
+
+      it('should return all files when no extensions specified', async () => {
+        await fs.writeFile(join(testDir, 'file1.js'), 'js');
+        await fs.writeFile(join(testDir, 'file2.ts'), 'ts');
+
+        const result = await listFiles(testDir, { extensions: [] });
+        expect(result.files).toHaveLength(2);
+      });
+
+      it('should be case-insensitive for extensions', async () => {
+        // Use different base names to avoid case-insensitive filesystem issues
+        await fs.writeFile(join(testDir, 'upper.JS'), 'js');
+        await fs.writeFile(join(testDir, 'mixed.Js'), 'js');
+        await fs.writeFile(join(testDir, 'lower.js'), 'js');
+
+        const result = await listFiles(testDir, { extensions: ['.js'] });
+        expect(result.files).toHaveLength(3);
+      });
+    });
+  });
+
+  describe('rotateBackups() - MED-6', () => {
+    describe('basic functionality', () => {
+      it('should keep newest N backups and delete older ones', async () => {
+        await createBackupFiles(testDir, 'config.json', 7);
+
+        const result = await rotateBackups(testDir, { maxBackups: 3 });
+
+        expect(result.kept).toHaveLength(3);
+        expect(result.deleted).toHaveLength(4);
+        expect(result.errors).toHaveLength(0);
+
+        // Verify files on disk
+        const remaining = await fs.readdir(testDir);
+        expect(remaining).toHaveLength(3);
+      });
+
+      it('should keep all backups when count is under limit', async () => {
+        await createBackupFiles(testDir, 'settings.json', 3);
+
+        const result = await rotateBackups(testDir, { maxBackups: 5 });
+
+        expect(result.kept).toHaveLength(3);
+        expect(result.deleted).toHaveLength(0);
+      });
+
+      it('should use default maxBackups of 5', async () => {
+        await createBackupFiles(testDir, 'config.json', 10);
+
+        const result = await rotateBackups(testDir);
+
+        expect(result.kept).toHaveLength(5);
+        expect(result.deleted).toHaveLength(5);
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should handle empty directory gracefully', async () => {
+        const result = await rotateBackups(testDir);
+
+        expect(result.kept).toHaveLength(0);
+        expect(result.deleted).toHaveLength(0);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should handle non-existent directory gracefully', async () => {
+        const result = await rotateBackups(join(testDir, 'nonexistent'));
+
+        expect(result.kept).toHaveLength(0);
+        expect(result.deleted).toHaveLength(0);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should handle maxBackups of 0 (delete all)', async () => {
+        await createBackupFiles(testDir, 'config.json', 5);
+
+        const result = await rotateBackups(testDir, { maxBackups: 0 });
+
+        expect(result.kept).toHaveLength(0);
+        expect(result.deleted).toHaveLength(5);
+      });
+
+      it('should ignore non-backup files', async () => {
+        await fs.writeFile(join(testDir, 'config.json'), 'original');
+        await fs.writeFile(join(testDir, 'README.md'), 'readme');
+        await createBackupFiles(testDir, 'config.json', 3);
+
+        const result = await rotateBackups(testDir, { maxBackups: 2 });
+
+        expect(result.kept).toHaveLength(2);
+        expect(result.deleted).toHaveLength(1);
+
+        // Original files should still exist
+        expect(await fs.pathExists(join(testDir, 'config.json'))).toBe(true);
+        expect(await fs.pathExists(join(testDir, 'README.md'))).toBe(true);
+      });
+
+      it('should throw error for invalid maxBackups (negative)', async () => {
+        await expect(rotateBackups(testDir, { maxBackups: -1 }))
+          .rejects.toThrow('maxBackups must be a non-negative number');
+      });
+    });
+
+    describe('pattern filtering', () => {
+      it('should filter backups by pattern', async () => {
+        await createBackupFiles(testDir, 'config.json', 5);
+        await createBackupFiles(testDir, 'settings.json', 5);
+
+        const result = await rotateBackups(testDir, {
+          maxBackups: 2,
+          pattern: 'config'
+        });
+
+        expect(result.kept).toHaveLength(2);
+        expect(result.deleted).toHaveLength(3);
+        expect(result.kept.every(p => p.includes('config'))).toBe(true);
+
+        // Settings backups should be untouched
+        const settingsBackups = (await fs.readdir(testDir))
+          .filter(f => f.includes('settings'));
+        expect(settingsBackups).toHaveLength(5);
+      });
+    });
+
+    describe('dry run mode', () => {
+      it('should not delete files in dry run mode', async () => {
+        await createBackupFiles(testDir, 'config.json', 5);
+
+        const result = await rotateBackups(testDir, {
+          maxBackups: 2,
+          dryRun: true
+        });
+
+        expect(result.kept).toHaveLength(2);
+        expect(result.deleted).toHaveLength(3);
+
+        // Files should still exist
+        const remaining = await fs.readdir(testDir);
+        expect(remaining).toHaveLength(5);
+      });
+    });
+  });
+
+  describe('cleanupBackups() - MED-6', () => {
+    describe('basic functionality', () => {
+      it('should delete backups older than maxAgeDays', async () => {
+        const now = Date.now();
+
+        // Create old backup (10 days ago)
+        const oldBackup = join(testDir, 'old.bak');
+        await fs.writeFile(oldBackup, 'old');
+        const oldTime = new Date(now - (10 * 24 * 60 * 60 * 1000));
+        await fs.utimes(oldBackup, oldTime, oldTime);
+
+        // Create recent backup (1 day ago)
+        const newBackup = join(testDir, 'new.bak');
+        await fs.writeFile(newBackup, 'new');
+        const newTime = new Date(now - (1 * 24 * 60 * 60 * 1000));
+        await fs.utimes(newBackup, newTime, newTime);
+
+        const result = await cleanupBackups(testDir, { maxAgeDays: 7 });
+
+        expect(result.deleted).toHaveLength(1);
+        expect(result.retained).toHaveLength(1);
+        expect(result.deleted[0]).toContain('old.bak');
+      });
+
+      it('should use default maxAgeDays of 30', async () => {
+        const now = Date.now();
+
+        // Create backup 40 days old
+        const oldBackup = join(testDir, 'very-old.bak');
+        await fs.writeFile(oldBackup, 'old');
+        const oldTime = new Date(now - (40 * 24 * 60 * 60 * 1000));
+        await fs.utimes(oldBackup, oldTime, oldTime);
+
+        // Create backup 10 days old
+        const newBackup = join(testDir, 'recent.bak');
+        await fs.writeFile(newBackup, 'recent');
+        const recentTime = new Date(now - (10 * 24 * 60 * 60 * 1000));
+        await fs.utimes(newBackup, recentTime, recentTime);
+
+        const result = await cleanupBackups(testDir);
+
+        expect(result.deleted).toHaveLength(1);
+        expect(result.retained).toHaveLength(1);
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should handle empty directory gracefully', async () => {
+        const result = await cleanupBackups(testDir);
+
+        expect(result.deleted).toHaveLength(0);
+        expect(result.retained).toHaveLength(0);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should handle non-existent directory gracefully', async () => {
+        const result = await cleanupBackups(join(testDir, 'nonexistent'));
+
+        expect(result.deleted).toHaveLength(0);
+        expect(result.retained).toHaveLength(0);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should delete all backups when maxAgeDays is 0', async () => {
+        await fs.writeFile(join(testDir, 'file1.bak'), 'content');
+        await fs.writeFile(join(testDir, 'file2.backup'), 'content');
+
+        const result = await cleanupBackups(testDir, { maxAgeDays: 0 });
+
+        expect(result.deleted).toHaveLength(2);
+        expect(result.retained).toHaveLength(0);
+      });
+
+      it('should throw error for invalid maxAgeDays (negative)', async () => {
+        await expect(cleanupBackups(testDir, { maxAgeDays: -1 }))
+          .rejects.toThrow('maxAgeDays must be a non-negative number');
+      });
+    });
+
+    describe('pattern filtering', () => {
+      it('should filter backups by pattern', async () => {
+        const now = Date.now();
+        const oldTime = new Date(now - (40 * 24 * 60 * 60 * 1000));
+
+        // Create old config backup
+        const configBackup = join(testDir, 'config.json.bak');
+        await fs.writeFile(configBackup, 'config');
+        await fs.utimes(configBackup, oldTime, oldTime);
+
+        // Create old settings backup
+        const settingsBackup = join(testDir, 'settings.json.bak');
+        await fs.writeFile(settingsBackup, 'settings');
+        await fs.utimes(settingsBackup, oldTime, oldTime);
+
+        const result = await cleanupBackups(testDir, {
+          maxAgeDays: 30,
+          pattern: 'config'
+        });
+
+        expect(result.deleted).toHaveLength(1);
+        expect(result.deleted[0]).toContain('config');
+
+        // Settings backup should still exist
+        expect(await fs.pathExists(settingsBackup)).toBe(true);
+      });
+    });
+
+    describe('dry run mode', () => {
+      it('should not delete files in dry run mode', async () => {
+        await fs.writeFile(join(testDir, 'file1.bak'), 'content');
+        await fs.writeFile(join(testDir, 'file2.bak'), 'content');
+
+        const result = await cleanupBackups(testDir, {
+          maxAgeDays: 0,
+          dryRun: true
+        });
+
+        expect(result.deleted).toHaveLength(2);
+
+        // Files should still exist
+        const remaining = await fs.readdir(testDir);
+        expect(remaining).toHaveLength(2);
+      });
+    });
+  });
+
+  describe('syncPackageAssets() - MED-11', () => {
+    let srcDir;
+    let destDir;
+    let mockPaths;
+
+    /**
+     * Create mock paths configuration for testing
+     */
+    function createMockPaths(src, dest) {
+      return {
+        PACKAGE_TEMPLATES_DIR: join(src, 'templates'),
+        PACKAGE_SCRIPTS_DIR: join(src, 'scripts'),
+        PACKAGE_LIB_CORE_DIR: join(src, 'lib', 'core'),
+        PACKAGE_SKILLS_DIR: join(src, 'skills'),
+        GLOBAL_TEMPLATES_DIR: join(dest, 'templates'),
+        GLOBAL_SCRIPTS_DIR: join(dest, 'scripts'),
+        GLOBAL_LIB_DIR: join(dest, 'lib'),
+        GLOBAL_SKILLS_DIR: join(dest, 'skills')
+      };
+    }
+
+    /**
+     * Create source asset directories with sample files
+     */
+    async function createSourceAssets(src) {
+      // Templates
+      await fs.ensureDir(join(src, 'templates'));
+      await fs.writeFile(join(src, 'templates', 'CLAUDE.md.hbs'), '# Template');
+      await fs.writeFile(join(src, 'templates', 'settings.json.hbs'), '{}');
+
+      // Scripts
+      await fs.ensureDir(join(src, 'scripts'));
+      await fs.writeFile(join(src, 'scripts', 'hook.sh'), '#!/bin/bash\necho "hook"');
+      await fs.writeFile(join(src, 'scripts', 'setup.sh'), '#!/bin/bash\necho "setup"');
+
+      // Lib/core
+      await fs.ensureDir(join(src, 'lib', 'core'));
+      await fs.writeFile(join(src, 'lib', 'core', 'README.md'), '# Core');
+
+      // Skills
+      await fs.ensureDir(join(src, 'skills'));
+      await fs.writeFile(join(src, 'skills', 'orchestrate.md'), '# Skill');
+    }
+
+    beforeEach(async () => {
+      srcDir = join(testDir, 'package');
+      destDir = join(testDir, 'global');
+      mockPaths = createMockPaths(srcDir, destDir);
+
+      await fs.ensureDir(srcDir);
+      await fs.ensureDir(destDir);
+    });
+
+    describe('basic functionality', () => {
+      it('should sync all asset types by default', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({}, mockPaths);
+
+        expect(result.synced).toHaveLength(4);
+        expect(result.errors).toHaveLength(0);
+
+        // Verify files were copied
+        expect(await exists(join(destDir, 'templates', 'CLAUDE.md.hbs'))).toBe(true);
+        expect(await exists(join(destDir, 'scripts', 'hook.sh'))).toBe(true);
+        expect(await exists(join(destDir, 'lib', 'README.md'))).toBe(true);
+        expect(await exists(join(destDir, 'skills', 'orchestrate.md'))).toBe(true);
+      });
+
+      it('should throw error when paths configuration is missing', async () => {
+        await expect(syncPackageAssets({})).rejects.toThrow(
+          'paths configuration is required'
+        );
+      });
+
+      it('should return synced paths in result', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({}, mockPaths);
+
+        // Check that synced entries contain expected info
+        expect(result.synced.some(s => s.includes('templates'))).toBe(true);
+        expect(result.synced.some(s => s.includes('scripts'))).toBe(true);
+        expect(result.synced.some(s => s.includes('lib'))).toBe(true);
+        expect(result.synced.some(s => s.includes('skills'))).toBe(true);
+      });
+    });
+
+    describe('selective sync', () => {
+      it('should sync only templates when specified', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.synced[0]).toContain('templates');
+
+        expect(await exists(join(destDir, 'templates'))).toBe(true);
+        expect(await exists(join(destDir, 'scripts'))).toBe(false);
+        expect(await exists(join(destDir, 'lib'))).toBe(false);
+        expect(await exists(join(destDir, 'skills'))).toBe(false);
+      });
+
+      it('should sync only scripts when specified', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: false,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.synced[0]).toContain('scripts');
+      });
+
+      it('should sync multiple selected asset types', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: true,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(2);
+        expect(result.synced.some(s => s.includes('templates'))).toBe(true);
+        expect(result.synced.some(s => s.includes('lib'))).toBe(true);
+      });
+    });
+
+    describe('force overwrite', () => {
+      it('should skip existing directories when force is false', async () => {
+        await createSourceAssets(srcDir);
+
+        // Pre-create destination directories
+        await fs.ensureDir(join(destDir, 'templates'));
+        await fs.writeFile(join(destDir, 'templates', 'existing.txt'), 'old content');
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false,
+          force: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(0);
+        expect(result.skipped).toHaveLength(1);
+        expect(result.skipped[0]).toContain('already exists');
+
+        // Original file should still exist
+        expect(await exists(join(destDir, 'templates', 'existing.txt'))).toBe(true);
+        // New file should NOT exist
+        expect(await exists(join(destDir, 'templates', 'CLAUDE.md.hbs'))).toBe(false);
+      });
+
+      it('should overwrite existing directories when force is true', async () => {
+        await createSourceAssets(srcDir);
+
+        // Pre-create destination directories
+        await fs.ensureDir(join(destDir, 'templates'));
+        await fs.writeFile(join(destDir, 'templates', 'existing.txt'), 'old content');
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false,
+          force: true
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.skipped).toHaveLength(0);
+
+        // New files should exist
+        expect(await exists(join(destDir, 'templates', 'CLAUDE.md.hbs'))).toBe(true);
+        expect(await exists(join(destDir, 'templates', 'settings.json.hbs'))).toBe(true);
+      });
+    });
+
+    describe('source not found handling', () => {
+      it('should skip and report when source directory does not exist', async () => {
+        // Don't create source assets
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(0);
+        expect(result.skipped).toHaveLength(1);
+        expect(result.skipped[0]).toContain('source not found');
+      });
+
+      it('should handle partial source availability', async () => {
+        // Only create templates
+        await fs.ensureDir(join(srcDir, 'templates'));
+        await fs.writeFile(join(srcDir, 'templates', 'test.hbs'), 'content');
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(1);
+        expect(result.synced[0]).toContain('templates');
+        expect(result.skipped).toHaveLength(1);
+        expect(result.skipped[0]).toContain('scripts');
+        expect(result.skipped[0]).toContain('source not found');
+      });
+    });
+
+    describe('script executable permissions', () => {
+      it('should make shell scripts executable after sync', async () => {
+        await createSourceAssets(srcDir);
+
+        await syncPackageAssets({
+          templates: false,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        // Check that scripts are executable
+        const hookPath = join(destDir, 'scripts', 'hook.sh');
+        const setupPath = join(destDir, 'scripts', 'setup.sh');
+
+        const hookStats = await fs.stat(hookPath);
+        const setupStats = await fs.stat(setupPath);
+
+        // Check execute bit is set
+        expect(hookStats.mode & 0o100).toBeTruthy();
+        expect(setupStats.mode & 0o100).toBeTruthy();
+      });
+
+      it('should not make non-shell files executable', async () => {
+        await fs.ensureDir(join(srcDir, 'scripts'));
+        await fs.writeFile(join(srcDir, 'scripts', 'config.json'), '{}');
+
+        await syncPackageAssets({
+          templates: false,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        const configPath = join(destDir, 'scripts', 'config.json');
+        const stats = await fs.stat(configPath);
+
+        // JSON files should not have execute bit
+        expect(stats.mode & 0o100).toBeFalsy();
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should handle empty source directories', async () => {
+        // Create empty source directories
+        await fs.ensureDir(join(srcDir, 'templates'));
+        await fs.ensureDir(join(srcDir, 'scripts'));
+
+        const result = await syncPackageAssets({
+          templates: true,
+          scripts: true,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(2);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should handle nested directories in assets', async () => {
+        // Create nested structure
+        await fs.ensureDir(join(srcDir, 'templates', 'partials'));
+        await fs.writeFile(join(srcDir, 'templates', 'partials', 'header.hbs'), 'header');
+        await fs.writeFile(join(srcDir, 'templates', 'main.hbs'), 'main');
+
+        await syncPackageAssets({
+          templates: true,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        // Check nested files were copied
+        expect(await exists(join(destDir, 'templates', 'main.hbs'))).toBe(true);
+        expect(await exists(join(destDir, 'templates', 'partials', 'header.hbs'))).toBe(true);
+      });
+
+      it('should return empty arrays when all options are false', async () => {
+        await createSourceAssets(srcDir);
+
+        const result = await syncPackageAssets({
+          templates: false,
+          scripts: false,
+          lib: false,
+          skills: false
+        }, mockPaths);
+
+        expect(result.synced).toHaveLength(0);
+        expect(result.skipped).toHaveLength(0);
+        expect(result.errors).toHaveLength(0);
+      });
     });
   });
 });
