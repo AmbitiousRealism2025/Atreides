@@ -20,7 +20,7 @@ import {
   writeFile,
   copyDir
 } from '../lib/file-manager.js';
-import { renderTemplate, getDefaultData } from '../lib/template-engine.js';
+import { renderNamedTemplate, getDefaultData } from '../lib/template-engine.js';
 import { getDefaultProjectConfig } from '../lib/config-merger.js';
 
 /**
@@ -130,7 +130,7 @@ async function runInit(options) {
 
   // Create CLAUDE.md (always)
   try {
-    const claudeMd = await renderTemplate('CLAUDE.md', templateData);
+    const claudeMd = await renderNamedTemplate('CLAUDE.md', templateData);
     await writeFile(paths.claudeMd, claudeMd, { backup: !options.force });
     logger.success('Created: CLAUDE.md');
   } catch (error) {
@@ -148,7 +148,7 @@ async function runInit(options) {
 
     // Create settings.json
     try {
-      const settings = await renderTemplate('settings.json', templateData);
+      const settings = await renderNamedTemplate('settings.json', templateData);
       await writeFile(paths.settingsJson, settings, { backup: !options.force });
       logger.success('Created: .claude/settings.json');
     } catch (error) {
@@ -160,7 +160,7 @@ async function runInit(options) {
 
     // Create context.md
     try {
-      const context = await renderTemplate('context.md', templateData);
+      const context = await renderNamedTemplate('context.md', templateData);
       await writeFile(paths.contextMd, context, { backup: !options.force });
       logger.success('Created: .claude/context.md');
     } catch (error) {
@@ -172,7 +172,7 @@ async function runInit(options) {
 
     // Create critical-context.md
     try {
-      const criticalContext = await renderTemplate('critical-context.md', templateData);
+      const criticalContext = await renderNamedTemplate('critical-context.md', templateData);
       await writeFile(paths.criticalContextMd, criticalContext, { backup: !options.force });
       logger.success('Created: .claude/critical-context.md');
     } catch (error) {
@@ -183,7 +183,7 @@ async function runInit(options) {
 
     // Create project config
     try {
-      const projectConfig = await renderTemplate('config.json', templateData);
+      const projectConfig = await renderNamedTemplate('config.json', templateData);
       await writeFile(paths.projectConfig, projectConfig, { backup: !options.force });
       logger.success('Created: .muaddib/config.json');
     } catch (error) {

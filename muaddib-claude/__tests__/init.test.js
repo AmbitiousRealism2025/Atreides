@@ -3,7 +3,7 @@
  */
 
 import { jest } from '@jest/globals';
-import { renderTemplate, getDefaultData } from '../src/lib/template-engine.js';
+import { renderNamedTemplate, getDefaultData } from '../src/lib/template-engine.js';
 
 describe('Init Command - Template Rendering', () => {
   const baseConfig = {
@@ -19,7 +19,7 @@ describe('Init Command - Template Rendering', () => {
   describe('CLAUDE.md generation', () => {
     it('should render CLAUDE.md with project name', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('test-project');
       expect(result).toContain('Muad\'Dib Orchestration');
@@ -27,28 +27,28 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include codebase maturity', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('**Codebase Maturity**: TRANSITIONAL');
     });
 
     it('should include project type', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('**Project Type**: node');
     });
 
     it('should include version', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toMatch(/\*\*Muad'Dib Version\*\*: \d+\.\d+\.\d+/);
     });
 
     it('should include core orchestration sections', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('## Intent Classification');
       expect(result).toContain('## Agent Delegation');
@@ -60,7 +60,7 @@ describe('Init Command - Template Rendering', () => {
   describe('settings.json generation', () => {
     it('should render settings.json with hooks for node project', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       expect(settings.hooks).toBeDefined();
@@ -69,7 +69,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include node-specific permissions (Claude Code 2.1 wildcards)', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       // Claude Code 2.1 wildcard syntax: Bash(npm *) instead of Bash(npm:*)
@@ -79,7 +79,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include deny list for dangerous operations (Claude Code 2.1 wildcards)', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       // Claude Code 2.1 wildcard syntax
@@ -90,7 +90,7 @@ describe('Init Command - Template Rendering', () => {
     it('should render python-specific permissions (Claude Code 2.1 wildcards)', async () => {
       const pythonConfig = { ...baseConfig, projectType: 'python' };
       const templateData = { ...getDefaultData(), ...pythonConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       expect(settings.permissions.allow).toContain('Bash(python *)');
@@ -100,7 +100,7 @@ describe('Init Command - Template Rendering', () => {
     it('should render go-specific permissions (Claude Code 2.1 wildcards)', async () => {
       const goConfig = { ...baseConfig, projectType: 'go' };
       const templateData = { ...getDefaultData(), ...goConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       expect(settings.permissions.allow).toContain('Bash(go *)');
@@ -109,7 +109,7 @@ describe('Init Command - Template Rendering', () => {
     it('should render rust-specific permissions (Claude Code 2.1 wildcards)', async () => {
       const rustConfig = { ...baseConfig, projectType: 'rust' };
       const templateData = { ...getDefaultData(), ...rustConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       expect(settings.permissions.allow).toContain('Bash(cargo *)');
@@ -119,7 +119,7 @@ describe('Init Command - Template Rendering', () => {
   describe('context.md generation', () => {
     it('should render context.md with project info', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('context.md', templateData);
+      const result = await renderNamedTemplate('context.md', templateData);
 
       expect(result).toContain('test-project');
       expect(result).toContain('Project Context');
@@ -129,7 +129,7 @@ describe('Init Command - Template Rendering', () => {
   describe('critical-context.md generation', () => {
     it('should render critical-context.md', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('critical-context.md', templateData);
+      const result = await renderNamedTemplate('critical-context.md', templateData);
 
       expect(result).toContain('Critical Context');
       expect(result).toContain('Never Forget');
@@ -139,7 +139,7 @@ describe('Init Command - Template Rendering', () => {
   describe('Phase 4 - Enhanced Hook Configuration', () => {
     it('should include all 8 hook types when useHooks is true', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       // Check for all hook types
@@ -152,7 +152,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should have PreToolUse hooks for Bash and Edit|Write', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
       const settings = JSON.parse(result);
 
       const preToolUseMatchers = settings.hooks.PreToolUse.map(h => h.matcher);
@@ -162,7 +162,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should reference helper scripts in hooks', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('settings.json', templateData);
+      const result = await renderNamedTemplate('settings.json', templateData);
 
       expect(result).toContain('validate-bash-command.sh');
       expect(result).toContain('pre-edit-check.sh');
@@ -175,7 +175,7 @@ describe('Init Command - Template Rendering', () => {
   describe('Phase 4 - Skills Documentation', () => {
     it('should include skills documentation in CLAUDE.md', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('Muad\'Dib Skills');
       expect(result).toContain('muaddib-explore');
@@ -184,7 +184,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include wildcard permission documentation in CLAUDE.md', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('Wildcard Syntax');
       expect(result).toContain('Bash(npm *)');
@@ -194,7 +194,7 @@ describe('Init Command - Template Rendering', () => {
   describe('Phase 5 - Extended Skills', () => {
     it('should include all 11 skills in CLAUDE.md', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       // Core skills (Phase 4)
       expect(result).toContain('muaddib-orchestrate');
@@ -214,7 +214,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include LSP operations documentation', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('## LSP Operations');
       expect(result).toContain('Go to Definition');
@@ -223,7 +223,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include ast-grep patterns documentation', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('## AST-grep Patterns');
       expect(result).toContain('ast-grep');
@@ -232,7 +232,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include checkpoint system documentation', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('## Checkpoint System');
       expect(result).toContain('checkpoint.md');
@@ -240,7 +240,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should include skill composition patterns', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('## Skill Composition Patterns');
       expect(result).toContain('Sequential Chaining');
@@ -249,7 +249,7 @@ describe('Init Command - Template Rendering', () => {
 
     it('should show Phase 5 skills with correct context types', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       // Forked context skills
       expect(result).toMatch(/muaddib-lsp.*\*\*forked\*\*/s);
@@ -286,7 +286,7 @@ describe('Init Command - Template Rendering', () => {
 
       it('should render settings.json without hooks section when useHooks is false', async () => {
         const templateData = { ...getDefaultData(), ...minimalConfig };
-        const result = await renderTemplate('settings.json', templateData);
+        const result = await renderNamedTemplate('settings.json', templateData);
         const settings = JSON.parse(result);
 
         // Hooks should be empty object when useHooks is false
@@ -299,7 +299,7 @@ describe('Init Command - Template Rendering', () => {
 
       it('should render CLAUDE.md without agent delegation section when useAgentDelegation is false', async () => {
         const templateData = { ...getDefaultData(), ...minimalConfig };
-        const result = await renderTemplate('CLAUDE.md', templateData);
+        const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
         // Should still contain the section header but marked as disabled or minimal
         expect(result).toContain('Agent Delegation');
@@ -344,7 +344,7 @@ describe('Init Command - Template Rendering', () => {
 
       it('should render settings.json with hooks when useHooks is true', async () => {
         const templateData = { ...getDefaultData(), ...fullConfig };
-        const result = await renderTemplate('settings.json', templateData);
+        const result = await renderNamedTemplate('settings.json', templateData);
         const settings = JSON.parse(result);
 
         // Hooks should contain PreToolUse and PostToolUse
@@ -355,7 +355,7 @@ describe('Init Command - Template Rendering', () => {
 
       it('should render CLAUDE.md with agent delegation when useAgentDelegation is true', async () => {
         const templateData = { ...getDefaultData(), ...fullConfig };
-        const result = await renderTemplate('CLAUDE.md', templateData);
+        const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
         // Should contain agent delegation patterns
         expect(result).toContain('Agent Delegation');
@@ -405,7 +405,7 @@ describe('Init Command - Template Rendering', () => {
 
       it('should render settings.json with hooks for standard mode', async () => {
         const templateData = { ...getDefaultData(), ...standardConfig };
-        const result = await renderTemplate('settings.json', templateData);
+        const result = await renderNamedTemplate('settings.json', templateData);
         const settings = JSON.parse(result);
 
         // Standard mode has hooks enabled
@@ -449,7 +449,7 @@ describe('Init Command - Template Rendering', () => {
   describe('Phase 5 - Language-specific patterns', () => {
     it('should include node-specific ast-grep patterns', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('JavaScript/TypeScript Patterns');
       expect(result).toContain('console.log');
@@ -458,7 +458,7 @@ describe('Init Command - Template Rendering', () => {
     it('should include python-specific patterns for python projects', async () => {
       const pythonConfig = { ...baseConfig, projectType: 'python' };
       const templateData = { ...getDefaultData(), ...pythonConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('Python Patterns');
       expect(result).toContain('pyright');
@@ -467,7 +467,7 @@ describe('Init Command - Template Rendering', () => {
     it('should include go-specific patterns for go projects', async () => {
       const goConfig = { ...baseConfig, projectType: 'go' };
       const templateData = { ...getDefaultData(), ...goConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('Go Patterns');
       expect(result).toContain('gopls');
@@ -476,7 +476,7 @@ describe('Init Command - Template Rendering', () => {
     it('should include rust-specific patterns for rust projects', async () => {
       const rustConfig = { ...baseConfig, projectType: 'rust' };
       const templateData = { ...getDefaultData(), ...rustConfig };
-      const result = await renderTemplate('CLAUDE.md', templateData);
+      const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('Rust Patterns');
       expect(result).toContain('unwrap');

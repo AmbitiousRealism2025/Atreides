@@ -9,6 +9,24 @@ import { dirname, join, basename } from 'path';
 import { debug } from '../utils/logger.js';
 
 /**
+ * Default maximum number of files to return from listFiles
+ * @type {number}
+ */
+const DEFAULT_MAX_FILES = 10000;
+
+/**
+ * Default maximum number of backups to retain
+ * @type {number}
+ */
+const DEFAULT_MAX_BACKUPS = 5;
+
+/**
+ * Backup file extension patterns to recognize
+ * @type {RegExp}
+ */
+const BACKUP_PATTERN = /\.(bak|backup|orig|\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})$/i;
+
+/**
  * Ensure a directory exists, creating it if necessary
  * @param {string} dirPath - Path to the directory
  * @returns {Promise<void>}
@@ -233,37 +251,98 @@ export async function readSymlink(linkPath) {
 }
 
 /**
- * List files in a directory
- * @param {string} dirPath - Path to the directory
- * @param {object} [options] - Options
- * @param {boolean} [options.recursive=false] - List recursively
- * @param {string[]} [options.extensions] - Filter by file extensions
- * @returns {Promise<string[]>}
+ * List files in a directory with optional filtering and limits.
+ * @param {string} dirPath - Directory path to list files from
+ * @param {Object} options - Listing options
+ * @param {boolean} [options.recursive=false] - Whether to list files recursively
+ * @param {string[]} [options.extensions=[]] - File extensions to filter by (e.g., ['.js', '.ts'])
+ * @param {number} [options.maxFiles=10000] - Maximum number of files to return
+ * @returns {Promise<{files: string[], limitReached: boolean}>} Object containing file paths and limit status
  */
 export async function listFiles(dirPath, options = {}) {
-  const { recursive = false, extensions = [] } = options;
+  const {
+    recursive = false,
+    extensions = [],
+    maxFiles = DEFAULT_MAX_FILES
+  } = options;
 
-  if (!await exists(dirPath)) {
-    return [];
+  // Validate maxFiles parameter
+  if (typeof maxFiles !== 'number' || maxFiles < 1) {
+    throw new Error(`maxFiles must be a positive number, got: ${maxFiles}`);
   }
 
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
   const files = [];
+  let limitReached = false;
 
-  for (const entry of entries) {
-    const fullPath = join(dirPath, entry.name);
+  async function collectFiles(currentPath) {
+    if (files.length >= maxFiles) {
+      limitReached = true;
+      return;
+    }
 
-    if (entry.isDirectory() && recursive) {
-      const subFiles = await listFiles(fullPath, options);
-      files.push(...subFiles);
-    } else if (entry.isFile()) {
-      if (extensions.length === 0 || extensions.some(ext => entry.name.endsWith(ext))) {
+    let entries;
+    try {
+      entries = await fs.readdir(currentPath, { withFileTypes: true });
+    } catch (err) {
+      if (err.code === 'EACCES' || err.code === 'EPERM') {
+        return;
+      }
+      throw err;
+    }
+
+    for (const entry of entries) {
+      if (files.length >= maxFiles) {
+        limitReached = true;
+        return;
+      }
+
+      const fullPath = join(currentPath, entry.name);
+
+      if (entry.isDirectory()) {
+        if (recursive) {
+          await collectFiles(fullPath);
+        }
+      } else if (entry.isFile()) {
+        if (extensions.length > 0) {
+          const ext = fullPath.substring(fullPath.lastIndexOf('.')).toLowerCase();
+          if (!extensions.includes(ext)) {
+            continue;
+          }
+        }
+
         files.push(fullPath);
+
+        if (files.length >= maxFiles) {
+          limitReached = true;
+          return;
+        }
       }
     }
   }
 
-  return files;
+  // Verify directory exists
+  try {
+    const stat = await fs.stat(dirPath);
+    if (!stat.isDirectory()) {
+      throw new Error(`Path is not a directory: ${dirPath}`);
+    }
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw new Error(`Directory does not exist: ${dirPath}`);
+    }
+    throw err;
+  }
+
+  await collectFiles(dirPath);
+
+  if (limitReached) {
+    console.warn(
+      `[file-manager] Warning: maxFiles limit (${maxFiles}) reached while listing ${dirPath}. ` +
+      `Results may be incomplete. Consider increasing maxFiles or filtering by extension.`
+    );
+  }
+
+  return { files, limitReached };
 }
 
 /**
@@ -290,24 +369,41 @@ export async function makeExecutable(filePath) {
 }
 
 /**
- * Find backup files for a given file
- * @param {string} filePath - Original file path
- * @returns {Promise<string[]>} List of backup file paths
+ * Find backup files in a directory
+ * @param {string} dirPath - Directory to search
+ * @param {string} [pattern] - Optional filename pattern to match
+ * @returns {Promise<string[]>} Array of backup file paths
  */
-export async function findBackups(filePath) {
-  const dir = dirname(filePath);
-  const name = basename(filePath);
+export async function findBackups(dirPath, pattern = null) {
+  const backups = [];
 
-  if (!await exists(dir)) {
-    return [];
+  try {
+    const stat = await fs.stat(dirPath);
+    if (!stat.isDirectory()) {
+      return backups;
+    }
+  } catch {
+    return backups;
   }
 
-  const entries = await fs.readdir(dir);
-  return entries
-    .filter(entry => entry.startsWith(`${name}.backup.`))
-    .map(entry => join(dir, entry))
-    .sort()
-    .reverse();
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      if (!BACKUP_PATTERN.test(entry.name)) continue;
+
+      if (pattern) {
+        const baseName = entry.name.replace(BACKUP_PATTERN, '');
+        if (!baseName.includes(pattern)) continue;
+      }
+
+      backups.push(join(dirPath, entry.name));
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  return backups;
 }
 
 /**
@@ -316,15 +412,319 @@ export async function findBackups(filePath) {
  * @returns {Promise<boolean>} True if restored, false if no backup found
  */
 export async function restoreFromBackup(filePath) {
-  const backups = await findBackups(filePath);
+  const dir = dirname(filePath);
+  const name = basename(filePath);
+  const backups = await findBackups(dir, name);
 
   if (backups.length === 0) {
     return false;
   }
 
-  await fs.copy(backups[0], filePath, { overwrite: true });
-  debug(`Restored from backup: ${backups[0]}`);
+  // Sort by mtime to get most recent
+  const backupStats = await Promise.all(
+    backups.map(async (path) => {
+      const stat = await fs.stat(path);
+      return { path, mtime: stat.mtime.getTime() };
+    })
+  );
+  backupStats.sort((a, b) => b.mtime - a.mtime);
+
+  await fs.copy(backupStats[0].path, filePath, { overwrite: true });
+  debug(`Restored from backup: ${backupStats[0].path}`);
   return true;
+}
+
+/**
+ * Get the default max files limit
+ * @returns {number} The default maximum files limit
+ */
+export function getDefaultMaxFiles() {
+  return DEFAULT_MAX_FILES;
+}
+
+/**
+ * Get the default max backups limit
+ * @returns {number} The default maximum backups to retain
+ */
+export function getDefaultMaxBackups() {
+  return DEFAULT_MAX_BACKUPS;
+}
+
+/**
+ * Rotate backup files in a directory, keeping only the most recent N backups.
+ * @param {string} backupDir - Directory containing backup files
+ * @param {Object} options - Rotation options
+ * @param {number} [options.maxBackups=5] - Maximum number of backups to retain
+ * @param {string} [options.pattern] - Optional filename pattern to match
+ * @param {boolean} [options.dryRun=false] - If true, only report what would be deleted
+ * @returns {Promise<{kept: string[], deleted: string[], errors: string[]}>} Rotation results
+ */
+export async function rotateBackups(backupDir, options = {}) {
+  const {
+    maxBackups = DEFAULT_MAX_BACKUPS,
+    pattern = null,
+    dryRun = false
+  } = options;
+
+  if (typeof maxBackups !== 'number' || maxBackups < 0) {
+    throw new Error(`maxBackups must be a non-negative number, got: ${maxBackups}`);
+  }
+
+  const kept = [];
+  const deleted = [];
+  const errors = [];
+
+  try {
+    const stat = await fs.stat(backupDir);
+    if (!stat.isDirectory()) {
+      throw new Error(`Path is not a directory: ${backupDir}`);
+    }
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return { kept, deleted, errors };
+    }
+    throw err;
+  }
+
+  let entries;
+  try {
+    entries = await fs.readdir(backupDir, { withFileTypes: true });
+  } catch (err) {
+    if (err.code === 'EACCES' || err.code === 'EPERM') {
+      errors.push(`Permission denied reading directory: ${backupDir}`);
+      return { kept, deleted, errors };
+    }
+    throw err;
+  }
+
+  const backupFiles = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (!BACKUP_PATTERN.test(entry.name)) continue;
+
+    if (pattern) {
+      const baseName = entry.name.replace(BACKUP_PATTERN, '');
+      if (!baseName.includes(pattern)) continue;
+    }
+
+    const fullPath = join(backupDir, entry.name);
+    try {
+      const stat = await fs.stat(fullPath);
+      backupFiles.push({
+        name: entry.name,
+        path: fullPath,
+        mtime: stat.mtime.getTime()
+      });
+    } catch (err) {
+      errors.push(`Could not stat file: ${fullPath}`);
+    }
+  }
+
+  backupFiles.sort((a, b) => b.mtime - a.mtime);
+
+  for (let i = 0; i < backupFiles.length; i++) {
+    const backup = backupFiles[i];
+    if (i < maxBackups) {
+      kept.push(backup.path);
+    } else {
+      if (dryRun) {
+        deleted.push(backup.path);
+      } else {
+        try {
+          await fs.unlink(backup.path);
+          deleted.push(backup.path);
+        } catch (err) {
+          errors.push(`Failed to delete: ${backup.path} (${err.message})`);
+        }
+      }
+    }
+  }
+
+  return { kept, deleted, errors };
+}
+
+/**
+ * Clean up all backup files in a directory, optionally older than a specified age.
+ * @param {string} backupDir - Directory containing backup files
+ * @param {Object} options - Cleanup options
+ * @param {number} [options.maxAgeDays=30] - Maximum age in days for backups (0 = delete all)
+ * @param {string} [options.pattern] - Optional filename pattern to match
+ * @param {boolean} [options.dryRun=false] - If true, only report what would be deleted
+ * @returns {Promise<{deleted: string[], retained: string[], errors: string[]}>} Cleanup results
+ */
+export async function cleanupBackups(backupDir, options = {}) {
+  const {
+    maxAgeDays = 30,
+    pattern = null,
+    dryRun = false
+  } = options;
+
+  if (typeof maxAgeDays !== 'number' || maxAgeDays < 0) {
+    throw new Error(`maxAgeDays must be a non-negative number, got: ${maxAgeDays}`);
+  }
+
+  const deleted = [];
+  const retained = [];
+  const errors = [];
+
+  try {
+    const stat = await fs.stat(backupDir);
+    if (!stat.isDirectory()) {
+      throw new Error(`Path is not a directory: ${backupDir}`);
+    }
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return { deleted, retained, errors };
+    }
+    throw err;
+  }
+
+  let entries;
+  try {
+    entries = await fs.readdir(backupDir, { withFileTypes: true });
+  } catch (err) {
+    if (err.code === 'EACCES' || err.code === 'EPERM') {
+      errors.push(`Permission denied reading directory: ${backupDir}`);
+      return { deleted, retained, errors };
+    }
+    throw err;
+  }
+
+  const cutoffTime = Date.now() - (maxAgeDays * 24 * 60 * 60 * 1000);
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (!BACKUP_PATTERN.test(entry.name)) continue;
+
+    if (pattern) {
+      const baseName = entry.name.replace(BACKUP_PATTERN, '');
+      if (!baseName.includes(pattern)) continue;
+    }
+
+    const fullPath = join(backupDir, entry.name);
+    try {
+      const stat = await fs.stat(fullPath);
+      const fileTime = stat.mtime.getTime();
+
+      if (maxAgeDays === 0 || fileTime < cutoffTime) {
+        if (dryRun) {
+          deleted.push(fullPath);
+        } else {
+          try {
+            await fs.unlink(fullPath);
+            deleted.push(fullPath);
+          } catch (unlinkErr) {
+            errors.push(`Failed to delete: ${fullPath} (${unlinkErr.message})`);
+          }
+        }
+      } else {
+        retained.push(fullPath);
+      }
+    } catch (err) {
+      errors.push(`Could not stat file: ${fullPath}`);
+    }
+  }
+
+  return { deleted, retained, errors };
+}
+
+/**
+ * Synchronize package assets (templates, scripts, lib, skills) to global directory.
+ * @param {Object} options - Sync options
+ * @param {boolean} [options.templates=true] - Sync templates directory
+ * @param {boolean} [options.scripts=true] - Sync scripts directory
+ * @param {boolean} [options.lib=true] - Sync lib/core directory
+ * @param {boolean} [options.skills=true] - Sync skills directory
+ * @param {boolean} [options.force=false] - Force overwrite even if destination exists
+ * @param {Object} paths - Path configuration
+ * @returns {Promise<{synced: string[], skipped: string[], errors: string[]}>} Sync results
+ */
+export async function syncPackageAssets(options = {}, paths) {
+  const {
+    templates = true,
+    scripts = true,
+    lib = true,
+    skills = true,
+    force = false
+  } = options;
+
+  const synced = [];
+  const skipped = [];
+  const errors = [];
+
+  if (!paths) {
+    throw new Error('paths configuration is required for syncPackageAssets');
+  }
+
+  async function syncDirectory(srcDir, destDir, name, makeScriptsExecutable = false) {
+    const srcExists = await exists(srcDir);
+    if (!srcExists) {
+      skipped.push(`${name}: source not found (${srcDir})`);
+      return;
+    }
+
+    const destExists = await exists(destDir);
+    if (destExists && !force) {
+      skipped.push(`${name}: already exists (use force to overwrite)`);
+      return;
+    }
+
+    try {
+      await fs.copy(srcDir, destDir, { overwrite: force });
+      synced.push(`${name}: ${srcDir} -> ${destDir}`);
+
+      if (makeScriptsExecutable) {
+        try {
+          const entries = await fs.readdir(destDir, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isFile() && entry.name.endsWith('.sh')) {
+              const scriptPath = join(destDir, entry.name);
+              await makeExecutable(scriptPath);
+            }
+          }
+        } catch (execErr) {
+          errors.push(`${name}: failed to make scripts executable: ${execErr.message}`);
+        }
+      }
+    } catch (copyErr) {
+      errors.push(`${name}: copy failed: ${copyErr.message}`);
+    }
+  }
+
+  if (templates) {
+    await syncDirectory(
+      paths.PACKAGE_TEMPLATES_DIR,
+      paths.GLOBAL_TEMPLATES_DIR,
+      'templates'
+    );
+  }
+
+  if (scripts) {
+    await syncDirectory(
+      paths.PACKAGE_SCRIPTS_DIR,
+      paths.GLOBAL_SCRIPTS_DIR,
+      'scripts',
+      true
+    );
+  }
+
+  if (lib) {
+    await syncDirectory(
+      paths.PACKAGE_LIB_CORE_DIR,
+      paths.GLOBAL_LIB_DIR,
+      'lib'
+    );
+  }
+
+  if (skills) {
+    await syncDirectory(
+      paths.PACKAGE_SKILLS_DIR,
+      paths.GLOBAL_SKILLS_DIR,
+      'skills'
+    );
+  }
+
+  return { synced, skipped, errors };
 }
 
 export default {
@@ -344,5 +744,10 @@ export default {
   getStats,
   makeExecutable,
   findBackups,
-  restoreFromBackup
+  restoreFromBackup,
+  getDefaultMaxFiles,
+  getDefaultMaxBackups,
+  rotateBackups,
+  cleanupBackups,
+  syncPackageAssets
 };

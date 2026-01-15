@@ -28,7 +28,7 @@ import {
   readJson,
   writeFile
 } from '../lib/file-manager.js';
-import { renderTemplate, getDefaultData } from '../lib/template-engine.js';
+import { renderNamedTemplate, getDefaultData } from '../lib/template-engine.js';
 
 /**
  * Create the update command
@@ -297,7 +297,7 @@ async function updateProject(options) {
   if (await exists(paths.settingsJson)) {
     try {
       const existingSettings = await readJson(paths.settingsJson);
-      const newSettings = await renderTemplate('settings.json', templateData);
+      const newSettings = await renderNamedTemplate('settings.json', templateData);
       const newSettingsObj = JSON.parse(newSettings);
 
       // Deep merge settings: new values fill gaps, existing customizations preserved
