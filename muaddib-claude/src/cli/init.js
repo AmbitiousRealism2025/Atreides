@@ -105,7 +105,11 @@ async function runInit(options) {
       config.useHooks = false;
       config.useAgentDelegation = false;
     }
-    if (options.full) config.orchestrationLevel = 'full';
+    if (options.full) {
+      config.orchestrationLevel = 'full';
+      config.useHooks = true;
+      config.useAgentDelegation = true;
+    }
   }
 
   // Add template defaults
