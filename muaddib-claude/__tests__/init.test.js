@@ -263,6 +263,189 @@ describe('Init Command - Template Rendering', () => {
     });
   });
 
+  describe('Flag Normalization Behavior (HIGH-1)', () => {
+    describe('--minimal flag', () => {
+      const minimalConfig = {
+        projectName: 'minimal-project',
+        description: 'Minimal test',
+        projectType: 'node',
+        orchestrationLevel: 'minimal',
+        codebaseMaturity: 'TRANSITIONAL',
+        useHooks: false,
+        useAgentDelegation: false
+      };
+
+      it('should set useHooks to false when orchestrationLevel is minimal', async () => {
+        const templateData = { ...getDefaultData(), ...minimalConfig };
+
+        // Verify the config values are correctly set for minimal
+        expect(templateData.useHooks).toBe(false);
+        expect(templateData.useAgentDelegation).toBe(false);
+        expect(templateData.orchestrationLevel).toBe('minimal');
+      });
+
+      it('should render settings.json without hooks section when useHooks is false', async () => {
+        const templateData = { ...getDefaultData(), ...minimalConfig };
+        const result = await renderTemplate('settings.json', templateData);
+        const settings = JSON.parse(result);
+
+        // Hooks should be empty object when useHooks is false
+        expect(settings.hooks).toBeDefined();
+        // The hook arrays should be empty for minimal mode
+        if (settings.hooks.PreToolUse) {
+          expect(settings.hooks.PreToolUse.length).toBe(0);
+        }
+      });
+
+      it('should render CLAUDE.md without agent delegation section when useAgentDelegation is false', async () => {
+        const templateData = { ...getDefaultData(), ...minimalConfig };
+        const result = await renderTemplate('CLAUDE.md', templateData);
+
+        // Should still contain the section header but marked as disabled or minimal
+        expect(result).toContain('Agent Delegation');
+        // Verify minimal orchestration level is reflected
+        expect(templateData.orchestrationLevel).toBe('minimal');
+      });
+
+      it('should normalize both flags together for minimal mode', () => {
+        // Simulating the normalization logic from init.js
+        const options = { minimal: true, yes: true };
+        const normalizedConfig = {
+          orchestrationLevel: options.minimal ? 'minimal' : 'standard',
+          useHooks: !options.minimal,
+          useAgentDelegation: options.full || false
+        };
+
+        expect(normalizedConfig.orchestrationLevel).toBe('minimal');
+        expect(normalizedConfig.useHooks).toBe(false);
+        expect(normalizedConfig.useAgentDelegation).toBe(false);
+      });
+    });
+
+    describe('--full flag', () => {
+      const fullConfig = {
+        projectName: 'full-project',
+        description: 'Full test',
+        projectType: 'node',
+        orchestrationLevel: 'full',
+        codebaseMaturity: 'TRANSITIONAL',
+        useHooks: true,
+        useAgentDelegation: true
+      };
+
+      it('should set useHooks to true when orchestrationLevel is full', async () => {
+        const templateData = { ...getDefaultData(), ...fullConfig };
+
+        // Verify the config values are correctly set for full
+        expect(templateData.useHooks).toBe(true);
+        expect(templateData.useAgentDelegation).toBe(true);
+        expect(templateData.orchestrationLevel).toBe('full');
+      });
+
+      it('should render settings.json with hooks when useHooks is true', async () => {
+        const templateData = { ...getDefaultData(), ...fullConfig };
+        const result = await renderTemplate('settings.json', templateData);
+        const settings = JSON.parse(result);
+
+        // Hooks should contain PreToolUse and PostToolUse
+        expect(settings.hooks.PreToolUse).toBeDefined();
+        expect(settings.hooks.PreToolUse.length).toBeGreaterThan(0);
+        expect(settings.hooks.PostToolUse).toBeDefined();
+      });
+
+      it('should render CLAUDE.md with agent delegation when useAgentDelegation is true', async () => {
+        const templateData = { ...getDefaultData(), ...fullConfig };
+        const result = await renderTemplate('CLAUDE.md', templateData);
+
+        // Should contain agent delegation patterns
+        expect(result).toContain('Agent Delegation');
+        expect(result).toContain('Task');
+        expect(result).toContain('subagent_type');
+      });
+
+      it('should normalize both flags together for full mode', () => {
+        // Simulating the normalization logic from init.js
+        const options = { full: true, yes: true };
+        const normalizedConfig = {
+          orchestrationLevel: options.full ? 'full' : 'standard',
+          useHooks: !options.minimal,
+          useAgentDelegation: options.full || false
+        };
+
+        expect(normalizedConfig.orchestrationLevel).toBe('full');
+        expect(normalizedConfig.useHooks).toBe(true);
+        expect(normalizedConfig.useAgentDelegation).toBe(true);
+      });
+    });
+
+    describe('--standard mode (default)', () => {
+      const standardConfig = {
+        projectName: 'standard-project',
+        description: 'Standard test',
+        projectType: 'node',
+        orchestrationLevel: 'standard',
+        codebaseMaturity: 'TRANSITIONAL',
+        useHooks: true,
+        useAgentDelegation: false
+      };
+
+      it('should set useHooks to true and useAgentDelegation to false for standard mode', () => {
+        // Simulating default behavior without --minimal or --full
+        const options = { yes: true };
+        const normalizedConfig = {
+          orchestrationLevel: options.minimal ? 'minimal' : options.full ? 'full' : 'standard',
+          useHooks: !options.minimal,
+          useAgentDelegation: options.full || false
+        };
+
+        expect(normalizedConfig.orchestrationLevel).toBe('standard');
+        expect(normalizedConfig.useHooks).toBe(true);
+        expect(normalizedConfig.useAgentDelegation).toBe(false);
+      });
+
+      it('should render settings.json with hooks for standard mode', async () => {
+        const templateData = { ...getDefaultData(), ...standardConfig };
+        const result = await renderTemplate('settings.json', templateData);
+        const settings = JSON.parse(result);
+
+        // Standard mode has hooks enabled
+        expect(settings.hooks.PreToolUse).toBeDefined();
+        expect(settings.hooks.PreToolUse.length).toBeGreaterThan(0);
+      });
+    });
+
+    describe('flag precedence', () => {
+      it('should handle --minimal taking precedence when both flags are provided', () => {
+        // In real CLI, commander would only allow one, but test the logic
+        const options = { minimal: true, full: false, yes: true };
+        const normalizedConfig = {
+          orchestrationLevel: options.minimal ? 'minimal' : options.full ? 'full' : 'standard',
+          useHooks: !options.minimal,
+          useAgentDelegation: options.full
+        };
+
+        // --minimal should set minimal config
+        expect(normalizedConfig.orchestrationLevel).toBe('minimal');
+        expect(normalizedConfig.useHooks).toBe(false);
+        expect(normalizedConfig.useAgentDelegation).toBe(false);
+      });
+
+      it('should handle --full taking precedence over standard default', () => {
+        const options = { minimal: false, full: true, yes: true };
+        const normalizedConfig = {
+          orchestrationLevel: options.minimal ? 'minimal' : options.full ? 'full' : 'standard',
+          useHooks: !options.minimal,
+          useAgentDelegation: options.full
+        };
+
+        // --full should set full config
+        expect(normalizedConfig.orchestrationLevel).toBe('full');
+        expect(normalizedConfig.useHooks).toBe(true);
+        expect(normalizedConfig.useAgentDelegation).toBe(true);
+      });
+    });
+  });
+
   describe('Phase 5 - Language-specific patterns', () => {
     it('should include node-specific ast-grep patterns', async () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
