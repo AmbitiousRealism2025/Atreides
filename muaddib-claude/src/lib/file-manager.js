@@ -154,11 +154,18 @@ export async function symlink(target, linkPath, options = {}) {
 
   await ensureDir(dirname(linkPath));
 
-  if (force && await exists(linkPath)) {
-    await remove(linkPath);
+  // Atomic approach: try to create, handle EEXIST error
+  // This eliminates the TOCTOU race condition between check and remove
+  try {
+    await fs.symlink(target, linkPath);
+  } catch (error) {
+    if (error.code === 'EEXIST' && force) {
+      await remove(linkPath);
+      await fs.symlink(target, linkPath);
+    } else {
+      throw error;
+    }
   }
-
-  await fs.symlink(target, linkPath);
   debug(`Created symlink: ${linkPath} → ${target}`);
 }
 
