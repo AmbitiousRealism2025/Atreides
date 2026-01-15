@@ -13,6 +13,8 @@ import { dirname, join } from 'path';
 // Import commands
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
+import { installCommand } from './install.js';
+import { updateCommand } from './update.js';
 
 // Get package version
 const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +51,8 @@ export async function run() {
   // Register commands
   program.addCommand(doctorCommand());
   program.addCommand(initCommand());
+  program.addCommand(installCommand());
+  program.addCommand(updateCommand());
 
   // Custom help formatting
   program.configureHelp({
@@ -60,6 +64,12 @@ export async function run() {
   program.addHelpText('after', `
 
 ${chalk.bold('Examples:')}
+  ${chalk.gray('# Install global components')}
+  $ muaddib install
+
+  ${chalk.gray('# Update to latest version')}
+  $ muaddib update
+
   ${chalk.gray('# Initialize a project')}
   $ muaddib init
 

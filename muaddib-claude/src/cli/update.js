@@ -1,34 +1,35 @@
 /**
  * Update Command
  *
- * Update Muad'Dib global or project components.
+ * Update global Muad'Dib components to latest version.
+ * Uses the shared syncPackageAssets() function from file-manager.js (MED-11).
+ *
+ * Updates:
+ * - Templates (to ~/.muaddib/templates)
+ * - Scripts (to ~/.muaddib/scripts) - made executable
+ * - Lib/core files (to ~/.muaddib/lib)
+ * - Skills (to ~/.muaddib/skills)
+ *
+ * Unlike install, update always uses force mode to overwrite existing files.
  */
 
 import { Command } from 'commander';
-import { join } from 'path';
+import fs from 'fs-extra';
 import logger from '../utils/logger.js';
-import { confirm } from '../utils/prompts.js';
+import { exists } from '../lib/file-manager.js';
 import {
   GLOBAL_MUADDIB_DIR,
-  GLOBAL_TEMPLATES_DIR,
-  GLOBAL_SCRIPTS_DIR,
-  GLOBAL_LIB_DIR,
-  GLOBAL_SKILLS_DIR,
+  PACKAGE_ROOT,
   PACKAGE_TEMPLATES_DIR,
   PACKAGE_SCRIPTS_DIR,
   PACKAGE_LIB_CORE_DIR,
   PACKAGE_SKILLS_DIR,
-  getProjectPaths
+  GLOBAL_TEMPLATES_DIR,
+  GLOBAL_SCRIPTS_DIR,
+  GLOBAL_LIB_DIR,
+  GLOBAL_SKILLS_DIR
 } from '../utils/paths.js';
-import {
-  exists,
-  copyDir,
-  listFiles,
-  makeExecutable,
-  readJson,
-  writeFile
-} from '../lib/file-manager.js';
-import { renderTemplate, getDefaultData } from '../lib/template-engine.js';
+import { syncPackageAssets } from '../lib/file-manager.js';
 
 /**
  * Create the update command
@@ -38,18 +39,17 @@ export function updateCommand() {
   const cmd = new Command('update');
 
   cmd
-    .description("Update Muad'Dib components")
-    .option('-g, --global', 'Update global components (default)')
-    .option('-p, --project', 'Update current project files')
-    .option('--no-backup', 'Skip backup creation')
-    .option('-n, --dry-run', 'Preview changes without applying them')
+    .description('Update global Muad\'Dib components to latest version')
+    .option('--templates-only', 'Update only templates')
+    .option('--scripts-only', 'Update only scripts')
+    .option('--no-templates', 'Skip templates')
+    .option('--no-scripts', 'Skip scripts')
+    .option('--no-lib', 'Skip lib files')
+    .option('--no-skills', 'Skip skills')
+    .option('--dry-run', 'Show what would be updated without making changes')
     .action(async (options) => {
       try {
-        if (options.project) {
-          await updateProject(options);
-        } else {
-          await updateGlobal(options);
-        }
+        await runUpdate(options);
       } catch (error) {
         logger.error(`Update failed: ${error.message}`);
         logger.debug(error.stack);
@@ -61,336 +61,109 @@ export function updateCommand() {
 }
 
 /**
- * Update global components
+ * Run the update process
  * @param {object} options - Command options
  */
-async function updateGlobal(options) {
-  const isDryRun = options.dryRun;
+async function runUpdate(options) {
+  const isDryRun = options.dryRun || false;
 
-  logger.title(isDryRun ? "Muad'Dib Global Update (Dry Run)" : "Muad'Dib Global Update");
+  logger.title("Muad'Dib Global Update");
+  logger.info(`Updating from: ${PACKAGE_ROOT}`);
+  logger.info(`Destination: ${GLOBAL_MUADDIB_DIR}`);
 
   if (isDryRun) {
-    logger.info('Preview mode: no changes will be made');
-    console.log();
+    logger.warn('Dry run mode - no changes will be made');
   }
-
-  if (!await exists(GLOBAL_MUADDIB_DIR)) {
-    logger.error("Muad'Dib is not installed.");
-    logger.info('Run: muaddib install');
-    process.exit(1);
-  }
-
-  // Create backup if requested
-  if (options.backup !== false) {
-    const backupDir = `${GLOBAL_MUADDIB_DIR}.backup.${Date.now()}`;
-    if (isDryRun) {
-      logger.info(`Would create backup: ${backupDir}`);
-    } else {
-      logger.info(`Creating backup: ${backupDir}`);
-      await copyDir(GLOBAL_MUADDIB_DIR, backupDir);
-      logger.success('Backup created');
-    }
-  }
-
-  logger.info(isDryRun ? 'Would update global components:' : 'Updating global components...');
-
-  // Update templates
-  if (await exists(PACKAGE_TEMPLATES_DIR)) {
-    if (isDryRun) {
-      const templateFiles = await listFiles(PACKAGE_TEMPLATES_DIR);
-      logger.info(`  Templates: ${templateFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_TEMPLATES_DIR, GLOBAL_TEMPLATES_DIR, { overwrite: true });
-      logger.success('Updated templates');
-    }
-  }
-
-  // Update scripts
-  if (await exists(PACKAGE_SCRIPTS_DIR)) {
-    if (isDryRun) {
-      const scriptFiles = await listFiles(PACKAGE_SCRIPTS_DIR, { extensions: ['.sh'] });
-      logger.info(`  Scripts: ${scriptFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_SCRIPTS_DIR, GLOBAL_SCRIPTS_DIR, { overwrite: true });
-
-      // Make scripts executable
-      const scriptFiles = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
-      for (const scriptFile of scriptFiles) {
-        await makeExecutable(scriptFile);
-      }
-      logger.success('Updated scripts');
-    }
-  }
-
-  // Update lib/core
-  if (await exists(PACKAGE_LIB_CORE_DIR)) {
-    if (isDryRun) {
-      const coreFiles = await listFiles(PACKAGE_LIB_CORE_DIR);
-      logger.info(`  Lib/core: ${coreFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_LIB_CORE_DIR, join(GLOBAL_LIB_DIR, 'core'), { overwrite: true });
-      logger.success('Updated lib/core');
-    }
-  }
-
-  // Update skills
-  if (await exists(PACKAGE_SKILLS_DIR)) {
-    if (isDryRun) {
-      const skillFiles = await listFiles(PACKAGE_SKILLS_DIR);
-      logger.info(`  Skills: ${skillFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_SKILLS_DIR, GLOBAL_SKILLS_DIR, { overwrite: true });
-      logger.success('Updated skills');
-    }
-  }
-
   console.log();
-  if (isDryRun) {
-    logger.info('Dry run complete. Run without --dry-run to apply changes.');
-  } else {
-    logger.success('Global update complete!');
-  }
-}
 
-/**
- * Merge hook arrays by matcher, combining commands to avoid duplicate runs
- * @param {Array} existing - Existing hook entries
- * @param {Array} newHooks - New hook entries to merge
- * @returns {Array} Merged hook array
- */
-function mergeHookArrays(existing, newHooks) {
-  const result = [...existing];
-
-  for (const newHook of newHooks) {
-    if (newHook.matcher && newHook.hooks) {
-      // PreToolUse/PostToolUse style: { matcher, hooks: [{type, command}] }
-      // Find existing entry with same matcher
-      const existingIndex = result.findIndex(h => h.matcher === newHook.matcher);
-
-      if (existingIndex >= 0) {
-        // Merge hooks arrays, deduplicating by command
-        const existingHooks = result[existingIndex].hooks || [];
-        const mergedHooks = [...existingHooks];
-
-        for (const newSubHook of newHook.hooks) {
-          const subHookSig = getSubHookSignature(newSubHook);
-          const isDupe = mergedHooks.some(h => getSubHookSignature(h) === subHookSig);
-          if (!isDupe) {
-            mergedHooks.push(newSubHook);
-          }
-        }
-
-        result[existingIndex] = { ...result[existingIndex], hooks: mergedHooks };
-      } else {
-        // New matcher - add the whole entry
-        result.push(newHook);
-      }
-    } else {
-      // Simple hook style or unknown format - dedupe by full signature
-      const hookSignature = getHookSignature(newHook);
-      const isDuplicate = result.some(h => getHookSignature(h) === hookSignature);
-      if (!isDuplicate) {
-        result.push(newHook);
-      }
-    }
+  // Check if already installed
+  const isInstalled = await exists(GLOBAL_MUADDIB_DIR);
+  if (!isInstalled) {
+    logger.warn('Muad\'Dib is not installed globally.');
+    logger.info('Run "muaddib install" first to install.');
+    return;
   }
 
-  return result;
-}
+  // Determine what to update
+  let syncTemplates = options.templates !== false;
+  let syncScripts = options.scripts !== false;
+  let syncLib = options.lib !== false;
+  let syncSkills = options.skills !== false;
 
-/**
- * Generate a signature for a sub-hook (inside hooks array)
- * @param {object} subHook - Sub-hook like {type, command}
- * @returns {string} Signature string
- */
-function getSubHookSignature(subHook) {
-  if (subHook.command) {
-    return subHook.command;
-  } else if (subHook.type) {
-    return subHook.type;
+  // Handle exclusive flags
+  if (options.templatesOnly) {
+    syncTemplates = true;
+    syncScripts = false;
+    syncLib = false;
+    syncSkills = false;
+  } else if (options.scriptsOnly) {
+    syncTemplates = false;
+    syncScripts = true;
+    syncLib = false;
+    syncSkills = false;
   }
-  return JSON.stringify(subHook);
-}
-
-/**
- * Generate a signature for a hook entry for deduplication
- * @param {object} hook - Hook configuration
- * @returns {string} Signature string
- */
-function getHookSignature(hook) {
-  if (hook.matcher && hook.hooks) {
-    // PreToolUse/PostToolUse style: { matcher, hooks: [{type, command}] }
-    const commands = hook.hooks.map(h => h.command || h.type).sort().join('|');
-    return `${hook.matcher}:${commands}`;
-  } else if (hook.type && hook.command) {
-    // Simple hook style: { type, command }
-    return `${hook.type}:${hook.command}`;
-  }
-  // Fallback to JSON
-  return JSON.stringify(hook);
-}
-
-/**
- * Deep merge settings with smart hook/permission handling
- * - New hook types are added
- * - New entries within existing hook types are merged with deduplication
- * - Existing hook customizations are preserved
- * - Permissions are merged with deduplication
- * @param {object} newSettings - New settings from template
- * @param {object} existingSettings - User's existing settings
- * @returns {object} Merged settings
- */
-function deepMergeSettings(newSettings, existingSettings) {
-  const merged = { ...existingSettings };
-
-  // Merge hooks: add new hook types AND merge entries within existing types
-  if (newSettings.hooks) {
-    merged.hooks = merged.hooks || {};
-    for (const [hookType, hookConfig] of Object.entries(newSettings.hooks)) {
-      if (!merged.hooks[hookType]) {
-        // New hook type - add it
-        merged.hooks[hookType] = hookConfig;
-      } else if (Array.isArray(hookConfig) && Array.isArray(merged.hooks[hookType])) {
-        // Merge hook arrays, deduplicating by command string
-        merged.hooks[hookType] = mergeHookArrays(merged.hooks[hookType], hookConfig);
-      }
-      // If hook type exists but isn't an array, keep user's customization
-    }
-  }
-
-  // Merge permissions: combine arrays with deduplication
-  if (newSettings.permissions) {
-    merged.permissions = merged.permissions || {};
-
-    // Merge allow list
-    if (newSettings.permissions.allow) {
-      const existingAllow = merged.permissions.allow || [];
-      const newAllow = newSettings.permissions.allow.filter(
-        p => !existingAllow.includes(p)
-      );
-      merged.permissions.allow = [...existingAllow, ...newAllow];
-    }
-
-    // Merge deny list
-    if (newSettings.permissions.deny) {
-      const existingDeny = merged.permissions.deny || [];
-      const newDeny = newSettings.permissions.deny.filter(
-        p => !existingDeny.includes(p)
-      );
-      merged.permissions.deny = [...existingDeny, ...newDeny];
-    }
-  }
-
-  return merged;
-}
-
-/**
- * Update project files
- * @param {object} options - Command options
- */
-async function updateProject(options) {
-  const paths = getProjectPaths();
-  const isDryRun = options.dryRun;
-
-  logger.title(isDryRun ? "Muad'Dib Project Update (Dry Run)" : "Muad'Dib Project Update");
 
   if (isDryRun) {
-    logger.info('Preview mode: no changes will be made');
-    console.log();
+    logger.info('Would update the following components:');
+    if (syncTemplates) logger.list(['  templates']);
+    if (syncScripts) logger.list(['  scripts']);
+    if (syncLib) logger.list(['  lib']);
+    if (syncSkills) logger.list(['  skills']);
+    return;
   }
 
-  if (!await exists(paths.claudeDir)) {
-    logger.error("No Muad'Dib project found in current directory.");
-    logger.info('Run: muaddib init');
-    process.exit(1);
-  }
+  // MED-11: Use shared syncPackageAssets function with force=true
+  logger.step(1, 1, 'Syncing package assets...');
 
-  // Confirm update (skip in dry-run mode)
-  if (!isDryRun) {
-    const proceed = await confirm(
-      'This will update project files. Continue?',
-      true
-    );
-
-    if (!proceed) {
-      logger.info('Update cancelled.');
-      return;
-    }
-  }
-
-  // Load existing project config
-  let projectConfig = {};
-  if (await exists(paths.projectConfig)) {
-    try {
-      projectConfig = await readJson(paths.projectConfig);
-    } catch {
-      logger.warn('Could not read project config, using defaults');
-    }
-  }
-
-  // Prepare template data
-  const templateData = {
-    ...getDefaultData(),
-    ...projectConfig,
-    updated: new Date().toISOString()
+  const paths = {
+    PACKAGE_TEMPLATES_DIR,
+    PACKAGE_SCRIPTS_DIR,
+    PACKAGE_LIB_CORE_DIR,
+    PACKAGE_SKILLS_DIR,
+    GLOBAL_TEMPLATES_DIR,
+    GLOBAL_SCRIPTS_DIR,
+    GLOBAL_LIB_DIR,
+    GLOBAL_SKILLS_DIR
   };
 
-  logger.info(isDryRun ? 'Would update project files:' : 'Updating project files...');
+  const result = await syncPackageAssets({
+    templates: syncTemplates,
+    scripts: syncScripts,
+    lib: syncLib,
+    skills: syncSkills,
+    force: true  // Update always uses force mode
+  }, paths);
 
-  // Update settings.json (preserving custom settings)
-  if (await exists(paths.settingsJson)) {
-    try {
-      const existingSettings = await readJson(paths.settingsJson);
-      const newSettings = await renderTemplate('settings.json', templateData);
-      const newSettingsObj = JSON.parse(newSettings);
+  // Report results
+  console.log();
+  console.log('-'.repeat(50));
+  console.log();
 
-      // Deep merge settings: new values fill gaps, existing customizations preserved
-      const mergedSettings = deepMergeSettings(newSettingsObj, existingSettings);
-
-      if (isDryRun) {
-        logger.info('  Would update: .claude/settings.json');
-        logger.dim('    - Hooks and permissions would be merged');
-      } else {
-        await writeFile(paths.settingsJson, JSON.stringify(mergedSettings, null, 2), { backup: options.backup !== false });
-        logger.success('Updated: .claude/settings.json');
-      }
-    } catch (error) {
-      logger.warn(`Could not update settings.json: ${error.message}`);
-    }
+  if (result.synced.length > 0) {
+    logger.success(`Updated ${result.synced.length} component(s):`);
+    result.synced.forEach(item => logger.list([`  ${item}`]));
   }
 
-  // Update context.md if empty or minimal
-  if (await exists(paths.contextMd)) {
-    // Don't overwrite user's context
-    logger.dim('Skipped: .claude/context.md (preserving user content)');
+  if (result.skipped.length > 0) {
+    console.log();
+    logger.dim(`Skipped ${result.skipped.length} component(s):`);
+    result.skipped.forEach(item => logger.list([`  ${item}`]));
   }
 
-  // Update project config version
-  if (await exists(paths.projectConfig)) {
-    try {
-      if (isDryRun) {
-        logger.info('  Would update: .muaddib/config.json');
-        logger.dim('    - Updated timestamp would be set');
-      } else {
-        projectConfig.updated = new Date().toISOString();
-        await writeFile(paths.projectConfig, JSON.stringify(projectConfig, null, 2), { backup: options.backup !== false });
-        logger.success('Updated: .muaddib/config.json');
-      }
-    } catch (error) {
-      logger.warn(`Could not update config: ${error.message}`);
-    }
+  if (result.errors.length > 0) {
+    console.log();
+    logger.warn(`Encountered ${result.errors.length} error(s):`);
+    result.errors.forEach(item => logger.list([`  ${item}`]));
   }
 
   console.log();
-  if (isDryRun) {
-    logger.info('Dry run complete. Run without --dry-run to apply changes.');
+  if (result.synced.length > 0) {
+    logger.success('Update complete!');
+  } else if (result.skipped.length > 0 && result.errors.length === 0) {
+    logger.info('Nothing to update (source files may be missing).');
   } else {
-    logger.success('Project update complete!');
-    console.log();
-    logger.info('Note: CLAUDE.md and context files were not modified to preserve your customizations.');
-    logger.info('To regenerate, run: muaddib init --force');
+    logger.warn('Update completed with issues.');
   }
 }
 
-// Export for testing
-export { deepMergeSettings };
+export default updateCommand;

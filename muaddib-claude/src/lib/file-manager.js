@@ -480,6 +480,139 @@ export async function cleanupBackups(backupDir, options = {}) {
   return { deleted, retained, errors };
 }
 
+/**
+ * MED-11: Synchronize package assets (templates, scripts, lib, skills) to global directory.
+ * This shared function is used by install.js and update.js to ensure consistent behavior.
+ *
+ * @param {Object} options - Sync options
+ * @param {boolean} [options.templates=true] - Sync templates directory
+ * @param {boolean} [options.scripts=true] - Sync scripts directory
+ * @param {boolean} [options.lib=true] - Sync lib/core directory
+ * @param {boolean} [options.skills=true] - Sync skills directory
+ * @param {boolean} [options.force=false] - Force overwrite even if destination exists
+ * @param {Object} paths - Path configuration (from paths.js)
+ * @param {string} paths.PACKAGE_TEMPLATES_DIR - Source templates directory
+ * @param {string} paths.PACKAGE_SCRIPTS_DIR - Source scripts directory
+ * @param {string} paths.PACKAGE_LIB_CORE_DIR - Source lib/core directory
+ * @param {string} paths.PACKAGE_SKILLS_DIR - Source skills directory
+ * @param {string} paths.GLOBAL_TEMPLATES_DIR - Destination templates directory
+ * @param {string} paths.GLOBAL_SCRIPTS_DIR - Destination scripts directory
+ * @param {string} paths.GLOBAL_LIB_DIR - Destination lib directory
+ * @param {string} paths.GLOBAL_SKILLS_DIR - Destination skills directory
+ * @returns {Promise<{synced: string[], skipped: string[], errors: string[]}>} Sync results
+ *
+ * @example
+ * import { syncPackageAssets } from '../lib/file-manager.js';
+ * import * as paths from '../utils/paths.js';
+ *
+ * const result = await syncPackageAssets({
+ *   templates: true,
+ *   scripts: true,
+ *   force: false
+ * }, paths);
+ * console.log(`Synced: ${result.synced.length} items`);
+ */
+export async function syncPackageAssets(options = {}, paths) {
+  const {
+    templates = true,
+    scripts = true,
+    lib = true,
+    skills = true,
+    force = false
+  } = options;
+
+  const synced = [];
+  const skipped = [];
+  const errors = [];
+
+  // Validate paths object
+  if (!paths) {
+    throw new Error('paths configuration is required for syncPackageAssets');
+  }
+
+  /**
+   * Sync a single directory from source to destination
+   * @param {string} srcDir - Source directory
+   * @param {string} destDir - Destination directory
+   * @param {string} name - Human-readable name for logging
+   * @param {boolean} [makeScriptsExecutable=false] - Whether to make .sh files executable
+   */
+  async function syncDirectory(srcDir, destDir, name, makeScriptsExecutable = false) {
+    // Check if source exists
+    const srcExists = await exists(srcDir);
+    if (!srcExists) {
+      skipped.push(`${name}: source not found (${srcDir})`);
+      return;
+    }
+
+    // Check if destination exists and force is false
+    const destExists = await exists(destDir);
+    if (destExists && !force) {
+      skipped.push(`${name}: already exists (use force to overwrite)`);
+      return;
+    }
+
+    try {
+      // Copy directory recursively
+      await fs.copy(srcDir, destDir, { overwrite: force });
+      synced.push(`${name}: ${srcDir} -> ${destDir}`);
+
+      // Make shell scripts executable if requested
+      if (makeScriptsExecutable) {
+        try {
+          const entries = await fs.readdir(destDir, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isFile() && entry.name.endsWith('.sh')) {
+              const scriptPath = path.join(destDir, entry.name);
+              await makeExecutable(scriptPath);
+            }
+          }
+        } catch (execErr) {
+          errors.push(`${name}: failed to make scripts executable: ${execErr.message}`);
+        }
+      }
+    } catch (copyErr) {
+      errors.push(`${name}: copy failed: ${copyErr.message}`);
+    }
+  }
+
+  // Sync each asset type if enabled
+  if (templates) {
+    await syncDirectory(
+      paths.PACKAGE_TEMPLATES_DIR,
+      paths.GLOBAL_TEMPLATES_DIR,
+      'templates'
+    );
+  }
+
+  if (scripts) {
+    await syncDirectory(
+      paths.PACKAGE_SCRIPTS_DIR,
+      paths.GLOBAL_SCRIPTS_DIR,
+      'scripts',
+      true // Make .sh files executable
+    );
+  }
+
+  if (lib) {
+    await syncDirectory(
+      paths.PACKAGE_LIB_CORE_DIR,
+      paths.GLOBAL_LIB_DIR,
+      'lib'
+    );
+  }
+
+  if (skills) {
+    await syncDirectory(
+      paths.PACKAGE_SKILLS_DIR,
+      paths.GLOBAL_SKILLS_DIR,
+      'skills'
+    );
+  }
+
+  return { synced, skipped, errors };
+}
+
 export default {
   exists,
   readJson,
@@ -491,5 +624,6 @@ export default {
   getDefaultMaxFiles,
   getDefaultMaxBackups,
   rotateBackups,
-  cleanupBackups
+  cleanupBackups,
+  syncPackageAssets
 };

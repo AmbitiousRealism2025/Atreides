@@ -1,33 +1,32 @@
 /**
  * Install Command
  *
- * Installs or repairs global Muad'Dib components to ~/.muaddib/
+ * Install global Muad'Dib components to ~/.muaddib directory.
+ * Uses the shared syncPackageAssets() function from file-manager.js (MED-11).
+ *
+ * Installs:
+ * - Templates (to ~/.muaddib/templates)
+ * - Scripts (to ~/.muaddib/scripts) - made executable
+ * - Lib/core files (to ~/.muaddib/lib)
+ * - Skills (to ~/.muaddib/skills)
  */
 
 import { Command } from 'commander';
+import fs from 'fs-extra';
 import logger from '../utils/logger.js';
 import {
   GLOBAL_MUADDIB_DIR,
-  GLOBAL_TEMPLATES_DIR,
-  GLOBAL_SCRIPTS_DIR,
-  GLOBAL_LIB_DIR,
-  GLOBAL_SKILLS_DIR,
-  CLAUDE_SKILLS_DIR,
+  PACKAGE_ROOT,
   PACKAGE_TEMPLATES_DIR,
   PACKAGE_SCRIPTS_DIR,
   PACKAGE_LIB_CORE_DIR,
-  PACKAGE_SKILLS_DIR
+  PACKAGE_SKILLS_DIR,
+  GLOBAL_TEMPLATES_DIR,
+  GLOBAL_SCRIPTS_DIR,
+  GLOBAL_LIB_DIR,
+  GLOBAL_SKILLS_DIR
 } from '../utils/paths.js';
-import {
-  ensureDir,
-  exists,
-  copyDir,
-  symlink,
-  listFiles,
-  makeExecutable,
-  remove
-} from '../lib/file-manager.js';
-import { join } from 'path';
+import { syncPackageAssets } from '../lib/file-manager.js';
 
 /**
  * Create the install command
@@ -37,10 +36,14 @@ export function installCommand() {
   const cmd = new Command('install');
 
   cmd
-    .description("Install or repair global Muad'Dib components")
-    .option('-f, --force', 'Force reinstall even if already installed')
-    .option('--no-skills', 'Skip skill symlink creation')
-    .option('-n, --dry-run', 'Preview what would be installed without making changes')
+    .description('Install global Muad\'Dib components')
+    .option('-f, --force', 'Force overwrite existing installation')
+    .option('--templates-only', 'Install only templates')
+    .option('--scripts-only', 'Install only scripts')
+    .option('--no-templates', 'Skip templates')
+    .option('--no-scripts', 'Skip scripts')
+    .option('--no-lib', 'Skip lib files')
+    .option('--no-skills', 'Skip skills')
     .action(async (options) => {
       try {
         await runInstall(options);
@@ -59,160 +62,88 @@ export function installCommand() {
  * @param {object} options - Command options
  */
 async function runInstall(options) {
-  const totalSteps = options.skills !== false ? 5 : 4;
-  let currentStep = 0;
-  const isDryRun = options.dryRun === true;
+  const isForce = options.force || false;
 
-  logger.title(isDryRun ? "Muad'Dib Installation (Dry Run)" : "Muad'Dib Installation");
+  logger.title("Muad'Dib Global Installation");
+  logger.info(`Installing to: ${GLOBAL_MUADDIB_DIR}`);
+  logger.info(`Package root: ${PACKAGE_ROOT}`);
+  console.log();
 
-  if (isDryRun) {
-    logger.info('Dry run mode - no changes will be made');
-    console.log();
+  // Determine what to install
+  let syncTemplates = options.templates !== false;
+  let syncScripts = options.scripts !== false;
+  let syncLib = options.lib !== false;
+  let syncSkills = options.skills !== false;
+
+  // Handle exclusive flags
+  if (options.templatesOnly) {
+    syncTemplates = true;
+    syncScripts = false;
+    syncLib = false;
+    syncSkills = false;
+  } else if (options.scriptsOnly) {
+    syncTemplates = false;
+    syncScripts = true;
+    syncLib = false;
+    syncSkills = false;
   }
 
-  // Step 1: Check existing installation
-  currentStep++;
-  logger.step(currentStep, totalSteps, 'Checking existing installation...');
+  // Ensure global directory exists
+  await fs.ensureDir(GLOBAL_MUADDIB_DIR);
 
-  const isInstalled = await exists(GLOBAL_MUADDIB_DIR);
+  // MED-11: Use shared syncPackageAssets function
+  logger.step(1, 1, 'Syncing package assets...');
 
-  if (isInstalled && !options.force) {
-    logger.warn("Muad'Dib is already installed.");
-    logger.info('Use --force to reinstall.');
-    logger.dim(`Location: ${GLOBAL_MUADDIB_DIR}`);
-    return;
-  }
-
-  if (isInstalled && options.force) {
-    if (isDryRun) {
-      logger.info('Would remove existing installation');
-    } else {
-      logger.info('Removing existing installation...');
-      await remove(GLOBAL_MUADDIB_DIR);
-    }
-  }
-
-  // Step 2: Create directory structure
-  currentStep++;
-  logger.step(currentStep, totalSteps, isDryRun ? 'Would create directory structure...' : 'Creating directory structure...');
-
-  const dirs = [
-    GLOBAL_MUADDIB_DIR,
+  const paths = {
+    PACKAGE_TEMPLATES_DIR,
+    PACKAGE_SCRIPTS_DIR,
+    PACKAGE_LIB_CORE_DIR,
+    PACKAGE_SKILLS_DIR,
     GLOBAL_TEMPLATES_DIR,
     GLOBAL_SCRIPTS_DIR,
     GLOBAL_LIB_DIR,
     GLOBAL_SKILLS_DIR
-  ];
+  };
 
-  for (const dir of dirs) {
-    if (isDryRun) {
-      logger.dim(`  Would create: ${dir}`);
-    } else {
-      await ensureDir(dir);
-      logger.debug(`Created: ${dir}`);
-    }
-  }
+  const result = await syncPackageAssets({
+    templates: syncTemplates,
+    scripts: syncScripts,
+    lib: syncLib,
+    skills: syncSkills,
+    force: isForce
+  }, paths);
 
-  // Step 3: Copy files from package
-  currentStep++;
-  logger.step(currentStep, totalSteps, isDryRun ? 'Would copy files...' : 'Copying files...');
-
-  // Copy templates
-  if (await exists(PACKAGE_TEMPLATES_DIR)) {
-    if (isDryRun) {
-      logger.dim(`  Would copy: templates → ${GLOBAL_TEMPLATES_DIR}`);
-    } else {
-      await copyDir(PACKAGE_TEMPLATES_DIR, GLOBAL_TEMPLATES_DIR);
-      logger.debug('Copied templates');
-    }
-  } else {
-    logger.warn('No templates directory found in package');
-  }
-
-  // Copy scripts
-  if (await exists(PACKAGE_SCRIPTS_DIR)) {
-    if (isDryRun) {
-      logger.dim(`  Would copy: scripts → ${GLOBAL_SCRIPTS_DIR}`);
-    } else {
-      await copyDir(PACKAGE_SCRIPTS_DIR, GLOBAL_SCRIPTS_DIR);
-      logger.debug('Copied scripts');
-    }
-  } else {
-    logger.warn('No scripts directory found in package');
-  }
-
-  // Copy lib/core
-  if (await exists(PACKAGE_LIB_CORE_DIR)) {
-    if (isDryRun) {
-      logger.dim(`  Would copy: lib/core → ${join(GLOBAL_LIB_DIR, 'core')}`);
-    } else {
-      await copyDir(PACKAGE_LIB_CORE_DIR, join(GLOBAL_LIB_DIR, 'core'));
-      logger.debug('Copied lib/core');
-    }
-  }
-
-  // Copy skills
-  if (await exists(PACKAGE_SKILLS_DIR)) {
-    if (isDryRun) {
-      logger.dim(`  Would copy: skills → ${GLOBAL_SKILLS_DIR}`);
-    } else {
-      await copyDir(PACKAGE_SKILLS_DIR, GLOBAL_SKILLS_DIR);
-      logger.debug('Copied skills');
-    }
-  }
-
-  // Step 4: Make scripts executable
-  currentStep++;
-  logger.step(currentStep, totalSteps, isDryRun ? 'Would set permissions...' : 'Setting permissions...');
-
-  if (isDryRun) {
-    const packageScriptFiles = await listFiles(PACKAGE_SCRIPTS_DIR, { extensions: ['.sh'] });
-    for (const scriptFile of packageScriptFiles) {
-      logger.dim(`  Would make executable: ${scriptFile}`);
-    }
-  } else {
-    const scriptFiles = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
-    for (const scriptFile of scriptFiles) {
-      await makeExecutable(scriptFile);
-      logger.debug(`Made executable: ${scriptFile}`);
-    }
-  }
-
-  // Step 5: Create skill symlink (optional)
-  if (options.skills !== false) {
-    currentStep++;
-    logger.step(currentStep, totalSteps, isDryRun ? 'Would create skill symlink...' : 'Creating skill symlink...');
-
-    const skillLink = join(CLAUDE_SKILLS_DIR, 'muaddib');
-    const skillTarget = join(GLOBAL_SKILLS_DIR, 'muaddib');
-
-    if (isDryRun) {
-      logger.dim(`  Would create symlink: ${skillLink} → ${skillTarget}`);
-    } else {
-      await ensureDir(CLAUDE_SKILLS_DIR);
-
-      if (await exists(skillTarget)) {
-        await symlink(skillTarget, skillLink, { force: true });
-        logger.debug(`Created symlink: ${skillLink} → ${skillTarget}`);
-      } else {
-        logger.warn('Skill source not found, skipping symlink');
-      }
-    }
-  }
-
-  // Success message
+  // Report results
   console.log();
-  if (isDryRun) {
-    logger.success('Dry run complete - no changes were made');
-    logger.info('Run without --dry-run to perform installation');
-  } else {
-    logger.success("Muad'Dib installed successfully!");
-    logger.dim(`Location: ${GLOBAL_MUADDIB_DIR}`);
+  console.log('-'.repeat(50));
+  console.log();
+
+  if (result.synced.length > 0) {
+    logger.success(`Installed ${result.synced.length} component(s):`);
+    result.synced.forEach(item => logger.list([`  ${item}`]));
+  }
+
+  if (result.skipped.length > 0) {
     console.log();
-    logger.info('Next steps:');
-    logger.list([
-      'cd into your project directory',
-      'Run: muaddib init'
-    ]);
+    logger.dim(`Skipped ${result.skipped.length} component(s):`);
+    result.skipped.forEach(item => logger.list([`  ${item}`]));
+  }
+
+  if (result.errors.length > 0) {
+    console.log();
+    logger.warn(`Encountered ${result.errors.length} error(s):`);
+    result.errors.forEach(item => logger.list([`  ${item}`]));
+  }
+
+  console.log();
+  if (result.synced.length > 0) {
+    logger.success('Installation complete!');
+    logger.info('Run "muaddib init" in a project to initialize it.');
+  } else if (result.skipped.length > 0 && result.errors.length === 0) {
+    logger.info('Nothing installed (use --force to overwrite existing components).');
+  } else {
+    logger.warn('Installation completed with issues.');
   }
 }
+
+export default installCommand;
