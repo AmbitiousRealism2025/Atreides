@@ -238,6 +238,177 @@ describe('deepMergeSettings', () => {
     });
   });
 
+  describe('prototype pollution protection', () => {
+    it('should not pollute Object.prototype via __proto__ in hooks', () => {
+      // Save original prototype state
+      const originalProtoKeys = Object.keys(Object.prototype);
+
+      const maliciousSettings = {
+        hooks: {
+          __proto__: { polluted: true },
+          PreToolUse: [{ type: 'command', command: 'safe.sh' }]
+        }
+      };
+      const existingSettings = {
+        hooks: {}
+      };
+
+      const result = deepMergeSettings(maliciousSettings, existingSettings);
+
+      // Object.prototype should NOT be polluted
+      expect(Object.prototype.polluted).toBeUndefined();
+      expect(Object.keys(Object.prototype)).toEqual(originalProtoKeys);
+
+      // Safe hook should still be merged
+      expect(result.hooks.PreToolUse).toEqual([{ type: 'command', command: 'safe.sh' }]);
+    });
+
+    it('should not pollute Object.prototype via __proto__ in permissions', () => {
+      const originalProtoKeys = Object.keys(Object.prototype);
+
+      const maliciousSettings = {
+        permissions: {
+          __proto__: { polluted: true },
+          allow: ['Bash(npm:*)']
+        }
+      };
+      const existingSettings = {
+        permissions: {}
+      };
+
+      const result = deepMergeSettings(maliciousSettings, existingSettings);
+
+      // Object.prototype should NOT be polluted
+      expect(Object.prototype.polluted).toBeUndefined();
+      expect(Object.keys(Object.prototype)).toEqual(originalProtoKeys);
+
+      // Safe permission should still be merged
+      expect(result.permissions.allow).toContain('Bash(npm:*)');
+    });
+
+    it('should not pollute via constructor key', () => {
+      const originalConstructor = Object.prototype.constructor;
+
+      const maliciousSettings = {
+        hooks: {
+          constructor: { polluted: true },
+          PreToolUse: [{ type: 'command', command: 'safe.sh' }]
+        }
+      };
+      const existingSettings = {};
+
+      const result = deepMergeSettings(maliciousSettings, existingSettings);
+
+      // constructor should not be overwritten on prototype
+      expect(Object.prototype.constructor).toBe(originalConstructor);
+
+      // Safe hook should still work
+      expect(result.hooks.PreToolUse).toEqual([{ type: 'command', command: 'safe.sh' }]);
+    });
+
+    it('should not pollute via prototype key', () => {
+      const originalProtoKeys = Object.keys(Object.prototype);
+
+      const maliciousSettings = {
+        hooks: {
+          prototype: { polluted: true },
+          PreToolUse: [{ type: 'command', command: 'safe.sh' }]
+        }
+      };
+      const existingSettings = {};
+
+      const result = deepMergeSettings(maliciousSettings, existingSettings);
+
+      // Object.prototype should be unchanged
+      expect(Object.keys(Object.prototype)).toEqual(originalProtoKeys);
+
+      // Safe hook should still work
+      expect(result.hooks.PreToolUse).toEqual([{ type: 'command', command: 'safe.sh' }]);
+    });
+
+    it('should handle nested __proto__ in hook configurations', () => {
+      const originalProtoKeys = Object.keys(Object.prototype);
+
+      const maliciousSettings = {
+        hooks: {
+          PreToolUse: [
+            {
+              __proto__: { polluted: true },
+              type: 'command',
+              command: 'malicious.sh'
+            }
+          ]
+        }
+      };
+      const existingSettings = {};
+
+      const result = deepMergeSettings(maliciousSettings, existingSettings);
+
+      // Object.prototype should NOT be polluted
+      expect(Object.prototype.polluted).toBeUndefined();
+      expect(Object.keys(Object.prototype)).toEqual(originalProtoKeys);
+    });
+
+    it('should not pollute when __proto__ is in top-level settings', () => {
+      const originalProtoKeys = Object.keys(Object.prototype);
+
+      const maliciousSettings = {
+        __proto__: { polluted: true },
+        hooks: {
+          PreToolUse: [{ type: 'command', command: 'safe.sh' }]
+        }
+      };
+      const existingSettings = {};
+
+      const result = deepMergeSettings(maliciousSettings, existingSettings);
+
+      // Object.prototype should NOT be polluted
+      expect(Object.prototype.polluted).toBeUndefined();
+      expect(Object.keys(Object.prototype)).toEqual(originalProtoKeys);
+    });
+
+    it('should safely merge when existing settings have dangerous keys', () => {
+      const originalProtoKeys = Object.keys(Object.prototype);
+
+      const newSettings = {
+        hooks: {
+          PreToolUse: [{ type: 'command', command: 'new.sh' }]
+        }
+      };
+      const maliciousExisting = {
+        __proto__: { polluted: true },
+        hooks: {
+          PreToolUse: [{ type: 'command', command: 'existing.sh' }]
+        }
+      };
+
+      const result = deepMergeSettings(newSettings, maliciousExisting);
+
+      // Object.prototype should NOT be polluted
+      expect(Object.prototype.polluted).toBeUndefined();
+      expect(Object.keys(Object.prototype)).toEqual(originalProtoKeys);
+
+      // Both hooks should be present
+      expect(result.hooks.PreToolUse).toHaveLength(2);
+    });
+
+    it('should not allow prototype pollution through JSON.parse attack vector', () => {
+      const originalProtoKeys = Object.keys(Object.prototype);
+
+      // Simulate a JSON.parse attack - this is how __proto__ typically gets introduced
+      const jsonPayload = '{"hooks":{"__proto__":{"polluted":"yes"},"PreToolUse":[{"type":"command","command":"safe.sh"}]}}';
+      const maliciousSettings = JSON.parse(jsonPayload);
+      const existingSettings = {};
+
+      const result = deepMergeSettings(maliciousSettings, existingSettings);
+
+      // Object.prototype should NOT be polluted
+      expect(Object.prototype.polluted).toBeUndefined();
+      expect(({}).polluted).toBeUndefined(); // Fresh object shouldn't have it
+      expect(Object.keys(Object.prototype)).toEqual(originalProtoKeys);
+    });
+  });
+
   describe('combined scenarios', () => {
     it('should handle real-world Phase 4 upgrade scenario', () => {
       // Existing settings from Phase 3
