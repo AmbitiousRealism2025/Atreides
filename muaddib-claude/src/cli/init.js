@@ -58,30 +58,6 @@ async function runInit(options) {
 
   logger.title("Muad'Dib Project Initialization");
 
-  // Validate environment and check for existing files
-  const shouldProceed = await validateEnvironment(paths, options);
-  if (!shouldProceed) {
-    return;
-  }
-
-  // Gather configuration from options or prompts
-  const config = await gatherConfiguration(options);
-
-  // Create all project files
-  await createProjectFiles(paths, config, options);
-
-  // Display success message
-  displaySuccessMessage(config);
-}
-
-/**
- * Validate the environment for initialization
- * Checks global installation and existing files
- * @param {object} paths - Project paths
- * @param {object} options - Command options
- * @returns {Promise<boolean>} Whether to proceed with initialization
- */
-async function validateEnvironment(paths, options) {
   // Check global installation
   if (!await exists(GLOBAL_MUADDIB_DIR)) {
     logger.error("Muad'Dib is not installed globally.");
@@ -103,19 +79,11 @@ async function validateEnvironment(paths, options) {
 
     if (!proceed) {
       logger.info('Initialization cancelled.');
-      return false;
+      return;
     }
   }
 
-  return true;
-}
-
-/**
- * Gather configuration from options or interactive prompts
- * @param {object} options - Command options
- * @returns {Promise<object>} Configuration object
- */
-async function gatherConfiguration(options) {
+  // Gather configuration
   let config;
 
   if (options.yes) {
@@ -136,16 +104,6 @@ async function gatherConfiguration(options) {
     if (options.full) config.orchestrationLevel = 'full';
   }
 
-  return config;
-}
-
-/**
- * Create all project files based on configuration
- * @param {object} paths - Project paths
- * @param {object} config - Project configuration
- * @param {object} options - Command options
- */
-async function createProjectFiles(paths, config, options) {
   // Add template defaults
   const templateData = {
     ...getDefaultData(),
@@ -243,16 +201,8 @@ async function createProjectFiles(paths, config, options) {
     await copyDir(GLOBAL_SKILLS_DIR, projectSkillsDir);
     logger.success('Copied: .claude/skills/');
   }
-}
 
-/**
- * Display success message with list of created files
- * @param {object} config - Project configuration
- */
-function displaySuccessMessage(config) {
-  const isMinimal = config.orchestrationLevel === 'minimal';
-  const isFull = config.orchestrationLevel === 'full';
-
+  // Success message
   console.log();
   logger.success("Muad'Dib initialized successfully!");
   console.log();
@@ -332,12 +282,7 @@ function createBasicSettings(_config) {
     hooks: {},
     permissions: {
       allow: [],
-      deny: [
-        "Bash(rm -rf *)",
-        "Bash(sudo *)",
-        "Bash(env *)",
-        "Bash(chmod 777 *)"
-      ]
+      deny: []
     }
   };
 }

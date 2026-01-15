@@ -10,6 +10,13 @@ import { join } from 'path';
 import { debug } from '../utils/logger.js';
 
 /**
+ * Keys that could be used for prototype pollution attacks
+ * These are filtered out during object merging to prevent security vulnerabilities
+ * @type {string[]}
+ */
+const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+/**
  * Deep merge two objects
  *
  * Rules:
@@ -25,6 +32,12 @@ export function deepMerge(target, source) {
   const result = { ...target };
 
   for (const key of Object.keys(source)) {
+    // Skip dangerous prototype-polluting keys
+    if (DANGEROUS_KEYS.includes(key)) {
+      debug(`Skipping dangerous key in deepMerge: ${key}`);
+      continue;
+    }
+
     const targetValue = target[key];
     const sourceValue = source[key];
 

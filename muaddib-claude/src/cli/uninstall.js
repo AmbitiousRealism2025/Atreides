@@ -30,7 +30,6 @@ export function uninstallCommand() {
     .option('-g, --global', 'Uninstall global components (default)')
     .option('-p, --project', 'Also remove project files (.claude/, .muaddib/)')
     .option('-f, --force', 'Skip confirmation prompts')
-    .option('-n, --dry-run', 'Preview changes without applying them')
     .action(async (options) => {
       try {
         await runUninstall(options);
@@ -49,14 +48,7 @@ export function uninstallCommand() {
  * @param {object} options - Command options
  */
 async function runUninstall(options) {
-  const isDryRun = options.dryRun;
-
-  logger.title(isDryRun ? "Muad'Dib Uninstall (Dry Run)" : "Muad'Dib Uninstall");
-
-  if (isDryRun) {
-    logger.info('Preview mode: no changes will be made');
-    console.log();
-  }
+  logger.title("Muad'Dib Uninstall");
 
   const hasGlobal = await exists(GLOBAL_MUADDIB_DIR);
   const skillLink = join(CLAUDE_SKILLS_DIR, 'muaddib');
@@ -71,7 +63,7 @@ async function runUninstall(options) {
 
   // Show what will be removed
   console.log();
-  logger.info(isDryRun ? 'The following would be removed:' : 'The following will be removed:');
+  logger.info('The following will be removed:');
   console.log();
 
   if (hasGlobal) {
@@ -91,8 +83,8 @@ async function runUninstall(options) {
 
   console.log();
 
-  // Confirm unless --force or --dry-run
-  if (!options.force && !isDryRun) {
+  // Confirm unless --force
+  if (!options.force) {
     const proceed = await confirm(
       'Are you sure you want to uninstall?',
       false
@@ -105,76 +97,56 @@ async function runUninstall(options) {
   }
 
   console.log();
-  logger.info(isDryRun ? 'Would uninstall:' : 'Uninstalling...');
+  logger.info('Uninstalling...');
 
   // Remove skill symlink first
   if (hasSkillLink) {
-    if (isDryRun) {
-      logger.info('  Would remove: skill symlink');
-    } else {
-      try {
-        await remove(skillLink);
-        logger.success('Removed: skill symlink');
-      } catch (error) {
-        logger.warn(`Could not remove skill symlink: ${error.message}`);
-      }
+    try {
+      await remove(skillLink);
+      logger.success('Removed: skill symlink');
+    } catch (error) {
+      logger.warn(`Could not remove skill symlink: ${error.message}`);
     }
   }
 
   // Remove global directory
   if (hasGlobal) {
-    if (isDryRun) {
-      logger.info('  Would remove: global components');
-    } else {
-      try {
-        await remove(GLOBAL_MUADDIB_DIR);
-        logger.success('Removed: global components');
-      } catch (error) {
-        logger.warn(`Could not remove global directory: ${error.message}`);
-      }
+    try {
+      await remove(GLOBAL_MUADDIB_DIR);
+      logger.success('Removed: global components');
+    } catch (error) {
+      logger.warn(`Could not remove global directory: ${error.message}`);
     }
   }
 
   // Remove project files if requested
   if (options.project && hasProject) {
     if (await exists(paths.claudeDir)) {
-      if (isDryRun) {
-        logger.info('  Would remove: .claude/');
-      } else {
-        try {
-          await remove(paths.claudeDir);
-          logger.success('Removed: .claude/');
-        } catch (error) {
-          logger.warn(`Could not remove .claude/: ${error.message}`);
-        }
+      try {
+        await remove(paths.claudeDir);
+        logger.success('Removed: .claude/');
+      } catch (error) {
+        logger.warn(`Could not remove .claude/: ${error.message}`);
       }
     }
 
     if (await exists(paths.muaddibDir)) {
-      if (isDryRun) {
-        logger.info('  Would remove: .muaddib/');
-      } else {
-        try {
-          await remove(paths.muaddibDir);
-          logger.success('Removed: .muaddib/');
-        } catch (error) {
-          logger.warn(`Could not remove .muaddib/: ${error.message}`);
-        }
+      try {
+        await remove(paths.muaddibDir);
+        logger.success('Removed: .muaddib/');
+      } catch (error) {
+        logger.warn(`Could not remove .muaddib/: ${error.message}`);
       }
     }
   }
 
   console.log();
-  if (isDryRun) {
-    logger.info('Dry run complete. Run without --dry-run to apply changes.');
-  } else {
-    logger.success('Uninstall complete!');
+  logger.success('Uninstall complete!');
 
-    if (!options.project && hasProject) {
-      console.log();
-      logger.info('Note: Project files were preserved.');
-      logger.info('To remove project files, run: muaddib uninstall --project');
-    }
+  if (!options.project && hasProject) {
+    console.log();
+    logger.info('Note: Project files were preserved.');
+    logger.info('To remove project files, run: muaddib uninstall --project');
   }
 }
 

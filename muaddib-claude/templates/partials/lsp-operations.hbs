@@ -39,24 +39,23 @@ If `mcp-language-server` is configured, semantic operations are automatic:
 
 When LSP MCP is not available, use CLI tools:
 
-{{#switch projectType}}
-{{#case "node"}}
+{{#if-eq projectType "node"}}
 ```bash
 # TypeScript/JavaScript
 npx tsc --noEmit                    # Diagnostics
 grep -rn "function NAME" src/        # Find definition
 grep -rn "symbolName" src/           # Find references
 ```
-{{/case}}
-{{#case "typescript"}}
+{{else}}
+{{#if-eq projectType "typescript"}}
 ```bash
 # TypeScript
 npx tsc --noEmit                    # Diagnostics
 grep -rn "function NAME" src/        # Find definition
 grep -rn "symbolName" src/           # Find references
 ```
-{{/case}}
-{{#case "python"}}
+{{else}}
+{{#if-eq projectType "python"}}
 ```bash
 # Python
 pyright . --outputjson              # Diagnostics
@@ -64,8 +63,8 @@ grep -rn "def NAME\|class NAME" .   # Find definition
 grep -rn "symbolName" .             # Find references
 python -m pydoc module.Symbol       # Documentation
 ```
-{{/case}}
-{{#case "go"}}
+{{else}}
+{{#if-eq projectType "go"}}
 ```bash
 # Go
 go vet ./...                        # Diagnostics
@@ -73,8 +72,8 @@ go doc package.Symbol               # Documentation
 grep -rn "func NAME" .              # Find definition
 grep -rn "symbolName" .             # Find references
 ```
-{{/case}}
-{{#case "rust"}}
+{{else}}
+{{#if-eq projectType "rust"}}
 ```bash
 # Rust
 cargo check                         # Diagnostics
@@ -82,15 +81,17 @@ cargo doc --open                    # Documentation
 grep -rn "fn NAME\|struct NAME" src/ # Find definition
 grep -rn "symbolName" src/          # Find references
 ```
-{{/case}}
-{{#default}}
+{{else}}
 ```bash
 # Generic fallback
 grep -rn "function\|def\|func NAME" . # Find definition
 grep -rn "symbolName" .               # Find references
 ```
-{{/default}}
-{{/switch}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
 
 ### Using the muaddib-lsp Skill
 

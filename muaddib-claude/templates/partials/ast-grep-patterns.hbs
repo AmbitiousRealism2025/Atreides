@@ -39,8 +39,7 @@ ast-grep --pattern 'PATTERN' --rewrite 'NEW' --interactive --lang LANG PATH
 
 ### Common Patterns
 
-{{#switch projectType}}
-{{#case "node"}}
+{{#if-eq projectType "node"}}
 #### JavaScript/TypeScript Patterns
 
 ```bash
@@ -64,8 +63,8 @@ ast-grep --pattern '$FN($$$ARGS).then($$$HANDLERS)' \
          --rewrite 'await $FN($$$ARGS)' \
          --lang javascript src/
 ```
-{{/case}}
-{{#case "typescript"}}
+{{else}}
+{{#if-eq projectType "typescript"}}
 #### TypeScript Patterns
 
 ```bash
@@ -84,8 +83,8 @@ ast-grep --pattern ': any' \
          --rewrite ': unknown' \
          --lang typescript src/
 ```
-{{/case}}
-{{#case "python"}}
+{{else}}
+{{#if-eq projectType "python"}}
 #### Python Patterns
 
 ```bash
@@ -104,8 +103,8 @@ ast-grep --pattern '"$STR".format($$$ARGS)' \
          --rewrite 'f"$STR"' \
          --lang python .
 ```
-{{/case}}
-{{#case "go"}}
+{{else}}
+{{#if-eq projectType "go"}}
 #### Go Patterns
 
 ```bash
@@ -119,8 +118,8 @@ ast-grep --pattern 'fmt.Println($$$ARGS)' \
          --rewrite 'log.Println($$$ARGS)' \
          --lang go .
 ```
-{{/case}}
-{{#case "rust"}}
+{{else}}
+{{#if-eq projectType "rust"}}
 #### Rust Patterns
 
 ```bash
@@ -134,8 +133,7 @@ ast-grep --pattern 'struct $NAME {' \
          --rewrite '#[derive(Debug, Clone)]\nstruct $NAME {' \
          --lang rust src/
 ```
-{{/case}}
-{{#default}}
+{{else}}
 #### Generic Patterns
 
 ```bash
@@ -145,8 +143,11 @@ ast-grep --pattern 'console.log($$$)' --rewrite '' --lang javascript src/
 # Python - Convert prints to logs
 ast-grep --pattern 'print($$$)' --rewrite 'logging.info($$$)' --lang python .
 ```
-{{/default}}
-{{/switch}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
+{{/if-eq}}
 
 ### Safety Protocol
 

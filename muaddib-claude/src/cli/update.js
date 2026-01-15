@@ -42,7 +42,6 @@ export function updateCommand() {
     .option('-g, --global', 'Update global components (default)')
     .option('-p, --project', 'Update current project files')
     .option('--no-backup', 'Skip backup creation')
-    .option('-n, --dry-run', 'Preview changes without applying them')
     .action(async (options) => {
       try {
         if (options.project) {
@@ -65,14 +64,7 @@ export function updateCommand() {
  * @param {object} options - Command options
  */
 async function updateGlobal(options) {
-  const isDryRun = options.dryRun;
-
-  logger.title(isDryRun ? "Muad'Dib Global Update (Dry Run)" : "Muad'Dib Global Update");
-
-  if (isDryRun) {
-    logger.info('Preview mode: no changes will be made');
-    console.log();
-  }
+  logger.title("Muad'Dib Global Update");
 
   if (!await exists(GLOBAL_MUADDIB_DIR)) {
     logger.error("Muad'Dib is not installed.");
@@ -83,73 +75,45 @@ async function updateGlobal(options) {
   // Create backup if requested
   if (options.backup !== false) {
     const backupDir = `${GLOBAL_MUADDIB_DIR}.backup.${Date.now()}`;
-    if (isDryRun) {
-      logger.info(`Would create backup: ${backupDir}`);
-    } else {
-      logger.info(`Creating backup: ${backupDir}`);
-      await copyDir(GLOBAL_MUADDIB_DIR, backupDir);
-      logger.success('Backup created');
-    }
+    logger.info(`Creating backup: ${backupDir}`);
+    await copyDir(GLOBAL_MUADDIB_DIR, backupDir);
+    logger.success('Backup created');
   }
 
-  logger.info(isDryRun ? 'Would update global components:' : 'Updating global components...');
+  logger.info('Updating global components...');
 
   // Update templates
   if (await exists(PACKAGE_TEMPLATES_DIR)) {
-    if (isDryRun) {
-      const templateFiles = await listFiles(PACKAGE_TEMPLATES_DIR);
-      logger.info(`  Templates: ${templateFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_TEMPLATES_DIR, GLOBAL_TEMPLATES_DIR, { overwrite: true });
-      logger.success('Updated templates');
-    }
+    await copyDir(PACKAGE_TEMPLATES_DIR, GLOBAL_TEMPLATES_DIR, { overwrite: true });
+    logger.success('Updated templates');
   }
 
   // Update scripts
   if (await exists(PACKAGE_SCRIPTS_DIR)) {
-    if (isDryRun) {
-      const scriptFiles = await listFiles(PACKAGE_SCRIPTS_DIR, { extensions: ['.sh'] });
-      logger.info(`  Scripts: ${scriptFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_SCRIPTS_DIR, GLOBAL_SCRIPTS_DIR, { overwrite: true });
+    await copyDir(PACKAGE_SCRIPTS_DIR, GLOBAL_SCRIPTS_DIR, { overwrite: true });
 
-      // Make scripts executable
-      const scriptFiles = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
-      for (const scriptFile of scriptFiles) {
-        await makeExecutable(scriptFile);
-      }
-      logger.success('Updated scripts');
+    // Make scripts executable
+    const scriptFiles = await listFiles(GLOBAL_SCRIPTS_DIR, { extensions: ['.sh'] });
+    for (const scriptFile of scriptFiles) {
+      await makeExecutable(scriptFile);
     }
+    logger.success('Updated scripts');
   }
 
   // Update lib/core
   if (await exists(PACKAGE_LIB_CORE_DIR)) {
-    if (isDryRun) {
-      const coreFiles = await listFiles(PACKAGE_LIB_CORE_DIR);
-      logger.info(`  Lib/core: ${coreFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_LIB_CORE_DIR, join(GLOBAL_LIB_DIR, 'core'), { overwrite: true });
-      logger.success('Updated lib/core');
-    }
+    await copyDir(PACKAGE_LIB_CORE_DIR, join(GLOBAL_LIB_DIR, 'core'), { overwrite: true });
+    logger.success('Updated lib/core');
   }
 
   // Update skills
   if (await exists(PACKAGE_SKILLS_DIR)) {
-    if (isDryRun) {
-      const skillFiles = await listFiles(PACKAGE_SKILLS_DIR);
-      logger.info(`  Skills: ${skillFiles.length} files would be updated`);
-    } else {
-      await copyDir(PACKAGE_SKILLS_DIR, GLOBAL_SKILLS_DIR, { overwrite: true });
-      logger.success('Updated skills');
-    }
+    await copyDir(PACKAGE_SKILLS_DIR, GLOBAL_SKILLS_DIR, { overwrite: true });
+    logger.success('Updated skills');
   }
 
   console.log();
-  if (isDryRun) {
-    logger.info('Dry run complete. Run without --dry-run to apply changes.');
-  } else {
-    logger.success('Global update complete!');
-  }
+  logger.success('Global update complete!');
 }
 
 /**
@@ -290,14 +254,8 @@ function deepMergeSettings(newSettings, existingSettings) {
  */
 async function updateProject(options) {
   const paths = getProjectPaths();
-  const isDryRun = options.dryRun;
 
-  logger.title(isDryRun ? "Muad'Dib Project Update (Dry Run)" : "Muad'Dib Project Update");
-
-  if (isDryRun) {
-    logger.info('Preview mode: no changes will be made');
-    console.log();
-  }
+  logger.title("Muad'Dib Project Update");
 
   if (!await exists(paths.claudeDir)) {
     logger.error("No Muad'Dib project found in current directory.");
@@ -305,17 +263,15 @@ async function updateProject(options) {
     process.exit(1);
   }
 
-  // Confirm update (skip in dry-run mode)
-  if (!isDryRun) {
-    const proceed = await confirm(
-      'This will update project files. Continue?',
-      true
-    );
+  // Confirm update
+  const proceed = await confirm(
+    'This will update project files. Continue?',
+    true
+  );
 
-    if (!proceed) {
-      logger.info('Update cancelled.');
-      return;
-    }
+  if (!proceed) {
+    logger.info('Update cancelled.');
+    return;
   }
 
   // Load existing project config
@@ -335,7 +291,7 @@ async function updateProject(options) {
     updated: new Date().toISOString()
   };
 
-  logger.info(isDryRun ? 'Would update project files:' : 'Updating project files...');
+  logger.info('Updating project files...');
 
   // Update settings.json (preserving custom settings)
   if (await exists(paths.settingsJson)) {
@@ -347,13 +303,8 @@ async function updateProject(options) {
       // Deep merge settings: new values fill gaps, existing customizations preserved
       const mergedSettings = deepMergeSettings(newSettingsObj, existingSettings);
 
-      if (isDryRun) {
-        logger.info('  Would update: .claude/settings.json');
-        logger.dim('    - Hooks and permissions would be merged');
-      } else {
-        await writeFile(paths.settingsJson, JSON.stringify(mergedSettings, null, 2), { backup: options.backup !== false });
-        logger.success('Updated: .claude/settings.json');
-      }
+      await writeFile(paths.settingsJson, JSON.stringify(mergedSettings, null, 2), { backup: options.backup !== false });
+      logger.success('Updated: .claude/settings.json');
     } catch (error) {
       logger.warn(`Could not update settings.json: ${error.message}`);
     }
@@ -368,28 +319,19 @@ async function updateProject(options) {
   // Update project config version
   if (await exists(paths.projectConfig)) {
     try {
-      if (isDryRun) {
-        logger.info('  Would update: .muaddib/config.json');
-        logger.dim('    - Updated timestamp would be set');
-      } else {
-        projectConfig.updated = new Date().toISOString();
-        await writeFile(paths.projectConfig, JSON.stringify(projectConfig, null, 2), { backup: options.backup !== false });
-        logger.success('Updated: .muaddib/config.json');
-      }
+      projectConfig.updated = new Date().toISOString();
+      await writeFile(paths.projectConfig, JSON.stringify(projectConfig, null, 2), { backup: options.backup !== false });
+      logger.success('Updated: .muaddib/config.json');
     } catch (error) {
       logger.warn(`Could not update config: ${error.message}`);
     }
   }
 
   console.log();
-  if (isDryRun) {
-    logger.info('Dry run complete. Run without --dry-run to apply changes.');
-  } else {
-    logger.success('Project update complete!');
-    console.log();
-    logger.info('Note: CLAUDE.md and context files were not modified to preserve your customizations.');
-    logger.info('To regenerate, run: muaddib init --force');
-  }
+  logger.success('Project update complete!');
+  console.log();
+  logger.info('Note: CLAUDE.md and context files were not modified to preserve your customizations.');
+  logger.info('To regenerate, run: muaddib init --force');
 }
 
 // Export for testing
