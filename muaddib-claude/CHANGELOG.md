@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-01-15
+
+### Added
+
+#### Project Documentation
+- **OVERVIEW.md** - Concise "what it is and what it does" document for GitHub visitors
+  - Problem/solution framing for AI-assisted development pain points
+  - Key capabilities summary with comparison tables
+  - Before/after example showing orchestration value
+- **CONTRIBUTING.md** - Comprehensive technical guide for contributors (~700 lines)
+  - Tech stack and architecture documentation
+  - Key API references (file-manager, template-engine, config-merger, validator)
+  - Template system and skills architecture guide
+  - Hook system documentation (5 types, script patterns)
+  - Testing guide and development workflow
+  - Code standards and security practices
+
+### Changed
+
+#### README Updates
+- **Updated test counts** - Fixed outdated numbers: 188 → 466 tests, 5 → 9 test files
+- **Complete test file listing** - All 9 test files now listed alphabetically
+
+---
+
 ## [1.0.3] - 2026-01-15
 
 ### Changed
@@ -48,7 +73,7 @@ atreides/
 ├── LICENSE
 ├── README.md
 └── muaddib-claude/    # All package code
-    ├── __tests__/     # 456 tests
+    ├── __tests__/     # 466 tests
     ├── bin/
     ├── docs/
     ├── lib/
@@ -194,6 +219,7 @@ atreides/
 
 ---
 
+[1.0.4]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.4
 [1.0.3]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.3
 [1.0.2]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.2
 [1.0.1]: https://github.com/AmbitiousRealism2025/Atreides/releases/tag/v1.0.1
