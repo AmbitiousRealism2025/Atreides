@@ -195,7 +195,8 @@ export async function isSymlink(path) {
   try {
     const stats = await fs.lstat(path);
     return stats.isSymbolicLink();
-  } catch {
+  } catch (error) {
+    debug(`Failed to check symlink status for ${path}: ${error.message}`);
     return false;
   }
 }
@@ -208,7 +209,8 @@ export async function isSymlink(path) {
 export async function readSymlink(linkPath) {
   try {
     return await fs.readlink(linkPath);
-  } catch {
+  } catch (error) {
+    debug(`Failed to read symlink target for ${linkPath}: ${error.message}`);
     return null;
   }
 }
@@ -255,7 +257,8 @@ export async function listFiles(dirPath, options = {}) {
 export async function getStats(filePath) {
   try {
     return await fs.stat(filePath);
-  } catch {
+  } catch (error) {
+    debug(`Failed to get stats for ${filePath}: ${error.message}`);
     return null;
   }
 }
