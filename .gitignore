@@ -1,0 +1,9 @@
+# Auto Claude data directory
+.auto-claude/
+
+# macOS
+.DS_Store
+
+# Local Claude settings
+.claude_settings.json
+.auto-claude-security.json
