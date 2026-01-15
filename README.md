@@ -427,12 +427,16 @@ npm run lint
 
 ### Test Suite
 
-The project includes a comprehensive test suite with 188 tests across 5 test files:
-- `template-engine.test.js` - Handlebars helpers and rendering
-- `settings-merge.test.js` - Deep merge logic for updates
-- `init.test.js` - Template generation, hooks, skills, permissions, Phase 5 features
+The project includes a comprehensive test suite with 466 tests across 9 test files:
 - `cli.test.js` - CLI command integration tests
+- `e2e.test.js` - End-to-end workflow tests
 - `file-manager.test.js` - File operations, backup, restore, symlinks
+- `hooks.test.js` - Hook system configuration and validation
+- `init.test.js` - Template generation, hooks, skills, permissions
+- `security-verification.test.js` - Security patterns and injection prevention
+- `settings-merge.test.js` - Deep merge logic for updates
+- `shell-scripts.test.js` - Shell script validation
+- `template-engine.test.js` - Handlebars helpers and rendering
 
 ## License
 
