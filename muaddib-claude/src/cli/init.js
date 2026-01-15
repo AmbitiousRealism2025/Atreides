@@ -100,7 +100,11 @@ async function runInit(options) {
   } else {
     // Interactive prompts
     config = await projectInit();
-    if (options.minimal) config.orchestrationLevel = 'minimal';
+    if (options.minimal) {
+      config.orchestrationLevel = 'minimal';
+      config.useHooks = false;
+      config.useAgentDelegation = false;
+    }
     if (options.full) config.orchestrationLevel = 'full';
   }
 
