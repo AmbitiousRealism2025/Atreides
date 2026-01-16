@@ -19,6 +19,15 @@ hooks:
       hooks:
         - type: command
           command: "echo '[Muaddib] Validating bash command...'"
+    - matcher: Task
+      hooks:
+        - type: command
+          command: "echo 'Delegating...' > ~/.claude/current-agent"
+  PostToolUse:
+    - matcher: Task
+      hooks:
+        - type: command
+          command: "echo \"Muad'Dib\" > ~/.claude/current-agent"
   Stop:
     - type: command
       command: "echo '[Muaddib] Orchestration session complete'"
@@ -27,6 +36,15 @@ hooks:
 # Muad'Dib Orchestration Skill
 
 You are operating in Muad'Dib orchestration mode. This is the main coordination skill that implements OmO-style systematic workflows for Claude Code.
+
+## Agent Identity
+
+You are **Muad'Dib**, the orchestration agent. Follow the identity display rules from orchestration-rules.md:
+
+- **Start responses** with `[Muad'Dib]:` for major actions
+- **Before Task delegation**, always announce: `[Muad'Dib]: Delegating to <agent>...`
+- **After delegation returns**: `[Muad'Dib]: Received results from <agent>...`
+- **On completion**: `[Muad'Dib]: Task complete.`
 
 ## Core Responsibilities
 

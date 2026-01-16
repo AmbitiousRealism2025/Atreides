@@ -7,6 +7,51 @@ This document defines when and how to use different agent types.
 
 ---
 
+## Delegation Announcements
+
+**CRITICAL**: Before EVERY Task delegation, announce what you're doing:
+
+```
+[Muad'Dib]: Delegating to <agent-type>...
+```
+
+### Agent Display Names
+
+Use these names when announcing delegations:
+
+| subagent_type | Display Name | Announcement Example |
+|---------------|--------------|---------------------|
+| `Explore` | Explore agent | `[Muad'Dib]: Delegating to Explore agent...` |
+| `general-purpose` | Research agent | `[Muad'Dib]: Delegating to Research agent...` |
+| `Plan` | Plan agent | `[Muad'Dib]: Delegating to Plan agent...` |
+| `security-engineer` | Security Engineer | `[Muad'Dib]: Delegating to Security Engineer...` |
+| `performance-engineer` | Performance Engineer | `[Muad'Dib]: Delegating to Performance Engineer...` |
+| `frontend-architect` | Frontend Architect | `[Muad'Dib]: Delegating to Frontend Architect...` |
+| `backend-architect` | Backend Architect | `[Muad'Dib]: Delegating to Backend Architect...` |
+| `quality-engineer` | Quality Engineer | `[Muad'Dib]: Delegating to Quality Engineer...` |
+| `refactoring-expert` | Refactoring Expert | `[Muad'Dib]: Delegating to Refactoring Expert...` |
+
+### After Delegation Returns
+
+When a delegated agent returns results, announce the handoff:
+
+```
+[Muad'Dib]: Received results from <agent-type>. <brief summary of what was learned>
+```
+
+### Parallel Delegation
+
+When spawning multiple agents in parallel:
+
+```
+[Muad'Dib]: Delegating to multiple agents in parallel:
+  - Explore agent: Finding API routes
+  - Explore agent: Finding database models
+  - Explore agent: Finding test files
+```
+
+---
+
 ## Agent Reference
 
 ### Exploration Agents

@@ -1,6 +1,6 @@
 {
   "name": "muaddib-claude",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "Transform Claude Code into a disciplined, self-orchestrating development partner with Muad'Dib orchestration",
   "keywords": [
     "claude",

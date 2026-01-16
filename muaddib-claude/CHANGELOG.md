@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-01-15
+
+### Added
+
+#### Agent Identity System
+- **Orchestrator identity display** - Muad'Dib now announces itself with `[Muad'Dib]:` prefix at session start
+- **Delegation announcements** - Clear visibility when delegating to subagents: `[Muad'Dib]: Delegating to Explore agent...`
+- **Subagent identity prefixes** - All 12 Muad'Dib skills now announce their identity:
+  - Main context skills: `[Muad'Dib/Validate]:`, `[Muad'Dib/Checkpoint]:`, `[Muad'Dib/QualityGate]:`, `[Muad'Dib/DocSync]:`
+  - Forked context agents: `[Explorer]:`, `[Refactor Specialist]:`, `[TDD Specialist]:`, `[LSP Analyst]:`, `[Parallel Explorer]:`, `[Incremental Refactor]:`
+- **Agent display names table** - Mapping of subagent_type to human-readable display names in agent-definitions.md
+
+#### Status Line Integration
+- **Dynamic agent display** - Status line shows current agent `[Muad'Dib]` in yellow
+- **Atreides-only activation** - Agent display only appears in Atreides sessions (checks `CLAUDE_AGENT_NAME` env var)
+- **State file mechanism** - `~/.claude/current-agent` tracks active agent for status line
+- **Helper script** - `~/.claude/scripts/set-agent.sh` for updating agent state
+
+#### Skill Hooks for Task Delegation
+- **PreToolUse hook** - Updates status to "Delegating..." when Task tool is called
+- **PostToolUse hook** - Reverts status to "Muad'Dib" after delegation completes
+
+### Changed
+
+#### Orchestration Rules
+- **Agent Identity section** - New mandatory section in orchestration-rules.md with identity display requirements
+- **Delegation Announcements section** - New section in agent-definitions.md with display name mappings
+
+#### Atreides Wrapper Scripts
+- **CLAUDE_AGENT_NAME export** - Both `atreides` and `atv` wrappers now set this environment variable
+
+---
+
 ## [1.0.4] - 2026-01-15
 
 ### Added
