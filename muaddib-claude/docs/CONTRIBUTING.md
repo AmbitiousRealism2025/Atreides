@@ -49,9 +49,9 @@ Technical documentation for developers who want to contribute to or customize th
 ### Directory Structure
 
 ```
-muaddib-claude/
+hawat/
 ├── bin/                        # CLI entry point
-│   └── muaddib.js             # Executable (#!/usr/bin/env node)
+│   └── hawat.js             # Executable (#!/usr/bin/env node)
 │
 ├── src/                        # Source code
 │   ├── cli/                   # CLI command implementations
@@ -77,7 +77,7 @@ muaddib-claude/
 ├── templates/                  # Handlebars templates
 │   ├── CLAUDE.md.hbs         # Main orchestration guide (~6700 lines)
 │   ├── settings.json.hbs     # Claude Code hooks/permissions (~6600 lines)
-│   ├── config.json.hbs       # Muaddib configuration
+│   ├── config.json.hbs       # Hawat configuration
 │   ├── context.md.hbs        # Session context
 │   ├── critical-context.md.hbs # Compaction-safe context
 │   ├── checkpoint.md.hbs     # Session checkpoints
@@ -110,7 +110,7 @@ muaddib-claude/
 │   │   ├── context-management.md
 │   │   └── exploration-patterns.md
 │   │
-│   └── skills/muaddib/        # Skill definitions (12 files)
+│   └── skills/hawat/        # Skill definitions (12 files)
 │       ├── SKILL.md          # Skill package manifest
 │       ├── orchestrate.md    # Main workflow coordination
 │       ├── explore.md        # Forked context exploration
@@ -159,7 +159,7 @@ muaddib-claude/
 |--------|----------------|
 | **src/cli/index.js** | Commander.js router, command registration |
 | **src/cli/init.js** | Interactive prompts, template rendering, file creation |
-| **src/cli/install.js** | Copy assets to ~/.muaddib, create symlinks |
+| **src/cli/install.js** | Copy assets to ~/.hawat, create symlinks |
 | **src/cli/update.js** | Smart merge updates, preserve customizations |
 | **src/cli/doctor.js** | Installation health checks, diagnostics |
 | **src/cli/uninstall.js** | Remove global/project components |
@@ -285,7 +285,7 @@ const { valid, errors } = validateHookDefinition({
 |----------|--------|-------------|
 | `CLAUDE.md.hbs` | `CLAUDE.md` | Orchestration rules (~2600 lines) |
 | `settings.json.hbs` | `.claude/settings.json` | Hooks and permissions |
-| `config.json.hbs` | `.muaddib/config.json` | Project configuration |
+| `config.json.hbs` | `.hawat/config.json` | Project configuration |
 | `context.md.hbs` | `.claude/context.md` | Session context |
 | `critical-context.md.hbs` | `.claude/critical-context.md` | Compaction-safe context |
 | `checkpoint.md.hbs` | `.claude/checkpoint.md` | Session checkpoints |
@@ -338,7 +338,7 @@ Skills use YAML frontmatter + Markdown body:
 
 ```markdown
 ---
-name: muaddib-explore
+name: hawat-explore
 description: Isolated codebase exploration
 context: fork           # fork (isolated) or main
 agent: Explore          # Agent type to use
@@ -374,9 +374,9 @@ Markdown content with instructions for the skill...
 
 ### Creating New Skills
 
-1. Create `skill-name.md` in `lib/skills/muaddib/`
+1. Create `skill-name.md` in `lib/skills/hawat/`
 2. Add frontmatter with required fields:
-   - `name`: Skill identifier (muaddib-*)
+   - `name`: Skill identifier (hawat-*)
    - `description`: Brief description
    - `context`: fork or main
 3. Write skill instructions in Markdown body
@@ -387,10 +387,10 @@ Markdown content with instructions for the skill...
 Users invoke skills with slash commands:
 
 ```
-/muaddib-orchestrate   # Main workflow coordination
-/muaddib-explore       # Forked context exploration
-/muaddib-lsp           # Semantic code operations
-/muaddib-refactor      # AST-grep transformations
+/hawat-orchestrate   # Main workflow coordination
+/hawat-explore       # Forked context exploration
+/hawat-lsp           # Semantic code operations
+/hawat-refactor      # AST-grep transformations
 ```
 
 ---
@@ -538,7 +538,7 @@ test('validatePath rejects traversal', () => {
 ```bash
 # Clone repository
 git clone https://github.com/AmbitiousRealism2025/Atreides.git
-cd Atreides/muaddib-claude
+cd Atreides/hawat
 
 # Install dependencies
 npm install

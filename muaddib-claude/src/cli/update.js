@@ -1,7 +1,7 @@
 /**
  * Update Command
  *
- * Update Muad'Dib global or project components.
+ * Update Hawat global or project components.
  */
 
 import { Command } from 'commander';
@@ -9,7 +9,7 @@ import { join, dirname } from 'path';
 import logger from '../utils/logger.js';
 import { confirm } from '../utils/prompts.js';
 import {
-  GLOBAL_MUADDIB_DIR,
+  GLOBAL_HAWAT_DIR,
   GLOBAL_TEMPLATES_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_LIB_DIR,
@@ -38,7 +38,7 @@ export function updateCommand() {
   const cmd = new Command('update');
 
   cmd
-    .description("Update Muad'Dib components")
+    .description("Update Hawat components")
     .option('-g, --global', 'Update global components (default)')
     .option('-p, --project', 'Update current project files')
     .option('--no-backup', 'Skip backup creation')
@@ -64,21 +64,21 @@ export function updateCommand() {
  * @param {object} options - Command options
  */
 async function updateGlobal(options) {
-  logger.title("Muad'Dib Global Update");
+  logger.title("Hawat Global Update");
 
-  if (!await exists(GLOBAL_MUADDIB_DIR)) {
-    logger.error("Muad'Dib is not installed.");
-    logger.info('Run: muaddib install');
+  if (!await exists(GLOBAL_HAWAT_DIR)) {
+    logger.error("Hawat is not installed.");
+    logger.info('Run: hawat install');
     process.exit(1);
   }
 
   // Create backup if requested
   if (options.backup !== false) {
-    const backupDir = `${GLOBAL_MUADDIB_DIR}.backup.${Date.now()}`;
+    const backupDir = `${GLOBAL_HAWAT_DIR}.backup.${Date.now()}`;
     logger.info(`Creating backup: ${backupDir}`);
-    await copyDir(GLOBAL_MUADDIB_DIR, backupDir, {
-      sourceBaseDir: GLOBAL_MUADDIB_DIR,
-      destBaseDir: dirname(GLOBAL_MUADDIB_DIR)
+    await copyDir(GLOBAL_HAWAT_DIR, backupDir, {
+      sourceBaseDir: GLOBAL_HAWAT_DIR,
+      destBaseDir: dirname(GLOBAL_HAWAT_DIR)
     });
     logger.success('Backup created');
   }
@@ -246,11 +246,11 @@ async function updateProject(options) {
   const paths = getProjectPaths();
   const baseDir = paths.root;
 
-  logger.title("Muad'Dib Project Update");
+  logger.title("Hawat Project Update");
 
   if (!await exists(paths.providerDir)) {
-    logger.error("No Muad'Dib project found in current directory.");
-    logger.info('Run: muaddib init');
+    logger.error("No Hawat project found in current directory.");
+    logger.info('Run: hawat init');
     process.exit(1);
   }
 
@@ -319,7 +319,7 @@ async function updateProject(options) {
         backup: options.backup !== false,
         baseDir
       });
-      logger.success('Updated: .muaddib/config.json');
+      logger.success('Updated: .hawat/config.json');
     } catch (error) {
       logger.warn(`Could not update config: ${error.message}`);
     }
@@ -329,7 +329,7 @@ async function updateProject(options) {
   logger.success('Project update complete!');
   console.log();
   logger.info('Note: CLAUDE.md and context files were not modified to preserve your customizations.');
-  logger.info('To regenerate, run: muaddib init --force');
+  logger.info('To regenerate, run: hawat init --force');
 }
 
 // Export for testing

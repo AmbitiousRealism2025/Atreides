@@ -1,5 +1,5 @@
 ---
-name: muaddib-reference
+name: hawat-reference
 description: On-demand orchestration reference (phases, agents, quality, maturity, sessions, skills, LSP, AST patterns)
 context: main
 model: sonnet
@@ -10,7 +10,7 @@ allowed-tools:
   - Grep
 ---
 
-# Muad'Dib Orchestration Reference
+# Hawat Orchestration Reference
 
 This skill provides detailed reference material moved out of CLAUDE.md to reduce
 context window consumption. Load when you need detailed phase criteria, delegation
@@ -1850,38 +1850,38 @@ For critical information that must survive:
 
 ## skills and hooks
 
-## Muad'Dib Skills (Claude Code 2.1+)
+## Hawat Skills (Claude Code 2.1+)
 
 ### Available Skills
 
-Muad'Dib provides 11 specialized skills that can be invoked with `/muaddib-<skill>`:
+Hawat provides 11 specialized skills that can be invoked with `/hawat-<skill>`:
 
 #### Core Skills (Phase 4)
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
-| `muaddib-orchestrate` | main | Main workflow coordination and task management |
-| `muaddib-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
-| `muaddib-validate` | main | Pre-completion quality gates and verification |
+| `hawat-orchestrate` | main | Main workflow coordination and task management |
+| `hawat-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
+| `hawat-validate` | main | Pre-completion quality gates and verification |
 
 #### Extended Skills (Phase 5)
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
-| `muaddib-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
-| `muaddib-refactor` | **forked** | AST-grep structural code transformations |
-| `muaddib-checkpoint` | main | Session state checkpointing and recovery |
-| `muaddib-tdd` | **forked** | Test-driven development workflow |
-| `muaddib-incremental-refactor` | **forked** | Per-file refactoring with verification |
-| `muaddib-doc-sync` | main | Documentation synchronization with code |
+| `hawat-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
+| `hawat-refactor` | **forked** | AST-grep structural code transformations |
+| `hawat-checkpoint` | main | Session state checkpointing and recovery |
+| `hawat-tdd` | **forked** | Test-driven development workflow |
+| `hawat-incremental-refactor` | **forked** | Per-file refactoring with verification |
+| `hawat-doc-sync` | main | Documentation synchronization with code |
 
 ### Forked Context (Key Feature)
 
-The `muaddib-explore` skill uses **forked context**, a Claude Code 2.1 feature:
+The `hawat-explore` skill uses **forked context**, a Claude Code 2.1 feature:
 
 ```yaml
 ---
-name: muaddib-explore
+name: hawat-explore
 context: fork                    # Isolated context
 ---
 ```
@@ -1896,7 +1896,7 @@ context: fork                    # Isolated context
 
 **Invoke a skill:**
 ```
-/muaddib-explore Find all API endpoints and their handlers
+/hawat-explore Find all API endpoints and their handlers
 ```
 
 **Skill-specific hooks fire automatically:**
@@ -2042,7 +2042,7 @@ Bash(make *)    - Makefile execution
 
 ## LSP Operations
 
-Muad'Dib supports semantic code operations through LSP (Language Server Protocol).
+Hawat supports semantic code operations through LSP (Language Server Protocol).
 These provide accurate, language-aware navigation and refactoring.
 
 ### Available Operations
@@ -2135,12 +2135,12 @@ grep -rn "symbolName" .               # Find references
 {{/if-eq}}
 {{/if-eq}}
 
-### Using the muaddib-lsp Skill
+### Using the hawat-lsp Skill
 
 For complex semantic operations, invoke the LSP skill:
 
 ```
-/muaddib-lsp
+/hawat-lsp
 
 Find all references to the UserService class
 ```
@@ -2377,7 +2377,7 @@ A checkpoint captures:
 
 To create a checkpoint:
 ```
-/muaddib-checkpoint
+/hawat-checkpoint
 ```
 
 To recover from a checkpoint:
@@ -2465,7 +2465,7 @@ Hooks can create automatic checkpoints:
 
 ## Skill Composition Patterns
 
-Muad'Dib skills can be composed (chained) to accomplish complex workflows.
+Hawat skills can be composed (chained) to accomplish complex workflows.
 Understanding when and how to chain skills is key to effective orchestration.
 
 ### Composition Strategies
@@ -2475,11 +2475,11 @@ Understanding when and how to chain skills is key to effective orchestration.
 Run skills one after another, passing context forward:
 
 ```
-muaddib-explore → gather context
+hawat-explore → gather context
        ↓
-muaddib-refactor → apply changes
+hawat-refactor → apply changes
        ↓
-muaddib-validate → verify results
+hawat-validate → verify results
 ```
 
 **When to use**: Multi-phase workflows where each phase depends on the previous.
@@ -2489,11 +2489,11 @@ muaddib-validate → verify results
 Run multiple forked skills simultaneously:
 
 ```
-┌─ muaddib-explore (parallel mode) (search 1)
+┌─ hawat-explore (parallel mode) (search 1)
 │
-├─ muaddib-explore (parallel mode) (search 2)
+├─ hawat-explore (parallel mode) (search 2)
 │
-└─ muaddib-explore (parallel mode) (search 3)
+└─ hawat-explore (parallel mode) (search 3)
          ↓
     Consolidate results in main context
 ```
@@ -2505,13 +2505,13 @@ Run multiple forked skills simultaneously:
 A skill invokes another skill for sub-tasks:
 
 ```
-muaddib-incremental-refactor
+hawat-incremental-refactor
     │
     ├─ (for each file)
     │     ├─ Apply change
-    │     └─ muaddib-tdd → verify with tests
+    │     └─ hawat-tdd → verify with tests
     │
-    └─ muaddib-validate → final verification
+    └─ hawat-validate → final verification
 ```
 
 **When to use**: Complex operations with embedded verification steps.
@@ -2521,7 +2521,7 @@ muaddib-incremental-refactor
 #### Pattern 1: Explore-Plan-Execute
 
 ```
-1. muaddib-explore (forked)
+1. hawat-explore (forked)
    → Understand codebase structure
    → Return summary to main
 
@@ -2529,7 +2529,7 @@ muaddib-incremental-refactor
    → Use exploration results
    → Define scope
 
-3. muaddib-incremental-refactor (forked)
+3. hawat-incremental-refactor (forked)
    → Apply planned changes
    → Verify each step
 ```
@@ -2537,16 +2537,16 @@ muaddib-incremental-refactor
 #### Pattern 2: TDD Feature Development
 
 ```
-1. muaddib-explore (forked)
+1. hawat-explore (forked)
    → Find existing patterns
    → Identify test locations
 
-2. muaddib-tdd (forked)
+2. hawat-tdd (forked)
    → Write failing test
    → Implement feature
    → Verify green
 
-3. muaddib-doc-sync (main)
+3. hawat-doc-sync (main)
    → Update documentation
    → Sync README
 ```
@@ -2554,15 +2554,15 @@ muaddib-incremental-refactor
 #### Pattern 3: Safe Refactoring
 
 ```
-1. muaddib-checkpoint (main)
+1. hawat-checkpoint (main)
    → Save current state
    → Create recovery point
 
-2. muaddib-refactor (forked)
+2. hawat-refactor (forked)
    → Apply ast-grep patterns
    → Structural changes
 
-3. muaddib-validate (main)
+3. hawat-validate (main)
    → Verify all checks pass
    → If fail, restore from checkpoint
 ```
@@ -2570,7 +2570,7 @@ muaddib-incremental-refactor
 #### Pattern 4: Multi-Angle Investigation
 
 ```
-1. muaddib-explore (parallel mode) (forked) × 3
+1. hawat-explore (parallel mode) (forked) × 3
    → Angle 1: Search for patterns
    → Angle 2: Check dependencies
    → Angle 3: Review tests
@@ -2579,7 +2579,7 @@ muaddib-incremental-refactor
    → Merge findings
    → Identify gaps
 
-3. muaddib-lsp (forked)
+3. hawat-lsp (forked)
    → Semantic analysis
    → Find references
 ```
@@ -2620,23 +2620,23 @@ Is this a simple, single-file change?
 └─ No ↓
 
 Do I need to understand the codebase first?
-├─ Yes → muaddib-explore or muaddib-explore (parallel mode)
+├─ Yes → hawat-explore or hawat-explore (parallel mode)
 └─ No ↓
 
 Am I making risky changes?
-├─ Yes → muaddib-checkpoint first
+├─ Yes → hawat-checkpoint first
 └─ No ↓
 
 Am I changing structure across files?
-├─ Yes → muaddib-refactor or muaddib-incremental-refactor
+├─ Yes → hawat-refactor or hawat-incremental-refactor
 └─ No ↓
 
 Am I adding new functionality?
-├─ Yes → muaddib-tdd
+├─ Yes → hawat-tdd
 └─ No ↓
 
 Am I done with changes?
-├─ Yes → muaddib-validate
+├─ Yes → hawat-validate
 └─ No → Continue working
 ```
 

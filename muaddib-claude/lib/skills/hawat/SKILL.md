@@ -1,20 +1,20 @@
-# Muad'Dib Skill
+# Hawat Skill
 
 ## Skill Identity
 
-**Name**: muaddib
+**Name**: hawat
 **Type**: Orchestration Framework
 **Version**: 1.0.0
 
 ## Purpose
 
-Muad'Dib is an orchestration skill that enables OmO-style systematic workflows,
+Hawat is an orchestration skill that enables OmO-style systematic workflows,
 intelligent agent delegation, and robust error recovery for Claude Code.
 
 ## Invocation
 
-This skill is automatically active when a project contains Muad'Dib configuration
-(CLAUDE.md with Muad'Dib markers).
+This skill is automatically active when a project contains Hawat configuration
+(CLAUDE.md with Hawat markers).
 
 ## Core Behaviors
 
@@ -81,18 +81,18 @@ Maintain context across sessions:
 
 ## Commands
 
-The Muad'Dib CLI provides project management:
+The Hawat CLI provides project management:
 
 ```bash
-muaddib install    # Install global components
-muaddib init       # Initialize in project
-muaddib update     # Update components
-muaddib doctor     # Health check
+hawat install    # Install global components
+hawat init       # Initialize in project
+hawat update     # Update components
+hawat doctor     # Health check
 ```
 
 ## Integration
 
-Muad'Dib integrates with Claude Code through:
+Hawat integrates with Claude Code through:
 
 1. **CLAUDE.md** - Project orchestration rules
 2. **settings.json** - Hooks and permissions
@@ -101,10 +101,10 @@ Muad'Dib integrates with Claude Code through:
 
 ## Philosophy
 
-Muad'Dib is inspired by the OmO (OpenCode Multi-agent Orchestration) framework,
+Hawat is inspired by the OmO (OpenCode Multi-agent Orchestration) framework,
 adapted specifically for Claude Code's capabilities. The goal is to provide
 systematic, reliable, and high-quality AI-assisted development.
 
 ---
 
-*"The spice must flow" - Muad'Dib orchestrates the flow of development*
+*"The spice must flow" - Hawat orchestrates the flow of development*

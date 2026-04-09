@@ -34,10 +34,10 @@ SAFE_FILE=$(sanitize_for_log "$FILE")
 printf 'EDIT: %s\n' "$SAFE_FILE" >&2
 
 # Session log support
-if [[ -n "${MUADDIB_SESSION_LOG:-}" ]]; then
-    log_dir=$(dirname "${MUADDIB_SESSION_LOG}")
+if [[ -n "${HAWAT_SESSION_LOG:-}" ]]; then
+    log_dir=$(dirname "${HAWAT_SESSION_LOG}")
     if [[ -d "$log_dir" ]] && [[ -w "$log_dir" ]]; then
-        printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SAFE_FILE" >> "$MUADDIB_SESSION_LOG"
+        printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SAFE_FILE" >> "$HAWAT_SESSION_LOG"
     fi
 fi
 
@@ -80,7 +80,7 @@ case "$EXTENSION" in
 esac
 
 # Log the edit to persistent log
-LOG_DIR="${HOME}/.muaddib/logs"
+LOG_DIR="${HOME}/.hawat/logs"
 mkdir -p "$LOG_DIR" 2>/dev/null || true
 
 LOG_FILE="${LOG_DIR}/edits.log"

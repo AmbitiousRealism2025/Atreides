@@ -1,4 +1,4 @@
-# Muad'Dib Project Reflection
+# Hawat Project Reflection
 
 **Date**: 2026-01-09
 **Phases Complete**: 0, 1, 2, 3
@@ -74,7 +74,7 @@ Current settings.json only has `PostToolUse` for formatters/linters. Missing:
 - `PreCompact` for critical context preservation
 
 ### 3. Repository URL Mismatch
-`package.json` points to `muaddib-claude/muaddib-claude.git` but actual repo is `AmbitiousRealism2025/muad-dib`.
+`package.json` points to `hawat/hawat.git` but actual repo is `AmbitiousRealism2025/hawat`.
 
 ### 4. Documentation Duplication
 Reference docs in `lib/core/*.md` duplicate template partial content. Consider if both are needed.

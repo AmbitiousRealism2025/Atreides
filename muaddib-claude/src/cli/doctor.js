@@ -1,14 +1,14 @@
 /**
  * Doctor Command
  *
- * Health check for Muad'Dib installation.
+ * Health check for Hawat installation.
  */
 
 import { Command } from 'commander';
 import { join } from 'path';
 import logger from '../utils/logger.js';
 import {
-  GLOBAL_MUADDIB_DIR,
+  GLOBAL_HAWAT_DIR,
   GLOBAL_TEMPLATES_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_LIB_DIR,
@@ -37,7 +37,7 @@ export function doctorCommand() {
   const cmd = new Command('doctor');
 
   cmd
-    .description("Check Muad'Dib installation health")
+    .description("Check Hawat installation health")
     .option('-v, --verbose', 'Show detailed check results')
     .option('--fix', 'Attempt to fix found issues')
     .option('--cleanup-backups', 'Clean up backup files')
@@ -60,11 +60,11 @@ export function doctorCommand() {
  * @param {object} options - Command options
  */
 async function runDoctor(options) {
-  logger.title("Muad'Dib Health Check");
+  logger.title("Hawat Health Check");
 
   // Handle --cleanup-backups option
   if (options.cleanupBackups) {
-    const backupDir = GLOBAL_MUADDIB_DIR;
+    const backupDir = GLOBAL_HAWAT_DIR;
     logger.info('Cleaning up Backup files...');
 
     const result = await cleanupBackups(backupDir, {
@@ -109,14 +109,14 @@ async function runDoctor(options) {
   logger.info('Global Installation:');
 
   // Check global directory
-  const globalExists = await exists(GLOBAL_MUADDIB_DIR);
+  const globalExists = await exists(GLOBAL_HAWAT_DIR);
   if (globalExists) {
-    logger.success(`  Global directory: ${GLOBAL_MUADDIB_DIR}`);
+    logger.success(`  Global directory: ${GLOBAL_HAWAT_DIR}`);
   } else {
     logger.error('  Global directory: Not found');
     issues.push({
       name: 'Global directory missing',
-      fix: 'Run: muaddib install'
+      fix: 'Run: hawat install'
     });
   }
 
@@ -133,7 +133,7 @@ async function runDoctor(options) {
       logger.error('  Templates: Not found');
       issues.push({
         name: 'Templates missing',
-        fix: 'Run: muaddib install --force'
+        fix: 'Run: hawat install --force'
       });
     }
 
@@ -166,7 +166,7 @@ async function runDoctor(options) {
       logger.warn('  Scripts: Not found (hooks will not work)');
       warnings.push({
         name: 'Scripts missing',
-        fix: 'Run: muaddib install --force'
+        fix: 'Run: hawat install --force'
       });
     }
 
@@ -178,7 +178,7 @@ async function runDoctor(options) {
       logger.warn('  Core library: Not found');
       warnings.push({
         name: 'Core library missing',
-        fix: 'Run: muaddib install --force'
+        fix: 'Run: hawat install --force'
       });
     }
 
@@ -191,7 +191,7 @@ async function runDoctor(options) {
     }
 
     // Check skill symlink
-    const skillLink = join(CLAUDE_SKILLS_DIR, 'muaddib');
+    const skillLink = join(CLAUDE_SKILLS_DIR, 'hawat');
     if (await exists(skillLink)) {
       if (await isSymlink(skillLink)) {
         const target = await readSymlink(skillLink);
@@ -200,7 +200,7 @@ async function runDoctor(options) {
         logger.warn('  Skill symlink: Exists but is not a symlink');
         warnings.push({
           name: 'Skill path is not a symlink',
-          fix: 'Remove and recreate with muaddib install --force'
+          fix: 'Remove and recreate with hawat install --force'
         });
       }
     } else {
@@ -226,7 +226,7 @@ async function runDoctor(options) {
       logger.warn('  CLAUDE.md: Not found');
       warnings.push({
         name: 'CLAUDE.md missing',
-        fix: 'Run: muaddib init'
+        fix: 'Run: hawat init'
       });
     }
 
@@ -237,7 +237,7 @@ async function runDoctor(options) {
       logger.error(`  ${PROVIDER_CONFIG.configDirName} directory: Not found`);
       issues.push({
         name: `${PROVIDER_CONFIG.configDirName} directory missing`,
-        fix: 'Run: muaddib init'
+        fix: 'Run: hawat init'
       });
     }
 
@@ -251,7 +251,7 @@ async function runDoctor(options) {
         logger.error('  settings.json: Invalid JSON');
         issues.push({
           name: 'settings.json is Invalid JSON',
-          fix: 'Fix JSON syntax or run: muaddib init --force'
+          fix: 'Fix JSON syntax or run: hawat init --force'
         });
       }
     } else {
@@ -265,11 +265,11 @@ async function runDoctor(options) {
       logger.dim('  context.md: Not found (optional)');
     }
 
-    // Check .muaddib directory
-    if (await exists(paths.muaddibDir)) {
-      logger.success('  .muaddib directory: OK');
+    // Check .hawat directory
+    if (await exists(paths.hawatDir)) {
+      logger.success('  .hawat directory: OK');
     } else {
-      logger.dim('  .muaddib directory: Not found (optional)');
+      logger.dim('  .hawat directory: Not found (optional)');
     }
 
     // Check project config
@@ -282,7 +282,7 @@ async function runDoctor(options) {
         logger.warn('  Project config: Invalid JSON');
         warnings.push({
           name: 'Project config is invalid JSON',
-          fix: 'Fix JSON syntax or run: muaddib init --force'
+          fix: 'Fix JSON syntax or run: hawat init --force'
         });
       }
     } else {
@@ -291,7 +291,7 @@ async function runDoctor(options) {
   } else {
     console.log();
     logger.dim('No project detected in current directory.');
-    logger.dim('Run "muaddib init" to initialize a project.');
+    logger.dim('Run "hawat init" to initialize a project.');
   }
 
   // ══════════════════════════════════════════════════════════════

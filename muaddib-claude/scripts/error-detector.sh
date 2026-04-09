@@ -18,7 +18,7 @@ EXIT_CODE="${TOOL_EXIT_CODE:-0}"
 OUTPUT="${TOOL_OUTPUT:-}"
 
 # Directory for error logs
-LOG_DIR="${HOME}/.muaddib/logs"
+LOG_DIR="${HOME}/.hawat/logs"
 mkdir -p "$LOG_DIR"
 
 ERROR_LOG="${LOG_DIR}/errors.log"

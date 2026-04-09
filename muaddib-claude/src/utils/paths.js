@@ -1,5 +1,5 @@
 /**
- * Path constants and utilities for Muad'Dib CLI
+ * Path constants and utilities for Hawat CLI
  *
  * Centralizes all path handling for consistent cross-platform behavior.
  * Provider-specific paths (Claude Code, Codex, etc.) are configurable
@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Root directory of the muaddib-claude package
+ * Root directory of the hawat package
  */
 export const PACKAGE_ROOT = resolve(__dirname, '..', '..');
 
@@ -44,39 +44,39 @@ export const PROVIDER_CONFIG = {
   checkpointFile: 'checkpoint.md',
   /** Skills subdirectory inside configDir */
   skillsDirName: 'skills',
-  /** State directory inside .muaddib */
+  /** State directory inside .hawat */
   stateDirName: 'state',
 };
 
 /**
- * Global muaddib installation directory
+ * Global hawat installation directory
  */
-export const GLOBAL_MUADDIB_DIR = join(HOME_DIR, '.muaddib');
+export const GLOBAL_HAWAT_DIR = join(HOME_DIR, '.hawat');
 
 /**
- * Global muaddib bin directory
+ * Global hawat bin directory
  */
-export const GLOBAL_BIN_DIR = join(GLOBAL_MUADDIB_DIR, 'bin');
+export const GLOBAL_BIN_DIR = join(GLOBAL_HAWAT_DIR, 'bin');
 
 /**
- * Global muaddib lib directory
+ * Global hawat lib directory
  */
-export const GLOBAL_LIB_DIR = join(GLOBAL_MUADDIB_DIR, 'lib');
+export const GLOBAL_LIB_DIR = join(GLOBAL_HAWAT_DIR, 'lib');
 
 /**
  * Global templates directory (copied from package)
  */
-export const GLOBAL_TEMPLATES_DIR = join(GLOBAL_MUADDIB_DIR, 'templates');
+export const GLOBAL_TEMPLATES_DIR = join(GLOBAL_HAWAT_DIR, 'templates');
 
 /**
  * Global scripts directory (copied from package)
  */
-export const GLOBAL_SCRIPTS_DIR = join(GLOBAL_MUADDIB_DIR, 'scripts');
+export const GLOBAL_SCRIPTS_DIR = join(GLOBAL_HAWAT_DIR, 'scripts');
 
 /**
  * Global skills directory
  */
-export const GLOBAL_SKILLS_DIR = join(GLOBAL_MUADDIB_DIR, 'skills');
+export const GLOBAL_SKILLS_DIR = join(GLOBAL_HAWAT_DIR, 'skills');
 
 /**
  * Provider config directory in user's home
@@ -125,28 +125,28 @@ export function getProjectPaths(projectDir = process.cwd()) {
   return {
     root: projectDir,
     providerDir: join(projectDir, cfg.configDirName),
-    muaddibDir: join(projectDir, '.muaddib'),
+    hawatDir: join(projectDir, '.hawat'),
     claudeMd: join(projectDir, cfg.instructionFile),
     settingsJson: join(projectDir, cfg.configDirName, cfg.settingsFile),
     contextMd: join(projectDir, cfg.configDirName, cfg.contextFile),
     criticalContextMd: join(projectDir, cfg.configDirName, cfg.criticalContextFile),
     checkpointMd: join(projectDir, cfg.configDirName, cfg.checkpointFile),
-    projectConfig: join(projectDir, '.muaddib', 'config.json'),
-    stateDir: join(projectDir, '.muaddib', cfg.stateDirName)
+    projectConfig: join(projectDir, '.hawat', 'config.json'),
+    stateDir: join(projectDir, '.hawat', cfg.stateDirName)
   };
 }
 
 /**
- * Check if a path is within the global muaddib directory
+ * Check if a path is within the global hawat directory
  * @param {string} path - Path to check
  * @returns {boolean}
  */
 export function isGlobalPath(path) {
-  return resolve(path).startsWith(GLOBAL_MUADDIB_DIR);
+  return resolve(path).startsWith(GLOBAL_HAWAT_DIR);
 }
 
 /**
- * Check if a path is within a project's .muaddib directory
+ * Check if a path is within a project's .hawat directory
  * @param {string} path - Path to check
  * @param {string} [projectDir=process.cwd()] - Project directory
  * @returns {boolean}
@@ -154,7 +154,7 @@ export function isGlobalPath(path) {
 export function isProjectPath(path, projectDir = process.cwd()) {
   const paths = getProjectPaths(projectDir);
   const resolved = resolve(path);
-  return resolved.startsWith(paths.muaddibDir) || resolved.startsWith(paths.providerDir);
+  return resolved.startsWith(paths.hawatDir) || resolved.startsWith(paths.providerDir);
 }
 
 /**
@@ -175,7 +175,7 @@ export function getRelativePath(fullPath, projectDir = process.cwd()) {
 export default {
   PACKAGE_ROOT,
   HOME_DIR,
-  GLOBAL_MUADDIB_DIR,
+  GLOBAL_HAWAT_DIR,
   GLOBAL_BIN_DIR,
   GLOBAL_LIB_DIR,
   GLOBAL_TEMPLATES_DIR,

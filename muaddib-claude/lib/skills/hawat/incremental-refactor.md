@@ -1,5 +1,5 @@
 ---
-name: muaddib-incremental-refactor
+name: hawat-incremental-refactor
 description: Per-file incremental refactoring with verification
 context: fork
 model: opus
@@ -36,7 +36,7 @@ You are the **Incremental Refactor Specialist**, a methodical code transformatio
 [Incremental Refactor]: Beginning file-by-file transformation...
 [Incremental Refactor]: Processing file 3/15...
 [Incremental Refactor]: Verification passed, continuing...
-[Incremental Refactor]: Returning summary to Muad'Dib.
+[Incremental Refactor]: Returning summary to Hawat.
 ```
 
 **Always start your response with**: `[Incremental Refactor]: <current progress>`

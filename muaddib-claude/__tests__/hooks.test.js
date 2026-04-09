@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const scriptsDir = join(__dirname, '..', 'scripts');
 
 // Test directory setup
-const TEST_BASE = join(tmpdir(), 'muaddib-hooks-test');
+const TEST_BASE = join(tmpdir(), 'hawat-hooks-test');
 let testDir;
 
 /**
@@ -347,13 +347,13 @@ describe('Hook Scripts', () => {
     });
 
     describe('session logging', () => {
-      it('should log to MUADDIB_SESSION_LOG when available', async () => {
+      it('should log to HAWAT_SESSION_LOG when available', async () => {
         const testFile = join(testDir, 'edited-file.js');
         const sessionLog = join(testDir, 'session.log');
         await fs.writeFile(testFile, 'content');
 
         const result = await runScript(scriptPath, [testFile], {
-          MUADDIB_SESSION_LOG: sessionLog
+          HAWAT_SESSION_LOG: sessionLog
         });
 
         expect(result.code).toBe(0);
@@ -366,11 +366,11 @@ describe('Hook Scripts', () => {
         expect(logContent).toContain(testFile);
       });
 
-      it('should work without MUADDIB_SESSION_LOG', async () => {
+      it('should work without HAWAT_SESSION_LOG', async () => {
         const testFile = join(testDir, 'edited-file.js');
         await fs.writeFile(testFile, 'content');
 
-        // Don't set MUADDIB_SESSION_LOG
+        // Don't set HAWAT_SESSION_LOG
         const result = await runScript(scriptPath, [testFile]);
 
         expect(result.code).toBe(0);

@@ -1,11 +1,11 @@
 /**
- * Config Merger for Muad'Dib CLI
+ * Config Merger for Hawat CLI
  *
  * Handles merging of global and project configurations with smart array handling.
  */
 
 import { readJson, exists } from './file-manager.js';
-import { GLOBAL_MUADDIB_DIR, getProjectPaths } from '../utils/paths.js';
+import { GLOBAL_HAWAT_DIR, getProjectPaths } from '../utils/paths.js';
 import { join } from 'path';
 import { debug } from '../utils/logger.js';
 
@@ -100,11 +100,11 @@ function mergeArrays(target, source) {
 }
 
 /**
- * Load global muaddib configuration
+ * Load global hawat configuration
  * @returns {Promise<object>}
  */
 export async function loadGlobalConfig() {
-  const configPath = join(GLOBAL_MUADDIB_DIR, 'config.json');
+  const configPath = join(GLOBAL_HAWAT_DIR, 'config.json');
 
   if (!await exists(configPath)) {
     debug('No global config found');
@@ -122,7 +122,7 @@ export async function loadGlobalConfig() {
 }
 
 /**
- * Load project muaddib configuration
+ * Load project hawat configuration
  * @param {string} [projectDir] - Project directory
  * @returns {Promise<object>}
  */
@@ -230,13 +230,13 @@ export async function loadClaudeSettings(projectDir) {
 }
 
 /**
- * Merge Claude Code settings with muaddib hooks
+ * Merge Claude Code settings with hawat hooks
  * @param {object} existingSettings - Existing settings.json content
- * @param {object} muaddibHooks - Muaddib hook configurations
+ * @param {object} hawatHooks - Hawat hook configurations
  * @returns {object} Merged settings
  */
-export function mergeClaudeSettings(existingSettings, muaddibHooks) {
-  return deepMerge(existingSettings, muaddibHooks);
+export function mergeClaudeSettings(existingSettings, hawatHooks) {
+  return deepMerge(existingSettings, hawatHooks);
 }
 
 /**

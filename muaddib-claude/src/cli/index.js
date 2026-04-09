@@ -1,7 +1,7 @@
 /**
  * CLI Router - Commander.js based command routing
  *
- * Main entry point for the Muad'Dib CLI.
+ * Main entry point for the Hawat CLI.
  */
 
 import { Command } from 'commander';
@@ -44,8 +44,8 @@ export async function run() {
 
   // Program metadata
   program
-    .name('muaddib')
-    .description(chalk.cyan("Muad'Dib - OmO-style orchestration for Claude Code"))
+    .name('hawat')
+    .description(chalk.cyan("Hawat - OmO-style orchestration for Claude Code"))
     .version(packageJson.version, '-v, --version', 'Output the current version')
     .helpOption('-h, --help', 'Display help for command');
 
@@ -67,25 +67,25 @@ export async function run() {
 
 ${chalk.bold('Examples:')}
   ${chalk.gray('# Install global components')}
-  $ muaddib install
+  $ hawat install
 
   ${chalk.gray('# Update to latest version')}
-  $ muaddib update
+  $ hawat update
 
   ${chalk.gray('# Initialize a project')}
-  $ muaddib init
+  $ hawat init
 
   ${chalk.gray('# Initialize with minimal setup (CLAUDE.md only)')}
-  $ muaddib init --minimal
+  $ hawat init --minimal
 
   ${chalk.gray('# Check installation health')}
-  $ muaddib doctor
+  $ hawat doctor
 
   ${chalk.gray('# Clean up old backup files')}
-  $ muaddib doctor --cleanup-backups
+  $ hawat doctor --cleanup-backups
 
 ${chalk.bold('Documentation:')}
-  ${chalk.blue('https://github.com/AmbitiousRealism2025/muad-dib')}
+  ${chalk.blue('https://github.com/AmbitiousRealism2025/hawat')}
 `);
 
   // Error handling

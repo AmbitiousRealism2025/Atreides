@@ -10,22 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Agent Identity System
-- **Orchestrator identity display** - Muad'Dib now announces itself with `[Muad'Dib]:` prefix at session start
-- **Delegation announcements** - Clear visibility when delegating to subagents: `[Muad'Dib]: Delegating to Explore agent...`
-- **Subagent identity prefixes** - All 12 Muad'Dib skills now announce their identity:
-  - Main context skills: `[Muad'Dib/Validate]:`, `[Muad'Dib/Checkpoint]:`, `[Muad'Dib/QualityGate]:`, `[Muad'Dib/DocSync]:`
+- **Orchestrator identity display** - Hawat now announces itself with `[Hawat]:` prefix at session start
+- **Delegation announcements** - Clear visibility when delegating to subagents: `[Hawat]: Delegating to Explore agent...`
+- **Subagent identity prefixes** - All 12 Hawat skills now announce their identity:
+  - Main context skills: `[Hawat/Validate]:`, `[Hawat/Checkpoint]:`, `[Hawat/QualityGate]:`, `[Hawat/DocSync]:`
   - Forked context agents: `[Explorer]:`, `[Refactor Specialist]:`, `[TDD Specialist]:`, `[LSP Analyst]:`, `[Parallel Explorer]:`, `[Incremental Refactor]:`
 - **Agent display names table** - Mapping of subagent_type to human-readable display names in agent-definitions.md
 
 #### Status Line Integration
-- **Dynamic agent display** - Status line shows current agent `[Muad'Dib]` in yellow
+- **Dynamic agent display** - Status line shows current agent `[Hawat]` in yellow
 - **Atreides-only activation** - Agent display only appears in Atreides sessions (checks `CLAUDE_AGENT_NAME` env var)
 - **State file mechanism** - `~/.claude/current-agent` tracks active agent for status line
 - **Helper script** - `~/.claude/scripts/set-agent.sh` for updating agent state
 
 #### Skill Hooks for Task Delegation
 - **PreToolUse hook** - Updates status to "Delegating..." when Task tool is called
-- **PostToolUse hook** - Reverts status to "Muad'Dib" after delegation completes
+- **PostToolUse hook** - Reverts status to "Hawat" after delegation completes
 
 ### Changed
 
@@ -68,8 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### Repository Structure Cleanup
-- **Consolidated package location** - All code now lives exclusively in `muaddib-claude/` directory
-- **Removed duplicate files** - Deleted 169 redundant files from root that were superseded by `muaddib-claude/` versions
+- **Consolidated package location** - All code now lives exclusively in `hawat/` directory
+- **Removed duplicate files** - Deleted 169 redundant files from root that were superseded by `hawat/` versions
 - **Cleaned development artifacts** - Removed planning, research, and review documents (archived in `MVP-Lock-Archive` branch)
 
 #### Branch Management
@@ -79,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-#### Root-Level Duplicates (moved to muaddib-claude/)
+#### Root-Level Duplicates (moved to hawat/)
 - `__tests__/`, `bin/`, `lib/`, `scripts/`, `src/`, `templates/`
 - `package.json`, `package-lock.json`, `.eslintrc.json`, `.npmignore`
 
@@ -105,7 +105,7 @@ atreides/
 ├── CLAUDE.md
 ├── LICENSE
 ├── README.md
-└── muaddib-claude/    # All package code
+└── hawat/    # All package code
     ├── __tests__/     # 466 tests
     ├── bin/
     ├── docs/
@@ -153,7 +153,7 @@ atreides/
 - **post-edit-log.sh** - Restored original API contract:
   - `$1` argument support (was removed, now restored)
   - stderr output for observability
-  - `MUADDIB_SESSION_LOG` environment variable support
+  - `HAWAT_SESSION_LOG` environment variable support
   - Kept security improvements (sanitization, length limits)
 - **pre-edit-check.sh** - Added missing blocked file patterns:
   - `secrets.json`, `secrets.yaml`, `credentials.yaml`
@@ -195,11 +195,11 @@ atreides/
 ### Added
 
 #### CLI Commands
-- `muaddib install` - Install global components for Claude Code orchestration
-- `muaddib init` - Initialize Muad'Dib orchestration in a project directory
-- `muaddib update` - Update to latest version of templates and configurations
-- `muaddib doctor` - Check installation health and diagnose issues
-- `muaddib uninstall` - Remove global components cleanly
+- `hawat install` - Install global components for Claude Code orchestration
+- `hawat init` - Initialize Hawat orchestration in a project directory
+- `hawat update` - Update to latest version of templates and configurations
+- `hawat doctor` - Check installation health and diagnose issues
+- `hawat uninstall` - Remove global components cleanly
 
 #### Orchestration Features
 - Intent classification system for automatic task categorization

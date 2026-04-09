@@ -88,7 +88,7 @@ The doctor command in `src/cli/doctor.js` is missing the `--cleanup-backups` and
 ### Current (lines 37-49)
 ```javascript
 cmd
-  .description("Check Muad'Dib installation health")
+  .description("Check Hawat installation health")
   .option('-v, --verbose', 'Show detailed check results')
   .option('--fix', 'Attempt to fix found issues')
 ```
@@ -96,7 +96,7 @@ cmd
 ### Required Addition
 ```javascript
 cmd
-  .description("Check Muad'Dib installation health")
+  .description("Check Hawat installation health")
   .option('-v, --verbose', 'Show detailed check results')
   .option('--fix', 'Attempt to fix found issues')
   .option('--cleanup-backups', 'Clean up backup files')
@@ -109,7 +109,7 @@ Add handler in `runDoctor()`:
 ```javascript
 if (options.cleanupBackups) {
   const { cleanupBackups } = await import('../lib/file-manager.js');
-  const result = await cleanupBackups(GLOBAL_MUADDIB_DIR, {
+  const result = await cleanupBackups(GLOBAL_HAWAT_DIR, {
     dryRun: options.dryRun,
     maxAgeDays: 30
   });
@@ -133,7 +133,7 @@ The script was rewritten and lost its original API:
 |---------|----------|---------|
 | Argument handling | `${1:-${TOOL_INPUT:-}}` | `${TOOL_INPUT:-}` only |
 | Stderr output | `printf 'EDIT: %s\n' "$FILE" >&2` | None |
-| Session logging | MUADDIB_SESSION_LOG support | Removed |
+| Session logging | HAWAT_SESSION_LOG support | Removed |
 
 ### Fix
 
@@ -163,15 +163,15 @@ SAFE_FILE=$(sanitize_for_log "$FILE")
 printf 'EDIT: %s\n' "$SAFE_FILE" >&2
 
 # RESTORE: Session log support
-if [[ -n "${MUADDIB_SESSION_LOG:-}" ]]; then
-  log_dir=$(dirname "${MUADDIB_SESSION_LOG}")
+if [[ -n "${HAWAT_SESSION_LOG:-}" ]]; then
+  log_dir=$(dirname "${HAWAT_SESSION_LOG}")
   if [[ -d "$log_dir" ]] && [[ -w "$log_dir" ]]; then
-    printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SAFE_FILE" >> "$MUADDIB_SESSION_LOG"
+    printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SAFE_FILE" >> "$HAWAT_SESSION_LOG"
   fi
 fi
 
 # Keep persistent logging (from new version)
-LOG_DIR="${HOME}/.muaddib/logs"
+LOG_DIR="${HOME}/.hawat/logs"
 mkdir -p "$LOG_DIR" 2>/dev/null || true
 # ... rest of logging logic ...
 
@@ -182,8 +182,8 @@ exit 0
 - "should accept $1 argument for file path"
 - "should fall back to TOOL_INPUT env var"
 - "should prefer $1 argument over TOOL_INPUT"
-- "should log to MUADDIB_SESSION_LOG"
-- "should work without MUADDIB_SESSION_LOG"
+- "should log to HAWAT_SESSION_LOG"
+- "should work without HAWAT_SESSION_LOG"
 
 ---
 
@@ -353,7 +353,7 @@ cmd=$(echo "$cmd" | sed 's/\\//g')
 
 ```bash
 # Run all tests
-cd /Users/ambrealismwork/Desktop/coding-projects/atreides/muaddib-claude
+cd /Users/ambrealismwork/Desktop/coding-projects/atreides/hawat
 npm test
 
 # Run specific suites

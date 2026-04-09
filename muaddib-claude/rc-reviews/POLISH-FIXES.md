@@ -1,4 +1,4 @@
-# Muad'Dib Polish Fixes - Consolidated Review Action Items
+# Hawat Polish Fixes - Consolidated Review Action Items
 
 **Date**: 2026-01-08
 **Sources**: Claude Review, Codex Review, Gemini Review
@@ -38,11 +38,11 @@
 **Location**: `src/cli/index.js:80`
 **Current**:
 ```javascript
-${chalk.blue('https://github.com/muaddib-claude/muaddib-claude')}
+${chalk.blue('https://github.com/hawat/hawat')}
 ```
 **Fix**:
 ```javascript
-${chalk.blue('https://github.com/AmbitiousRealism2025/muad-dib')}
+${chalk.blue('https://github.com/AmbitiousRealism2025/hawat')}
 ```
 **Effort**: 1 minute
 
@@ -92,7 +92,7 @@ B. Update documentation to clarify Claude Code 2.1 hook limitations
 
 ### 6. Fix Settings Update Within Hook Types
 **Source**: Codex Review
-**Problem**: `muaddib update --project` only adds new hook TYPES, not new entries within existing hook types
+**Problem**: `hawat update --project` only adds new hook TYPES, not new entries within existing hook types
 **Location**: `src/cli/update.js:120-166`
 **Current Behavior**: If we add a new PreToolUse entry, existing projects won't get it
 **Fix Options**:
@@ -120,12 +120,12 @@ if (typeof item === 'object') {
 
 ## MEDIUM PRIORITY - Nice Improvements
 
-### 8. Add `muaddib uninstall` Command
+### 8. Add `hawat uninstall` Command
 **Source**: Claude Review
 **Problem**: No clean uninstall path exists
 **Fix**: Add `src/cli/uninstall.js` that:
-- Removes ~/.muaddib/ directory
-- Removes ~/.claude/skills/muaddib symlink
+- Removes ~/.hawat/ directory
+- Removes ~/.claude/skills/hawat symlink
 - Optionally removes project .claude/ files with --project flag
 **Effort**: 1-2 hours
 
@@ -178,10 +178,10 @@ Handlebars.registerHelper('project-patterns', function(projectType) {
 
 ### 12. Add E2E Test
 **Source**: Gemini Review
-**Problem**: No test that actually runs `muaddib init` and verifies output
+**Problem**: No test that actually runs `hawat init` and verifies output
 **Fix**: Create `__tests__/e2e.test.js` that:
 1. Creates temp directory
-2. Runs `muaddib init` with mock answers
+2. Runs `hawat init` with mock answers
 3. Verifies CLAUDE.md contains expected strings
 4. Cleans up
 **Effort**: 2 hours

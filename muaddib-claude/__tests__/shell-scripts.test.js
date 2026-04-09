@@ -1,7 +1,7 @@
 /**
  * Shell Scripts Tests
  *
- * Tests for Muad'Dib shell scripts: pre-edit-check.sh, post-edit-log.sh,
+ * Tests for Hawat shell scripts: pre-edit-check.sh, post-edit-log.sh,
  * validate-bash-command.sh, error-detector.sh, notify-idle.sh
  *
  * These scripts handle security validation, logging, and session management.
@@ -21,7 +21,7 @@ const PACKAGE_ROOT = join(__dirname, '..');
 const SCRIPTS_DIR = join(PACKAGE_ROOT, 'scripts');
 
 // Test directory setup
-const TEST_BASE = join(tmpdir(), 'muaddib-shell-scripts-test');
+const TEST_BASE = join(tmpdir(), 'hawat-shell-scripts-test');
 let testDir;
 let originalHome;
 
@@ -69,9 +69,9 @@ beforeEach(async () => {
   await fs.ensureDir(testDir);
   // Set HOME to test directory to isolate log files
   process.env.HOME = testDir;
-  // Create .muaddib directories for scripts that need them
-  await fs.ensureDir(join(testDir, '.muaddib', 'state'));
-  await fs.ensureDir(join(testDir, '.muaddib', 'logs'));
+  // Create .hawat directories for scripts that need them
+  await fs.ensureDir(join(testDir, '.hawat', 'state'));
+  await fs.ensureDir(join(testDir, '.hawat', 'logs'));
 });
 
 afterEach(async () => {
@@ -389,7 +389,7 @@ describe('post-edit-log.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Check log file was created
-      const logPath = join(testDir, '.muaddib', 'logs', 'edits.log');
+      const logPath = join(testDir, '.hawat', 'logs', 'edits.log');
       expect(await fs.pathExists(logPath)).toBe(true);
 
       // Check log entry
@@ -424,7 +424,7 @@ describe('post-edit-log.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Check that log doesn't have injected lines
-      const logPath = join(testDir, '.muaddib', 'logs', 'edits.log');
+      const logPath = join(testDir, '.hawat', 'logs', 'edits.log');
       if (await fs.pathExists(logPath)) {
         const logContent = await fs.readFile(logPath, 'utf-8');
         // Should have sanitized the newlines
@@ -444,7 +444,7 @@ describe('post-edit-log.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Check that log entry is truncated
-      const logPath = join(testDir, '.muaddib', 'logs', 'edits.log');
+      const logPath = join(testDir, '.hawat', 'logs', 'edits.log');
       if (await fs.pathExists(logPath)) {
         const logContent = await fs.readFile(logPath, 'utf-8');
         const lines = logContent.split('\n').filter(l => l.length > 0);
@@ -498,7 +498,7 @@ describe('error-detector.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Check error log
-      const logPath = join(testDir, '.muaddib', 'logs', 'errors.log');
+      const logPath = join(testDir, '.hawat', 'logs', 'errors.log');
       expect(await fs.pathExists(logPath)).toBe(true);
 
       const logContent = await fs.readFile(logPath, 'utf-8');
@@ -515,7 +515,7 @@ describe('error-detector.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Error log should not contain EXIT_CODE entry
-      const logPath = join(testDir, '.muaddib', 'logs', 'errors.log');
+      const logPath = join(testDir, '.hawat', 'logs', 'errors.log');
       if (await fs.pathExists(logPath)) {
         const logContent = await fs.readFile(logPath, 'utf-8');
         expect(logContent).not.toContain('EXIT_CODE');
@@ -553,7 +553,7 @@ describe('error-detector.sh', () => {
         expect(result.exitCode).toBe(0);
 
         // Check error log
-        const logPath = join(testDir, '.muaddib', 'logs', 'errors.log');
+        const logPath = join(testDir, '.hawat', 'logs', 'errors.log');
         expect(await fs.pathExists(logPath)).toBe(true);
 
         const logContent = await fs.readFile(logPath, 'utf-8');
@@ -573,7 +573,7 @@ describe('error-detector.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Error log should be empty or not exist
-      const logPath = join(testDir, '.muaddib', 'logs', 'errors.log');
+      const logPath = join(testDir, '.hawat', 'logs', 'errors.log');
       if (await fs.pathExists(logPath)) {
         const logContent = await fs.readFile(logPath, 'utf-8');
         expect(logContent.trim()).toBe('');
@@ -595,7 +595,7 @@ describe('notify-idle.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Check session stops log
-      const logPath = join(testDir, '.muaddib', 'state', 'session-stops.log');
+      const logPath = join(testDir, '.hawat', 'state', 'session-stops.log');
       expect(await fs.pathExists(logPath)).toBe(true);
 
       const logContent = await fs.readFile(logPath, 'utf-8');
@@ -608,7 +608,7 @@ describe('notify-idle.sh', () => {
       expect(result.exitCode).toBe(0);
 
       // Check last activity file
-      const activityPath = join(testDir, '.muaddib', 'state', 'last-activity');
+      const activityPath = join(testDir, '.hawat', 'state', 'last-activity');
       expect(await fs.pathExists(activityPath)).toBe(true);
 
       const timestamp = await fs.readFile(activityPath, 'utf-8');
@@ -669,7 +669,7 @@ describe('notify-idle.sh', () => {
 
   describe('log maintenance', () => {
     it('should trim large stop log files', async () => {
-      const logPath = join(testDir, '.muaddib', 'state', 'session-stops.log');
+      const logPath = join(testDir, '.hawat', 'state', 'session-stops.log');
 
       // Create a log file with more than 100 entries
       const entries = [];
@@ -739,7 +739,7 @@ describe('Shell Scripts Integration', () => {
       expect(errorResult.exitCode).toBe(0);
 
       // Check error was logged
-      const errorLog = join(testDir, '.muaddib', 'logs', 'errors.log');
+      const errorLog = join(testDir, '.hawat', 'logs', 'errors.log');
       expect(await fs.pathExists(errorLog)).toBe(true);
     });
   });

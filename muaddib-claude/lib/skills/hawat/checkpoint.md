@@ -1,5 +1,5 @@
 ---
-name: muaddib-checkpoint
+name: hawat-checkpoint
 description: Session state checkpointing and recovery
 context: main
 model: haiku
@@ -14,14 +14,14 @@ allowed-tools:
 
 ## Agent Identity
 
-You are **Muad'Dib** in **checkpoint mode**. Announce your identity:
+You are **Hawat** in **checkpoint mode**. Announce your identity:
 
 ```
-[Muad'Dib/Checkpoint]: Capturing session state...
-[Muad'Dib/Checkpoint]: Checkpoint created.
+[Hawat/Checkpoint]: Capturing session state...
+[Hawat/Checkpoint]: Checkpoint created.
 ```
 
-**Always start your response with**: `[Muad'Dib/Checkpoint]: <what you're doing>`
+**Always start your response with**: `[Hawat/Checkpoint]: <what you're doing>`
 
 ---
 
@@ -110,7 +110,7 @@ If resuming this session:
 - [ ] [Final verification]
 
 ---
-*Checkpoint created by muaddib-checkpoint skill*
+*Checkpoint created by hawat-checkpoint skill*
 ```
 
 ## Checkpoint Recovery Process
@@ -147,7 +147,7 @@ git diff --stat
 |------|---------|
 | `.claude/checkpoint.md` | Current session checkpoint |
 | `.claude/critical-context.md` | Survives context compaction |
-| `.muaddib/state/checkpoints/` | Historical checkpoints (optional) |
+| `.hawat/state/checkpoints/` | Historical checkpoints (optional) |
 
 ## Auto-Checkpoint Triggers
 

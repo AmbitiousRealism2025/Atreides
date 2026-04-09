@@ -1,7 +1,7 @@
 /**
  * CLI Integration Tests
  *
- * Tests for the Muad'Dib CLI commands: install, init, update, doctor
+ * Tests for the Hawat CLI commands: install, init, update, doctor
  * Uses Jest mocking for filesystem operations to test command logic.
  */
 
@@ -199,7 +199,7 @@ describe('Path Configuration', () => {
   it('should export all required global path constants', async () => {
     const paths = await import('../src/utils/paths.js');
 
-    expect(paths.GLOBAL_MUADDIB_DIR).toBeDefined();
+    expect(paths.GLOBAL_HAWAT_DIR).toBeDefined();
     expect(paths.GLOBAL_TEMPLATES_DIR).toBeDefined();
     expect(paths.GLOBAL_SCRIPTS_DIR).toBeDefined();
     expect(paths.GLOBAL_LIB_DIR).toBeDefined();
@@ -230,14 +230,14 @@ describe('Path Configuration', () => {
 
     expect(paths.root).toBe(testDir);
     expect(paths.providerDir).toBe('/test/project/.claude');
-    expect(paths.muaddibDir).toBe('/test/project/.muaddib');
+    expect(paths.hawatDir).toBe('/test/project/.hawat');
     expect(paths.claudeMd).toBe('/test/project/CLAUDE.md');
     expect(paths.settingsJson).toBe('/test/project/.claude/settings.json');
     expect(paths.contextMd).toBe('/test/project/.claude/context.md');
     expect(paths.criticalContextMd).toBe('/test/project/.claude/critical-context.md');
     expect(paths.checkpointMd).toBe('/test/project/.claude/checkpoint.md');
-    expect(paths.projectConfig).toBe('/test/project/.muaddib/config.json');
-    expect(paths.stateDir).toBe('/test/project/.muaddib/state');
+    expect(paths.projectConfig).toBe('/test/project/.hawat/config.json');
+    expect(paths.stateDir).toBe('/test/project/.hawat/state');
   });
 
   it('should use current working directory as default', async () => {
@@ -515,35 +515,35 @@ describe('Install Command - Directory Structure', () => {
 
     // Verify the expected directories that install should create
     const expectedDirs = [
-      paths.GLOBAL_MUADDIB_DIR,
+      paths.GLOBAL_HAWAT_DIR,
       paths.GLOBAL_TEMPLATES_DIR,
       paths.GLOBAL_SCRIPTS_DIR,
       paths.GLOBAL_LIB_DIR,
       paths.GLOBAL_SKILLS_DIR
     ];
 
-    // All paths should be under ~/.muaddib/
+    // All paths should be under ~/.hawat/
     for (const dir of expectedDirs) {
-      expect(dir).toContain('.muaddib');
+      expect(dir).toContain('.hawat');
     }
   });
 
-  it('should have GLOBAL_MUADDIB_DIR in home directory', async () => {
-    const { GLOBAL_MUADDIB_DIR, HOME_DIR } = await import('../src/utils/paths.js');
+  it('should have GLOBAL_HAWAT_DIR in home directory', async () => {
+    const { GLOBAL_HAWAT_DIR, HOME_DIR } = await import('../src/utils/paths.js');
 
-    expect(GLOBAL_MUADDIB_DIR).toBe(`${HOME_DIR}/.muaddib`);
+    expect(GLOBAL_HAWAT_DIR).toBe(`${HOME_DIR}/.hawat`);
   });
 
-  it('should have GLOBAL_TEMPLATES_DIR under GLOBAL_MUADDIB_DIR', async () => {
-    const { GLOBAL_MUADDIB_DIR, GLOBAL_TEMPLATES_DIR } = await import('../src/utils/paths.js');
+  it('should have GLOBAL_TEMPLATES_DIR under GLOBAL_HAWAT_DIR', async () => {
+    const { GLOBAL_HAWAT_DIR, GLOBAL_TEMPLATES_DIR } = await import('../src/utils/paths.js');
 
-    expect(GLOBAL_TEMPLATES_DIR).toBe(`${GLOBAL_MUADDIB_DIR}/templates`);
+    expect(GLOBAL_TEMPLATES_DIR).toBe(`${GLOBAL_HAWAT_DIR}/templates`);
   });
 
-  it('should have GLOBAL_SCRIPTS_DIR under GLOBAL_MUADDIB_DIR', async () => {
-    const { GLOBAL_MUADDIB_DIR, GLOBAL_SCRIPTS_DIR } = await import('../src/utils/paths.js');
+  it('should have GLOBAL_SCRIPTS_DIR under GLOBAL_HAWAT_DIR', async () => {
+    const { GLOBAL_HAWAT_DIR, GLOBAL_SCRIPTS_DIR } = await import('../src/utils/paths.js');
 
-    expect(GLOBAL_SCRIPTS_DIR).toBe(`${GLOBAL_MUADDIB_DIR}/scripts`);
+    expect(GLOBAL_SCRIPTS_DIR).toBe(`${GLOBAL_HAWAT_DIR}/scripts`);
   });
 });
 
@@ -568,14 +568,14 @@ describe('Init Command - Expected Files', () => {
     expect(paths.settingsJson).toBe('/test/project/.claude/settings.json');
     expect(paths.contextMd).toBe('/test/project/.claude/context.md');
     expect(paths.criticalContextMd).toBe('/test/project/.claude/critical-context.md');
-    expect(paths.projectConfig).toBe('/test/project/.muaddib/config.json');
+    expect(paths.projectConfig).toBe('/test/project/.hawat/config.json');
   });
 
   it('should have stateDir for session state', async () => {
     const { getProjectPaths } = await import('../src/utils/paths.js');
     const paths = getProjectPaths('/test/project');
 
-    expect(paths.stateDir).toBe('/test/project/.muaddib/state');
+    expect(paths.stateDir).toBe('/test/project/.hawat/state');
   });
 });
 
@@ -585,12 +585,12 @@ describe('Init Command - Expected Files', () => {
 
 describe('Update Command - Configuration', () => {
   it('should require global installation for global update', async () => {
-    // The update command checks for GLOBAL_MUADDIB_DIR existence
-    const { GLOBAL_MUADDIB_DIR } = await import('../src/utils/paths.js');
+    // The update command checks for GLOBAL_HAWAT_DIR existence
+    const { GLOBAL_HAWAT_DIR } = await import('../src/utils/paths.js');
 
     // This path should be checked before proceeding
-    expect(GLOBAL_MUADDIB_DIR).toBeDefined();
-    expect(GLOBAL_MUADDIB_DIR).toContain('.muaddib');
+    expect(GLOBAL_HAWAT_DIR).toBeDefined();
+    expect(GLOBAL_HAWAT_DIR).toContain('.hawat');
   });
 
   it('should require project init for project update', async () => {
@@ -612,7 +612,7 @@ describe('Doctor Command - Health Check Categories', () => {
 
     // Doctor should check these global components
     const globalComponents = [
-      paths.GLOBAL_MUADDIB_DIR,
+      paths.GLOBAL_HAWAT_DIR,
       paths.GLOBAL_TEMPLATES_DIR,
       paths.GLOBAL_SCRIPTS_DIR,
       paths.GLOBAL_LIB_DIR,
@@ -633,7 +633,7 @@ describe('Doctor Command - Health Check Categories', () => {
     expect(paths.providerDir).toBeDefined();
     expect(paths.settingsJson).toBeDefined();
     expect(paths.contextMd).toBeDefined();
-    expect(paths.muaddibDir).toBeDefined();
+    expect(paths.hawatDir).toBeDefined();
     expect(paths.projectConfig).toBeDefined();
   });
 
@@ -757,9 +757,9 @@ describe('Prompts Integration', () => {
 describe('Edge Cases', () => {
   describe('Path utilities', () => {
     it('should handle isGlobalPath correctly', async () => {
-      const { isGlobalPath, GLOBAL_MUADDIB_DIR } = await import('../src/utils/paths.js');
+      const { isGlobalPath, GLOBAL_HAWAT_DIR } = await import('../src/utils/paths.js');
 
-      expect(isGlobalPath(`${GLOBAL_MUADDIB_DIR}/templates`)).toBe(true);
+      expect(isGlobalPath(`${GLOBAL_HAWAT_DIR}/templates`)).toBe(true);
       expect(isGlobalPath('/some/other/path')).toBe(false);
     });
 
@@ -767,7 +767,7 @@ describe('Edge Cases', () => {
       const { isProjectPath } = await import('../src/utils/paths.js');
 
       expect(isProjectPath('/project/.claude/settings.json', '/project')).toBe(true);
-      expect(isProjectPath('/project/.muaddib/config.json', '/project')).toBe(true);
+      expect(isProjectPath('/project/.hawat/config.json', '/project')).toBe(true);
       expect(isProjectPath('/other/path/file.txt', '/project')).toBe(false);
     });
 
@@ -844,11 +844,11 @@ describe('Edge Cases', () => {
 
 describe('Cross-Command Integration', () => {
   it('install and init should use same global path constants', async () => {
-    const { GLOBAL_MUADDIB_DIR, GLOBAL_SCRIPTS_DIR, GLOBAL_SKILLS_DIR } =
+    const { GLOBAL_HAWAT_DIR, GLOBAL_SCRIPTS_DIR, GLOBAL_SKILLS_DIR } =
       await import('../src/utils/paths.js');
 
     // Both commands reference these paths
-    expect(GLOBAL_MUADDIB_DIR).toBeDefined();
+    expect(GLOBAL_HAWAT_DIR).toBeDefined();
     expect(GLOBAL_SCRIPTS_DIR).toBeDefined();
     expect(GLOBAL_SKILLS_DIR).toBeDefined();
   });

@@ -1,5 +1,5 @@
 ---
-name: muaddib-lsp
+name: hawat-lsp
 description: Semantic code operations using LSP MCP or CLI fallbacks
 context: fork
 model: sonnet
@@ -13,10 +13,10 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: echo "[Muaddib LSP] Operation completed"
+          command: echo "[Hawat LSP] Operation completed"
   Stop:
     - type: command
-      command: echo "[Muaddib LSP] Returning semantic analysis to main context"
+      command: echo "[Hawat LSP] Returning semantic analysis to main context"
 ---
 
 # LSP Operations Skill (Forked Context)
@@ -28,7 +28,7 @@ You are the **LSP Analyst**, a semantic code analysis specialist. Announce your 
 ```
 [LSP Analyst]: Performing semantic analysis...
 [LSP Analyst]: Finding references to symbol...
-[LSP Analyst]: Returning results to Muad'Dib.
+[LSP Analyst]: Returning results to Hawat.
 ```
 
 **Always start your response with**: `[LSP Analyst]: <what you're analyzing>`

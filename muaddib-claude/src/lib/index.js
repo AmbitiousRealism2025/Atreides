@@ -1,5 +1,5 @@
 /**
- * Muad'Dib Library Exports
+ * Hawat Library Exports
  *
  * Central export point for all library modules.
  */

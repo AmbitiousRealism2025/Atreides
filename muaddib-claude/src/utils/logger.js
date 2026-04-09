@@ -1,5 +1,5 @@
 /**
- * Logger utility for Muad'Dib CLI
+ * Logger utility for Hawat CLI
  *
  * Provides chalk-based colored console output for consistent messaging.
  */
@@ -139,7 +139,7 @@ export function title(title) {
  * @param {...any} args - Additional arguments
  */
 export function debug(message, ...args) {
-  if (process.env.DEBUG || process.env.MUADDIB_DEBUG) {
+  if (process.env.DEBUG || process.env.HAWAT_DEBUG) {
     const safeMessage = redactValue(message);
     const safeArgs = args.map(arg => redactValue(arg));
     console.log(chalk.gray('[debug]'), safeMessage, ...safeArgs);

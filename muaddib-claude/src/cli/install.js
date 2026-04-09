@@ -1,13 +1,13 @@
 /**
  * Install Command
  *
- * Installs or repairs global Muad'Dib components to ~/.muaddib/
+ * Installs or repairs global Hawat components to ~/.hawat/
  */
 
 import { Command } from 'commander';
 import logger from '../utils/logger.js';
 import {
-  GLOBAL_MUADDIB_DIR,
+  GLOBAL_HAWAT_DIR,
   GLOBAL_TEMPLATES_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_LIB_DIR,
@@ -35,7 +35,7 @@ export function installCommand() {
   const cmd = new Command('install');
 
   cmd
-    .description("Install or repair global Muad'Dib components")
+    .description("Install or repair global Hawat components")
     .option('-f, --force', 'Force reinstall even if already installed')
     .option('--no-skills', 'Skip skill symlink creation')
     .action(async (options) => {
@@ -59,24 +59,24 @@ async function runInstall(options) {
   const totalSteps = options.skills !== false ? 4 : 3;
   let currentStep = 0;
 
-  logger.title("Muad'Dib Installation");
+  logger.title("Hawat Installation");
 
   // Step 1: Check existing installation
   currentStep++;
   logger.step(currentStep, totalSteps, 'Checking existing installation...');
 
-  const isInstalled = await exists(GLOBAL_MUADDIB_DIR);
+  const isInstalled = await exists(GLOBAL_HAWAT_DIR);
 
   if (isInstalled && !options.force) {
-    logger.warn("Muad'Dib is already installed.");
+    logger.warn("Hawat is already installed.");
     logger.info('Use --force to reinstall.');
-    logger.dim(`Location: ${GLOBAL_MUADDIB_DIR}`);
+    logger.dim(`Location: ${GLOBAL_HAWAT_DIR}`);
     return;
   }
 
   if (isInstalled && options.force) {
     logger.info('Removing existing installation...');
-    await remove(GLOBAL_MUADDIB_DIR);
+    await remove(GLOBAL_HAWAT_DIR);
   }
 
   // Step 2: Create directory structure
@@ -84,7 +84,7 @@ async function runInstall(options) {
   logger.step(currentStep, totalSteps, 'Creating directory structure...');
 
   const dirs = [
-    GLOBAL_MUADDIB_DIR,
+    GLOBAL_HAWAT_DIR,
     GLOBAL_TEMPLATES_DIR,
     GLOBAL_SCRIPTS_DIR,
     GLOBAL_LIB_DIR,
@@ -125,8 +125,8 @@ async function runInstall(options) {
 
     await ensureDir(CLAUDE_SKILLS_DIR);
 
-    const skillLink = join(CLAUDE_SKILLS_DIR, 'muaddib');
-    const skillTarget = join(GLOBAL_SKILLS_DIR, 'muaddib');
+    const skillLink = join(CLAUDE_SKILLS_DIR, 'hawat');
+    const skillTarget = join(GLOBAL_SKILLS_DIR, 'hawat');
 
     if (await exists(skillTarget)) {
       await symlink(skillTarget, skillLink, { force: true });
@@ -138,13 +138,13 @@ async function runInstall(options) {
 
   // Success message
   console.log();
-  logger.success("Muad'Dib installed successfully!");
+  logger.success("Hawat installed successfully!");
   logger.info('Installation complete');
-  logger.dim(`Location: ${GLOBAL_MUADDIB_DIR}`);
+  logger.dim(`Location: ${GLOBAL_HAWAT_DIR}`);
   console.log();
   logger.info('Next steps:');
   logger.list([
     'cd into your project directory',
-    'Run: muaddib init'
+    'Run: hawat init'
   ]);
 }

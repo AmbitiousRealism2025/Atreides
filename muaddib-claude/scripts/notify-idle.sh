@@ -14,7 +14,7 @@ set -euo pipefail
 STOP_REASON="${STOP_REASON:-unknown}"
 
 # Directory for state
-STATE_DIR="${HOME}/.muaddib/state"
+STATE_DIR="${HOME}/.hawat/state"
 mkdir -p "$STATE_DIR"
 
 # Timestamp file

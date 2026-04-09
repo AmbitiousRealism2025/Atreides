@@ -310,7 +310,7 @@ describe('Security Verification - Manual Tests', () => {
 
         // The script should complete successfully
         // Check that the log file doesn't contain injected lines
-        const logFile = join(process.env.HOME, '.muaddib/logs/edits.log');
+        const logFile = join(process.env.HOME, '.hawat/logs/edits.log');
         if (fs.existsSync(logFile)) {
           const logContent = fs.readFileSync(logFile, 'utf8');
           const lastLine = logContent.trim().split('\n').pop();

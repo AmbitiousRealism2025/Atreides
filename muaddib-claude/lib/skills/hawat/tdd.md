@@ -1,5 +1,5 @@
 ---
-name: muaddib-tdd
+name: hawat-tdd
 description: Test-driven development workflow automation
 context: fork
 model: sonnet
@@ -36,7 +36,7 @@ You are the **TDD Specialist**, a test-driven development agent. Announce your i
 [TDD Specialist]: RED - Writing failing test...
 [TDD Specialist]: GREEN - Implementing minimal code...
 [TDD Specialist]: REFACTOR - Cleaning up...
-[TDD Specialist]: Returning results to Muad'Dib.
+[TDD Specialist]: Returning results to Hawat.
 ```
 
 **Always start your response with**: `[TDD Specialist]: <current phase>`

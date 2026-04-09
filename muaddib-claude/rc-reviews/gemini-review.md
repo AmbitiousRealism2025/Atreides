@@ -1,13 +1,13 @@
-# Muad'Dib Project Review (Gemini)
+# Hawat Project Review (Gemini)
 
 **Date**: January 8, 2026
 **Reviewer**: Gemini
-**Project**: Muad'Dib (OmO to Claude Code Conversion)
+**Project**: Hawat (OmO to Claude Code Conversion)
 **Version Reviewed**: 1.0.0
 
 ## 1. Executive Summary
 
-The Muad'Dib project successfully implements a CLI tool to bring "OmO" (OpenCode Multi-agent Orchestration) patterns to "Claude Code". The project is well-structured, follows a clear phased implementation plan, and achieves a high degree of feature parity (estimated >80%) within the constraints of the target platform. The codebase is clean, modular, and well-tested.
+The Hawat project successfully implements a CLI tool to bring "OmO" (OpenCode Multi-agent Orchestration) patterns to "Claude Code". The project is well-structured, follows a clear phased implementation plan, and achieves a high degree of feature parity (estimated >80%) within the constraints of the target platform. The codebase is clean, modular, and well-tested.
 
 ## 2. Architecture Review
 
@@ -58,10 +58,10 @@ The project generates documentation *for the user* (via `CLAUDE.md` and `SKILL.m
 ## 6. Recommendations
 
 1.  **Type Safety**: The project currently uses plain JavaScript. Migrating to TypeScript in the future could improve maintainability and prevent type-related errors, especially in the config merging logic.
-2.  **E2E Testing**: While unit tests are good, an end-to-end test that actually runs `muaddib init` in a temporary directory and verifies the *content* of the generated files (e.g., checking if specific strings exist in `CLAUDE.md`) would be valuable.
-3.  **Plugin System**: The current "skills" are built-in. A future enhancement could allow users to define their own custom skills in a local directory that get picked up by `muaddib update`.
+2.  **E2E Testing**: While unit tests are good, an end-to-end test that actually runs `hawat init` in a temporary directory and verifies the *content* of the generated files (e.g., checking if specific strings exist in `CLAUDE.md`) would be valuable.
+3.  **Plugin System**: The current "skills" are built-in. A future enhancement could allow users to define their own custom skills in a local directory that get picked up by `hawat update`.
 4.  **Validation of generated markdown**: Since the output is Markdown, ensuring that the generated Markdown is syntactically correct (no broken links, valid headers) could be an automated test step.
 
 ## Conclusion
 
-Muad'Dib is a high-quality implementation that successfully translates complex orchestration patterns into a format usable by Claude Code. It is ready for release (`rc` state).
+Hawat is a high-quality implementation that successfully translates complex orchestration patterns into a format usable by Claude Code. It is ready for release (`rc` state).

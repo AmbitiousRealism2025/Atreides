@@ -1,12 +1,12 @@
 /**
- * Validator for Muad'Dib CLI
+ * Validator for Hawat CLI
  *
  * Validates installations, configurations, and project structure.
  */
 
 import { exists, isSymlink, readSymlink, readJson, readFile } from './file-manager.js';
 import {
-  GLOBAL_MUADDIB_DIR,
+  GLOBAL_HAWAT_DIR,
   GLOBAL_TEMPLATES_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_SKILLS_DIR,
@@ -27,20 +27,20 @@ import { debug } from '../utils/logger.js';
  */
 
 /**
- * Validate global muaddib installation
+ * Validate global hawat installation
  * @returns {Promise<ValidationResult>}
  */
 export async function validateGlobalInstallation() {
   const errors = [];
   const warnings = [];
   const details = {
-    globalDir: GLOBAL_MUADDIB_DIR,
+    globalDir: GLOBAL_HAWAT_DIR,
     components: {}
   };
 
   // Check global directory exists
-  if (!await exists(GLOBAL_MUADDIB_DIR)) {
-    errors.push(`Global directory not found: ${GLOBAL_MUADDIB_DIR}`);
+  if (!await exists(GLOBAL_HAWAT_DIR)) {
+    errors.push(`Global directory not found: ${GLOBAL_HAWAT_DIR}`);
     return { valid: false, errors, warnings, details };
   }
 
@@ -71,7 +71,7 @@ export async function validateGlobalInstallation() {
   }
 
   // Check global config
-  const configPath = join(GLOBAL_MUADDIB_DIR, 'config.json');
+  const configPath = join(GLOBAL_HAWAT_DIR, 'config.json');
   if (!await exists(configPath)) {
     warnings.push('Global config not found (will use defaults)');
     details.components.config = false;
@@ -86,7 +86,7 @@ export async function validateGlobalInstallation() {
   }
 
   // Check skill symlink in Claude config
-  const skillSymlink = join(CLAUDE_SKILLS_DIR, 'muaddib');
+  const skillSymlink = join(CLAUDE_SKILLS_DIR, 'hawat');
   if (await exists(skillSymlink)) {
     if (await isSymlink(skillSymlink)) {
       const target = await readSymlink(skillSymlink);
@@ -132,8 +132,8 @@ export async function validateProjectInit(projectDir) {
     details.components.claudeMd = true;
     // Validate CLAUDE.md content
     const content = await readFile(paths.claudeMd);
-    if (!content.includes('Muad\'Dib') && !content.includes('muaddib')) {
-      warnings.push('CLAUDE.md may not be a muaddib-generated file');
+    if (!content.includes('Hawat') && !content.includes('hawat')) {
+      warnings.push('CLAUDE.md may not be a hawat-generated file');
     }
   }
 
@@ -159,12 +159,12 @@ export async function validateProjectInit(projectDir) {
     }
   }
 
-  // Check .muaddib directory
-  if (!await exists(paths.muaddibDir)) {
-    warnings.push('.muaddib directory not found');
-    details.components.muaddibDir = false;
+  // Check .hawat directory
+  if (!await exists(paths.hawatDir)) {
+    warnings.push('.hawat directory not found');
+    details.components.hawatDir = false;
   } else {
-    details.components.muaddibDir = true;
+    details.components.hawatDir = true;
   }
 
   // Check project config

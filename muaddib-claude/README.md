@@ -2,9 +2,9 @@
 
 **Transform Claude Code into a disciplined, self-orchestrating development partner.**
 
-Atreides brings systematic workflows, intelligent agent delegation, and robust error recovery to your Claude Code sessions. At its core is **Muad'Dib**—the orchestration agent that manages your development workflow from start to finish. Instead of ad-hoc prompting, Muad'Dib provides a structured methodology that knows when to explore, when to implement, and when to stop and recover from errors—automatically.
+Atreides brings systematic workflows, intelligent agent delegation, and robust error recovery to your Claude Code sessions. At its core is **Hawat**—the orchestration agent that manages your development workflow from start to finish. Instead of ad-hoc prompting, Hawat provides a structured methodology that knows when to explore, when to implement, and when to stop and recover from errors—automatically.
 
-Whether you're navigating a legacy codebase or building from scratch, Muad'Dib adapts to your project's maturity level and applies the right approach for each task. Complex multi-step operations are broken down and tracked. Failures trigger automatic recovery protocols. Specialized agents are delegated to with clear instructions and success criteria.
+Whether you're navigating a legacy codebase or building from scratch, Hawat adapts to your project's maturity level and applies the right approach for each task. Complex multi-step operations are broken down and tracked. Failures trigger automatic recovery protocols. Specialized agents are delegated to with clear instructions and success criteria.
 
 **The result?** More reliable AI-assisted development with fewer dead ends and wasted context.
 
@@ -19,12 +19,12 @@ Atreides was inspired by [Oh My Opencode](https://github.com/code-yeongyu/oh-my-
 ## Features
 
 - **Systematic Workflows** — Move through intent classification, exploration, implementation, and completion phases automatically. No more wondering "what should I do next?"
-- **Intelligent Delegation** — Muad'Dib selects the right agent and model for each task. Quick lookups use fast models; complex architecture decisions get the heavy hitters.
+- **Intelligent Delegation** — Hawat selects the right agent and model for each task. Quick lookups use fast models; complex architecture decisions get the heavy hitters.
 - **Robust Error Recovery** — The 3-strikes rule automatically halts, reverts, and escalates when things go wrong. No more runaway failures corrupting your codebase.
 - **Context Preservation** — Session state persists across conversations and survives context compaction. Pick up exactly where you left off.
 - **Project Templates** — Initialize new projects with sensible defaults, or configure existing ones to match your team's standards.
 - **Quality Guardrails** — Built-in permission controls prevent dangerous operations while allowing the flexibility you need for real development work.
-- **Muad'Dib Skills** (Claude Code 2.1+) — 11 specialized skills with forked context isolation. Explore 50+ files without bloating your main session.
+- **Hawat Skills** (Claude Code 2.1+) — 11 specialized skills with forked context isolation. Explore 50+ files without bloating your main session.
 - **Wildcard Permissions** — Flexible patterns like `Bash(npm *)` give you fine-grained control over what operations are allowed.
 
 ## Installation
@@ -38,30 +38,30 @@ You have two options for installing Atreides:
 
 ```bash
 # Install globally
-npm install -g muaddib-claude
+npm install -g hawat
 
 # Set up global components
-muaddib install
+hawat install
 
 # Initialize in your project
 cd your-project
-muaddib init
+hawat init
 ```
 
 ## Quick Start
 
-### 1. Install Muad'Dib
+### 1. Install Hawat
 
 ```bash
-npm install -g muaddib-claude
-muaddib install
+npm install -g hawat
+hawat install
 ```
 
 ### 2. Initialize Your Project
 
 ```bash
 cd your-project
-muaddib init
+hawat init
 ```
 
 Follow the prompts to configure:
@@ -72,7 +72,7 @@ Follow the prompts to configure:
 
 ### 3. Start Using Claude Code
 
-Your project now has Muad'Dib orchestration! Claude Code will automatically:
+Your project now has Hawat orchestration! Claude Code will automatically:
 - Follow systematic workflow phases
 - Use TodoWrite for multi-step tasks (3+ steps)
 - Apply 3-strikes error recovery
@@ -82,19 +82,19 @@ Your project now has Muad'Dib orchestration! Claude Code will automatically:
 
 | Command | Description |
 |---------|-------------|
-| `muaddib install` | Install global components to ~/.muaddib |
-| `muaddib init` | Initialize in current project |
-| `muaddib init --minimal` | Minimal setup (CLAUDE.md only) |
-| `muaddib init --full` | Full setup with all features |
-| `muaddib update` | Update global components |
-| `muaddib update --project` | Update project files |
-| `muaddib doctor` | Check installation health |
-| `muaddib uninstall` | Remove global components |
-| `muaddib uninstall --project` | Also remove project files |
+| `hawat install` | Install global components to ~/.hawat |
+| `hawat init` | Initialize in current project |
+| `hawat init --minimal` | Minimal setup (CLAUDE.md only) |
+| `hawat init --full` | Full setup with all features |
+| `hawat update` | Update global components |
+| `hawat update --project` | Update project files |
+| `hawat doctor` | Check installation health |
+| `hawat uninstall` | Remove global components |
+| `hawat uninstall --project` | Also remove project files |
 
 ## Generated Files
 
-After `muaddib init --full`, your project will have:
+After `hawat init --full`, your project will have:
 
 ```
 your-project/
@@ -110,7 +110,7 @@ your-project/
 │   │   ├── error-detector.sh
 │   │   └── notify-idle.sh
 │   └── skills/
-│       └── muaddib/             # Muad'Dib skill package (11 skills)
+│       └── hawat/             # Hawat skill package (11 skills)
 │           ├── orchestrate.md   # Main workflow coordination
 │           ├── explore.md       # Forked context exploration
 │           ├── validate.md      # Pre-completion validation
@@ -122,7 +122,7 @@ your-project/
 │           ├── incremental-refactor.md  # Per-file refactoring
 │           ├── doc-sync.md      # Documentation sync
 │           └── quality-gate.md  # Pre-completion verification
-└── .muaddib/
+└── .hawat/
     └── config.json              # Project configuration
 ```
 
@@ -130,7 +130,7 @@ your-project/
 
 Not every request needs the same level of rigor. Asking "what does this function do?" shouldn't trigger a full codebase assessment. But "refactor the auth system" absolutely should.
 
-Muad'Dib classifies your requests before acting, ensuring simple questions get quick answers while complex tasks receive the thorough treatment they deserve:
+Hawat classifies your requests before acting, ensuring simple questions get quick answers while complex tasks receive the thorough treatment they deserve:
 
 | Category | Examples | Action |
 |----------|----------|--------|
@@ -142,7 +142,7 @@ Muad'Dib classifies your requests before acting, ensuring simple questions get q
 
 ## Codebase Maturity Assessment
 
-A battle-tested codebase with 90% test coverage deserves different treatment than a scrappy prototype. Muad'Dib assesses your project's maturity level and adjusts its approach accordingly—following established patterns exactly in disciplined codebases, while being more flexible in greenfield projects where patterns are still being established.
+A battle-tested codebase with 90% test coverage deserves different treatment than a scrappy prototype. Hawat assesses your project's maturity level and adjusts its approach accordingly—following established patterns exactly in disciplined codebases, while being more flexible in greenfield projects where patterns are still being established.
 
 Projects are assessed on a 4-level scale:
 
@@ -155,9 +155,9 @@ Projects are assessed on a 4-level scale:
 
 ## Orchestration Phases
 
-Muad'Dib orchestrates your development workflow through a series of intelligent phases. Rather than jumping straight into code changes, the agent first understands what you're asking for, assesses your codebase, and gathers the context needed to succeed. This methodical approach prevents the common pitfalls of AI-assisted development: incomplete understanding, missed edge cases, and changes that break existing functionality.
+Hawat orchestrates your development workflow through a series of intelligent phases. Rather than jumping straight into code changes, the agent first understands what you're asking for, assesses your codebase, and gathers the context needed to succeed. This methodical approach prevents the common pitfalls of AI-assisted development: incomplete understanding, missed edge cases, and changes that break existing functionality.
 
-When you give Muad'Dib a task, it automatically routes your request through the appropriate phases. Simple questions get immediate answers. Implementation requests trigger exploration and planning. Complex refactoring engages the full workflow with quality gates and recovery protocols. You don't need to manage this process—Muad'Dib handles the orchestration while keeping you informed of progress through each phase.
+When you give Hawat a task, it automatically routes your request through the appropriate phases. Simple questions get immediate answers. Implementation requests trigger exploration and planning. Complex refactoring engages the full workflow with quality gates and recovery protocols. You don't need to manage this process—Hawat handles the orchestration while keeping you informed of progress through each phase.
 
 ### Phase 0: Intent Gate
 Classify requests using the Intent Classification matrix above.
@@ -186,7 +186,7 @@ Verify deliverables, run quality checks, and summarize accomplishments.
 
 ## 3-Strikes Error Recovery
 
-One of the most frustrating aspects of AI-assisted development is watching an agent repeatedly fail at the same operation, consuming context and making things worse with each attempt. Muad'Dib implements a strict 3-strikes protocol: after three consecutive failures, it stops, reverts to a known-good state, and escalates—either consulting a more capable agent or asking you for guidance.
+One of the most frustrating aspects of AI-assisted development is watching an agent repeatedly fail at the same operation, consuming context and making things worse with each attempt. Hawat implements a strict 3-strikes protocol: after three consecutive failures, it stops, reverts to a known-good state, and escalates—either consulting a more capable agent or asking you for guidance.
 
 After 3 consecutive failures on the same operation:
 
@@ -207,7 +207,7 @@ ESCALATE → AskUserQuestion if still stuck
 
 ## Agent Delegation
 
-Muad'Dib doesn't try to do everything itself. When a task calls for specialized expertise—security analysis, performance optimization, frontend architecture—it delegates to purpose-built agents with the right capabilities and model selection. This team-based approach means you get the right level of intelligence for each subtask without burning expensive tokens on simple operations.
+Hawat doesn't try to do everything itself. When a task calls for specialized expertise—security analysis, performance optimization, frontend architecture—it delegates to purpose-built agents with the right capabilities and model selection. This team-based approach means you get the right level of intelligence for each subtask without burning expensive tokens on simple operations.
 
 | Agent | Model | Use For |
 |-------|-------|---------|
@@ -239,7 +239,7 @@ When delegating to agents, use this structure:
 
 ## Completion Checking
 
-"Done" doesn't mean "I stopped working." Muad'Dib enforces a strict completion protocol that verifies all todos are complete, quality checks pass, and deliverables match requirements before declaring victory. No more prematurely ended sessions with half-finished features and failing tests.
+"Done" doesn't mean "I stopped working." Hawat enforces a strict completion protocol that verifies all todos are complete, quality checks pass, and deliverables match requirements before declaring victory. No more prematurely ended sessions with half-finished features and failing tests.
 
 Before ending any multi-step task, this protocol runs:
 
@@ -255,7 +255,7 @@ Before ending any multi-step task, this protocol runs:
 
 ## Session Continuity
 
-Development rarely happens in a single sitting. Muad'Dib maintains context across sessions so you can pick up exactly where you left off—even after context compaction. Critical information is preserved in dedicated files that survive conversation resets.
+Development rarely happens in a single sitting. Hawat maintains context across sessions so you can pick up exactly where you left off—even after context compaction. Critical information is preserved in dedicated files that survive conversation resets.
 
 **Session Start Protocol**:
 - Read CLAUDE.md (project rules)
@@ -276,7 +276,7 @@ Development rarely happens in a single sitting. Muad'Dib maintains context acros
 
 ## Quality Standards
 
-Code that doesn't pass linting, type checking, and tests isn't done—it's a liability. Muad'Dib runs your project's quality checks before marking tasks complete, catching issues while the context is still fresh rather than leaving them for future debugging sessions.
+Code that doesn't pass linting, type checking, and tests isn't done—it's a liability. Hawat runs your project's quality checks before marking tasks complete, catching issues while the context is still fresh rather than leaving them for future debugging sessions.
 
 Before marking any task complete:
 
@@ -287,32 +287,32 @@ Before marking any task complete:
 5. Run tests (jest, pytest, go test, cargo test)
 6. Verify no regressions
 
-## Muad'Dib Skills (Claude Code 2.1+)
+## Hawat Skills (Claude Code 2.1+)
 
-Beyond orchestration, Muad'Dib provides 11 specialized skills that extend Claude Code's capabilities. These skills leverage forked context—a powerful feature that lets you explore dozens of files without consuming your main session's context window. The results come back as concise summaries, keeping your working memory clean while giving you deep codebase insights.
+Beyond orchestration, Hawat provides 11 specialized skills that extend Claude Code's capabilities. These skills leverage forked context—a powerful feature that lets you explore dozens of files without consuming your main session's context window. The results come back as concise summaries, keeping your working memory clean while giving you deep codebase insights.
 
-Invoke any skill with `/muaddib-<skill>`:
+Invoke any skill with `/hawat-<skill>`:
 
 ### Core Skills
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
-| `muaddib-orchestrate` | main | Main workflow coordination and task management |
-| `muaddib-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
-| `muaddib-validate` | main | Pre-completion quality gates and verification |
+| `hawat-orchestrate` | main | Main workflow coordination and task management |
+| `hawat-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
+| `hawat-validate` | main | Pre-completion quality gates and verification |
 
 ### Extended Skills
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
-| `muaddib-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
-| `muaddib-refactor` | **forked** | AST-grep structural code transformations |
-| `muaddib-checkpoint` | main | Session state checkpointing and recovery |
-| `muaddib-tdd` | **forked** | Test-driven development workflow |
-| `muaddib-parallel-explore` | **forked** | Multiple parallel exploration queries |
-| `muaddib-incremental-refactor` | **forked** | Per-file refactoring with verification |
-| `muaddib-doc-sync` | main | Documentation synchronization with code |
-| `muaddib-quality-gate` | main | Pre-completion quality verification |
+| `hawat-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
+| `hawat-refactor` | **forked** | AST-grep structural code transformations |
+| `hawat-checkpoint` | main | Session state checkpointing and recovery |
+| `hawat-tdd` | **forked** | Test-driven development workflow |
+| `hawat-parallel-explore` | **forked** | Multiple parallel exploration queries |
+| `hawat-incremental-refactor` | **forked** | Per-file refactoring with verification |
+| `hawat-doc-sync` | main | Documentation synchronization with code |
+| `hawat-quality-gate` | main | Pre-completion quality verification |
 
 ### Forked Context
 
@@ -325,13 +325,13 @@ Skills marked with **forked** use Claude Code 2.1's forked context feature:
 
 ### LSP Integration
 
-The `muaddib-lsp` skill supports semantic code operations via MCP or CLI:
+The `hawat-lsp` skill supports semantic code operations via MCP or CLI:
 - **MCP option**: [mcp-language-server](https://github.com/isaacphi/mcp-language-server)
 - **CLI fallbacks**: Language-specific tools (pyright, gopls, rust-analyzer)
 
 ### AST-grep Integration
 
-The `muaddib-refactor` skill uses [ast-grep](https://ast-grep.github.io/) for structural transformations:
+The `hawat-refactor` skill uses [ast-grep](https://ast-grep.github.io/) for structural transformations:
 ```bash
 ast-grep --pattern 'console.log($$$ARGS)' --rewrite '' --lang javascript src/
 ```
@@ -342,7 +342,7 @@ Giving an AI agent access to your terminal requires trust—and guardrails. Atre
 
 ### Wildcard Permissions (Claude Code 2.1)
 
-Muad'Dib uses flexible wildcard patterns:
+Hawat uses flexible wildcard patterns:
 
 ```json
 {
@@ -382,16 +382,16 @@ The deny list blocks `npx` usage that would chain shell or network primitives.
 Atreides uses a layered configuration system. Global settings apply across all your projects, while project-specific settings let you customize behavior for individual codebases. Project config takes precedence, with smart merging that preserves your customizations during updates.
 
 ### Global Configuration
-Located at `~/.muaddib/config.json`
+Located at `~/.hawat/config.json`
 
 ### Project Configuration
-Located at `.muaddib/config.json`
+Located at `.hawat/config.json`
 
 Project config overrides global config with smart merging.
 
 ### Update Behavior
 
-When running `muaddib update --project`:
+When running `hawat update --project`:
 - **New hook types** are added without overwriting your customizations
 - **Permissions** are merged with deduplication
 - **Existing settings** are preserved
@@ -402,7 +402,7 @@ Want to keep your standard `claude` command untouched while having `atreides` av
 
 ```bash
 claude     # Vanilla Claude Code
-atreides   # Claude Code + Muad'Dib orchestration
+atreides   # Claude Code + Hawat orchestration
 ```
 
 This lets you choose the right level of structure for each task.

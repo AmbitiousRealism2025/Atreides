@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Muad'Dib CLI Entry Point
+ * Hawat CLI Entry Point
  *
  * OmO-style orchestration for Claude Code
  */

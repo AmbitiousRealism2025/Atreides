@@ -1,5 +1,5 @@
 /**
- * Prompts utility for Muad'Dib CLI
+ * Prompts utility for Hawat CLI
  *
  * Wraps inquirer for consistent prompting across commands.
  */

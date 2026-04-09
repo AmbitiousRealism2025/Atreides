@@ -1,7 +1,7 @@
 /**
  * Uninstall Command
  *
- * Removes Muad'Dib global components and optionally project files.
+ * Removes Hawat global components and optionally project files.
  */
 
 import { Command } from 'commander';
@@ -9,7 +9,7 @@ import { join } from 'path';
 import logger from '../utils/logger.js';
 import { confirm } from '../utils/prompts.js';
 import {
-  GLOBAL_MUADDIB_DIR,
+  GLOBAL_HAWAT_DIR,
   CLAUDE_SKILLS_DIR,
   PROVIDER_CONFIG,
   getProjectPaths
@@ -27,9 +27,9 @@ export function uninstallCommand() {
   const cmd = new Command('uninstall');
 
   cmd
-    .description("Uninstall Muad'Dib components")
+    .description("Uninstall Hawat components")
     .option('-g, --global', 'Uninstall global components (default)')
-    .option('-p, --project', `Also remove project files (${PROVIDER_CONFIG.configDirName}/, .muaddib/)`)
+    .option('-p, --project', `Also remove project files (${PROVIDER_CONFIG.configDirName}/, .hawat/)`)
     .option('-f, --force', 'Skip confirmation prompts')
     .action(async (options) => {
       try {
@@ -49,16 +49,16 @@ export function uninstallCommand() {
  * @param {object} options - Command options
  */
 async function runUninstall(options) {
-  logger.title("Muad'Dib Uninstall");
+  logger.title("Hawat Uninstall");
 
-  const hasGlobal = await exists(GLOBAL_MUADDIB_DIR);
-  const skillLink = join(CLAUDE_SKILLS_DIR, 'muaddib');
+  const hasGlobal = await exists(GLOBAL_HAWAT_DIR);
+  const skillLink = join(CLAUDE_SKILLS_DIR, 'hawat');
   const hasSkillLink = await exists(skillLink);
   const paths = getProjectPaths();
-  const hasProject = await exists(paths.providerDir) || await exists(paths.muaddibDir);
+  const hasProject = await exists(paths.providerDir) || await exists(paths.hawatDir);
 
   if (!hasGlobal && !hasSkillLink && (!options.project || !hasProject)) {
-    logger.info("Muad'Dib is not installed.");
+    logger.info("Hawat is not installed.");
     return;
   }
 
@@ -68,7 +68,7 @@ async function runUninstall(options) {
   console.log();
 
   if (hasGlobal) {
-    logger.dim(`  - ${GLOBAL_MUADDIB_DIR}/ (global components)`);
+    logger.dim(`  - ${GLOBAL_HAWAT_DIR}/ (global components)`);
   }
   if (hasSkillLink) {
     logger.dim(`  - ${skillLink} (skill symlink)`);
@@ -77,8 +77,8 @@ async function runUninstall(options) {
     if (await exists(paths.providerDir)) {
       logger.dim(`  - ${paths.providerDir}/ (project settings)`);
     }
-    if (await exists(paths.muaddibDir)) {
-      logger.dim(`  - ${paths.muaddibDir}/ (project config)`);
+    if (await exists(paths.hawatDir)) {
+      logger.dim(`  - ${paths.hawatDir}/ (project config)`);
     }
   }
 
@@ -113,7 +113,7 @@ async function runUninstall(options) {
   // Remove global directory
   if (hasGlobal) {
     try {
-      await remove(GLOBAL_MUADDIB_DIR);
+      await remove(GLOBAL_HAWAT_DIR);
       logger.success('Removed: global components');
     } catch (error) {
       logger.warn(`Could not remove global directory: ${error.message}`);
@@ -131,12 +131,12 @@ async function runUninstall(options) {
       }
     }
 
-    if (await exists(paths.muaddibDir)) {
+    if (await exists(paths.hawatDir)) {
       try {
-        await remove(paths.muaddibDir);
-        logger.success('Removed: .muaddib/');
+        await remove(paths.hawatDir);
+        logger.success('Removed: .hawat/');
       } catch (error) {
-        logger.warn(`Could not remove .muaddib/: ${error.message}`);
+        logger.warn(`Could not remove .hawat/: ${error.message}`);
       }
     }
   }
@@ -147,7 +147,7 @@ async function runUninstall(options) {
   if (!options.project && hasProject) {
     console.log();
     logger.info('Note: Project files were preserved.');
-    logger.info('To remove project files, run: muaddib uninstall --project');
+    logger.info('To remove project files, run: hawat uninstall --project');
   }
 }
 

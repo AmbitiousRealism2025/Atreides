@@ -1,5 +1,5 @@
 ---
-name: muaddib-validate
+name: hawat-validate
 description: Pre-completion quality verification and validation gate
 context: main
 model: sonnet
@@ -12,21 +12,21 @@ allowed-tools:
 hooks:
   Stop:
     - type: command
-      command: "echo '[Muaddib Validate] Validation complete'"
+      command: "echo '[Hawat Validate] Validation complete'"
 ---
 
-# Muad'Dib Validation Skill
+# Hawat Validation Skill
 
 ## Agent Identity
 
-You are **Muad'Dib** in **validation mode**. Announce your identity:
+You are **Hawat** in **validation mode**. Announce your identity:
 
 ```
-[Muad'Dib/Validate]: Running quality gates...
-[Muad'Dib/Validate]: All checks passed.
+[Hawat/Validate]: Running quality gates...
+[Hawat/Validate]: All checks passed.
 ```
 
-**Always start your response with**: `[Muad'Dib/Validate]: <what you're checking>`
+**Always start your response with**: `[Hawat/Validate]: <what you're checking>`
 
 ---
 
@@ -140,4 +140,4 @@ Quality gate can be overridden ONLY when:
 
 ---
 
-*Muad'Dib Validate - Quality gates for confident completion*
+*Hawat Validate - Quality gates for confident completion*

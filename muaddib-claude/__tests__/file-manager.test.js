@@ -39,7 +39,7 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Test directory setup
-const TEST_BASE = join(tmpdir(), 'muaddib-file-manager-test');
+const TEST_BASE = join(tmpdir(), 'hawat-file-manager-test');
 let testDir;
 
 /**

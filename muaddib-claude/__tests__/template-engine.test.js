@@ -29,7 +29,7 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Test directory setup
-const TEST_BASE = join(tmpdir(), 'muaddib-template-engine-test');
+const TEST_BASE = join(tmpdir(), 'hawat-template-engine-test');
 let testDir;
 
 /**

@@ -1,5 +1,5 @@
 /**
- * Template Engine for Muad'Dib CLI
+ * Template Engine for Hawat CLI
  *
  * Handlebars-based template rendering with custom helpers and partials.
  */

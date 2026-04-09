@@ -1,14 +1,14 @@
 {
-  "name": "muaddib-claude",
+  "name": "hawat",
   "version": "1.0.5",
-  "description": "Transform Claude Code into a disciplined, self-orchestrating development partner with Muad'Dib orchestration",
+  "description": "Transform Claude Code into a disciplined, self-orchestrating development partner with Hawat orchestration",
   "keywords": [
     "claude",
     "claude-code",
     "ai",
     "orchestration",
     "atreides",
-    "muaddib",
+    "hawat",
     "ai-assistant",
     "developer-tools",
     "cli",
@@ -26,7 +26,7 @@
   "homepage": "https://github.com/AmbitiousRealism2025/Atreides#readme",
   "type": "module",
   "bin": {
-    "muaddib": "./bin/muaddib.js"
+    "hawat": "./bin/hawat.js"
   },
   "main": "./src/lib/index.js",
   "exports": {

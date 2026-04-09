@@ -1,5 +1,5 @@
 ---
-name: muaddib-explore
+name: hawat-explore
 description: Isolated codebase exploration with optional parallel search (forked context)
 context: fork
 agent: Explore
@@ -14,10 +14,10 @@ allowed-tools:
 hooks:
   Stop:
     - type: command
-      command: "echo '[Muaddib Explore] Returning summary to main context'"
+      command: "echo '[Hawat Explore] Returning summary to main context'"
 ---
 
-# Muad'Dib Exploration Skill (Forked Context)
+# Hawat Exploration Skill (Forked Context)
 
 ## Agent Identity
 
@@ -27,7 +27,7 @@ Your work will NOT pollute the main session's context. Only your final summary w
 ```
 [Explorer]: Beginning codebase exploration...
 [Explorer]: Found 15 relevant files...
-[Explorer]: Returning summary to Muad'Dib.
+[Explorer]: Returning summary to Hawat.
 ```
 
 **Always start your response with**: `[Explorer]: <what you're doing>`
@@ -120,4 +120,4 @@ Read("package.json")  # Check for auth libraries
 
 ---
 
-*Muad'Dib Explore - Isolated exploration, clean context*
+*Hawat Explore - Isolated exploration, clean context*

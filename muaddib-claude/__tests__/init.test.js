@@ -22,7 +22,7 @@ describe('Init Command - Template Rendering', () => {
       const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       expect(result).toContain('test-project');
-      expect(result).toContain('Muad\'Dib Orchestration');
+      expect(result).toContain('Hawat Orchestration');
     });
 
     it('should include codebase maturity', async () => {
@@ -43,7 +43,7 @@ describe('Init Command - Template Rendering', () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
       const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
-      expect(result).toMatch(/\*\*Muad'Dib Version\*\*: \d+\.\d+\.\d+/);
+      expect(result).toMatch(/\*\*Hawat Version\*\*: \d+\.\d+\.\d+/);
     });
 
     it('should include core orchestration sections', async () => {
@@ -54,7 +54,7 @@ describe('Init Command - Template Rendering', () => {
       expect(result).toContain('## Intent Classification');
       expect(result).toContain('3-Strikes'); // Error recovery in orchestration-rules
       // Reference content is linked but not inlined
-      expect(result).toContain('muaddib-reference');
+      expect(result).toContain('hawat-reference');
     });
   });
 
@@ -178,8 +178,8 @@ describe('Init Command - Template Rendering', () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
       const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
-      expect(result).toContain('Muad\'Dib Skills');
-      expect(result).toContain('muaddib-explore');
+      expect(result).toContain('Hawat Skills');
+      expect(result).toContain('hawat-explore');
       expect(result).toContain('forked');
     });
 
@@ -198,19 +198,19 @@ describe('Init Command - Template Rendering', () => {
       const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       // Core skills (Phase 4)
-      expect(result).toContain('muaddib-orchestrate');
-      expect(result).toContain('muaddib-explore');
-      expect(result).toContain('muaddib-validate');
+      expect(result).toContain('hawat-orchestrate');
+      expect(result).toContain('hawat-explore');
+      expect(result).toContain('hawat-validate');
 
       // Extended skills (Phase 5)
-      expect(result).toContain('muaddib-lsp');
-      expect(result).toContain('muaddib-refactor');
-      expect(result).toContain('muaddib-checkpoint');
-      expect(result).toContain('muaddib-tdd');
-      expect(result).toContain('muaddib-parallel-explore');
-      expect(result).toContain('muaddib-incremental-refactor');
-      expect(result).toContain('muaddib-doc-sync');
-      expect(result).toContain('muaddib-quality-gate');
+      expect(result).toContain('hawat-lsp');
+      expect(result).toContain('hawat-refactor');
+      expect(result).toContain('hawat-checkpoint');
+      expect(result).toContain('hawat-tdd');
+      expect(result).toContain('hawat-parallel-explore');
+      expect(result).toContain('hawat-incremental-refactor');
+      expect(result).toContain('hawat-doc-sync');
+      expect(result).toContain('hawat-quality-gate');
     });
 
     it('should include LSP operations documentation', async () => {
@@ -253,14 +253,14 @@ describe('Init Command - Template Rendering', () => {
       const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
       // Forked context skills
-      expect(result).toMatch(/muaddib-lsp.*\*\*forked\*\*/s);
-      expect(result).toMatch(/muaddib-refactor.*\*\*forked\*\*/s);
-      expect(result).toMatch(/muaddib-tdd.*\*\*forked\*\*/s);
+      expect(result).toMatch(/hawat-lsp.*\*\*forked\*\*/s);
+      expect(result).toMatch(/hawat-refactor.*\*\*forked\*\*/s);
+      expect(result).toMatch(/hawat-tdd.*\*\*forked\*\*/s);
 
       // Main context skills
-      expect(result).toContain('muaddib-checkpoint');
-      expect(result).toContain('muaddib-doc-sync');
-      expect(result).toContain('muaddib-quality-gate');
+      expect(result).toContain('hawat-checkpoint');
+      expect(result).toContain('hawat-doc-sync');
+      expect(result).toContain('hawat-quality-gate');
     });
   });
 
@@ -303,7 +303,7 @@ describe('Init Command - Template Rendering', () => {
         const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
         // Minimal mode still renders core CLAUDE.md
-        expect(result).toContain('Muad\'Dib Orchestration');
+        expect(result).toContain('Hawat Orchestration');
         // Verify minimal orchestration level is reflected
         expect(templateData.orchestrationLevel).toBe('minimal');
       });
@@ -359,8 +359,8 @@ describe('Init Command - Template Rendering', () => {
         const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
         // Core sections present, reference material linked
-        expect(result).toContain("Muad'Dib Orchestration");
-        expect(result).toContain('muaddib-reference');
+        expect(result).toContain("Hawat Orchestration");
+        expect(result).toContain('hawat-reference');
         // Full mode config
         expect(templateData.useAgentDelegation).toBe(true);
       });

@@ -4,7 +4,7 @@ This guide explains how to set up your system so you can launch either vanilla C
 
 **The Goal:**
 - `claude` → Launches standard Claude Code (no orchestration)
-- `atreides` → Launches Claude Code with Muad'Dib orchestration
+- `atreides` → Launches Claude Code with Hawat orchestration
 
 This lets you choose the right tool for the job. Quick questions and simple edits? Use vanilla Claude. Complex multi-step development? Bring in Atreides.
 
@@ -12,7 +12,7 @@ This lets you choose the right tool for the job. Quick questions and simple edit
 
 ## How It Works
 
-The `atreides` command is a wrapper script that launches Claude Code with Muad'Dib orchestration rules injected via the `--append-system-prompt` flag. Your vanilla `claude` command remains completely unchanged.
+The `atreides` command is a wrapper script that launches Claude Code with Hawat orchestration rules injected via the `--append-system-prompt` flag. Your vanilla `claude` command remains completely unchanged.
 
 ---
 
@@ -21,11 +21,11 @@ The `atreides` command is a wrapper script that launches Claude Code with Muad'D
 ### Step 1: Install Atreides globally
 
 ```bash
-npm install -g muaddib-claude
-muaddib install
+npm install -g hawat
+hawat install
 ```
 
-This installs Atreides components to `~/.muaddib/`.
+This installs Atreides components to `~/.hawat/`.
 
 ### Step 2: Create the Atreides profile
 
@@ -41,24 +41,24 @@ Create the profile's CLAUDE.md with Atreides orchestration:
 cat > ~/.claude/profiles/atreides/CLAUDE.md << 'EOF'
 # Atreides Orchestration Profile
 
-This profile enables Muad'Dib orchestration for Claude Code sessions.
+This profile enables Hawat orchestration for Claude Code sessions.
 
 # Core Orchestration Rules
-@~/.muaddib/lib/core/orchestration-rules.md
-@~/.muaddib/lib/core/workflow-phases.md
-@~/.muaddib/lib/core/intent-classification.md
+@~/.hawat/lib/core/orchestration-rules.md
+@~/.hawat/lib/core/workflow-phases.md
+@~/.hawat/lib/core/intent-classification.md
 
 # Assessment & Context
-@~/.muaddib/lib/core/maturity-assessment.md
-@~/.muaddib/lib/core/context-management.md
-@~/.muaddib/lib/core/exploration-patterns.md
+@~/.hawat/lib/core/maturity-assessment.md
+@~/.hawat/lib/core/context-management.md
+@~/.hawat/lib/core/exploration-patterns.md
 
 # Completion & Continuity
-@~/.muaddib/lib/core/completion-checking.md
-@~/.muaddib/lib/core/session-continuity.md
+@~/.hawat/lib/core/completion-checking.md
+@~/.hawat/lib/core/session-continuity.md
 
 # Agent Delegation
-@~/.muaddib/lib/core/agent-definitions.md
+@~/.hawat/lib/core/agent-definitions.md
 
 # Add any personal customizations below
 
@@ -71,7 +71,7 @@ EOF
 sudo tee /usr/local/bin/atreides << 'EOF'
 #!/usr/bin/env bash
 #
-# Atreides - Claude Code with Muad'Dib Orchestration
+# Atreides - Claude Code with Hawat Orchestration
 #
 
 CLAUDE_BIN="$HOME/.claude/local/claude"
@@ -84,7 +84,7 @@ fi
 
 if [[ ! -f "$ATREIDES_CLAUDE_MD" ]]; then
     echo "Error: Atreides profile not found at $ATREIDES_CLAUDE_MD"
-    echo "Run 'muaddib install' to set up Atreides."
+    echo "Run 'hawat install' to set up Atreides."
     exit 1
 fi
 
@@ -115,11 +115,11 @@ Even with the dual-environment setup, you can still have project-specific Atreid
 
 ### Projects WITH Atreides
 
-Run `muaddib init` in the project to add project-level orchestration:
+Run `hawat init` in the project to add project-level orchestration:
 
 ```bash
 cd your-project
-muaddib init
+hawat init
 ```
 
 This creates a `CLAUDE.md` in your project with full orchestration rules. Both `claude` and `atreides` will use these rules when in this directory.
@@ -166,7 +166,7 @@ Project CLAUDE.md     → Team standards
 
 ```bash
 claude
-# Should start without Muad'Dib orchestration
+# Should start without Hawat orchestration
 # Type: "What orchestration system are you using?"
 # Should respond that it's using standard Claude Code
 ```
@@ -175,9 +175,9 @@ claude
 
 ```bash
 atreides
-# Should start with Muad'Dib orchestration
+# Should start with Hawat orchestration
 # Type: "What orchestration system are you using?"
-# Should mention Muad'Dib and the workflow phases
+# Should mention Hawat and the workflow phases
 ```
 
 ---
@@ -218,8 +218,8 @@ export PATH="$HOME/bin:$PATH"
 ### Updating Atreides
 
 ```bash
-npm update -g muaddib-claude
-muaddib update
+npm update -g hawat
+hawat update
 ```
 
 Your wrapper script and profile remain unchanged.
@@ -231,9 +231,9 @@ Your wrapper script and profile remain unchanged.
 | Command | Behavior |
 |---------|----------|
 | `claude` | Vanilla Claude Code, no orchestration |
-| `atreides` | Claude Code + Muad'Dib orchestration |
-| `muaddib init` | Add Atreides to current project |
-| `muaddib doctor` | Check Atreides installation health |
+| `atreides` | Claude Code + Hawat orchestration |
+| `hawat init` | Add Atreides to current project |
+| `hawat doctor` | Check Atreides installation health |
 
 ---
 

@@ -1,37 +1,37 @@
-## Muad'Dib Skills (Claude Code 2.1+)
+## Hawat Skills (Claude Code 2.1+)
 
 ### Available Skills
 
-Muad'Dib provides 11 specialized skills that can be invoked with `/muaddib-<skill>`:
+Hawat provides 11 specialized skills that can be invoked with `/hawat-<skill>`:
 
 #### Core Skills (Phase 4)
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
-| `muaddib-orchestrate` | main | Main workflow coordination and task management |
-| `muaddib-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
-| `muaddib-validate` | main | Pre-completion quality gates and verification |
+| `hawat-orchestrate` | main | Main workflow coordination and task management |
+| `hawat-explore` | **forked** | Isolated codebase exploration (doesn't pollute context) |
+| `hawat-validate` | main | Pre-completion quality gates and verification |
 
 #### Extended Skills (Phase 5)
 
 | Skill | Context | Purpose |
 |-------|---------|---------|
-| `muaddib-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
-| `muaddib-refactor` | **forked** | AST-grep structural code transformations |
-| `muaddib-checkpoint` | main | Session state checkpointing and recovery |
-| `muaddib-tdd` | **forked** | Test-driven development workflow |
-| `muaddib-parallel-explore` | **forked** | Multiple parallel exploration queries |
-| `muaddib-incremental-refactor` | **forked** | Per-file refactoring with verification |
-| `muaddib-doc-sync` | main | Documentation synchronization with code |
-| `muaddib-quality-gate` | main | Pre-completion quality verification |
+| `hawat-lsp` | **forked** | Semantic code operations (go-to-definition, find references) |
+| `hawat-refactor` | **forked** | AST-grep structural code transformations |
+| `hawat-checkpoint` | main | Session state checkpointing and recovery |
+| `hawat-tdd` | **forked** | Test-driven development workflow |
+| `hawat-parallel-explore` | **forked** | Multiple parallel exploration queries |
+| `hawat-incremental-refactor` | **forked** | Per-file refactoring with verification |
+| `hawat-doc-sync` | main | Documentation synchronization with code |
+| `hawat-quality-gate` | main | Pre-completion quality verification |
 
 ### Forked Context (Key Feature)
 
-The `muaddib-explore` skill uses **forked context**, a Claude Code 2.1 feature:
+The `hawat-explore` skill uses **forked context**, a Claude Code 2.1 feature:
 
 ```yaml
 ---
-name: muaddib-explore
+name: hawat-explore
 context: fork                    # Isolated context
 ---
 ```
@@ -46,7 +46,7 @@ context: fork                    # Isolated context
 
 **Invoke a skill:**
 ```
-/muaddib-explore Find all API endpoints and their handlers
+/hawat-explore Find all API endpoints and their handlers
 ```
 
 **Skill-specific hooks fire automatically:**

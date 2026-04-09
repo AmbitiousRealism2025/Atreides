@@ -1,5 +1,5 @@
 /**
- * File Manager for Muad'Dib CLI
+ * File Manager for Hawat CLI
  *
  * Provides safe file operations with backup capability.
  */

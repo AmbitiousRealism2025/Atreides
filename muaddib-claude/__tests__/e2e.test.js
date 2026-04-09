@@ -6,12 +6,12 @@
  *
  * Test Flow:
  * 1. Create temp directory
- * 2. Run muaddib install --force
- * 3. Run muaddib init --yes
+ * 2. Run hawat install --force
+ * 3. Run hawat init --yes
  * 4. Verify CLAUDE.md created
  * 5. Verify settings.json is valid JSON
  * 6. Verify scripts are executable
- * 7. Run muaddib doctor and verify no errors
+ * 7. Run hawat doctor and verify no errors
  */
 
 import { jest } from '@jest/globals';
@@ -23,12 +23,12 @@ import fs from 'fs-extra';
 
 // Get the directory of this test file
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const cliPath = join(__dirname, '..', 'bin', 'muaddib.js');
+const cliPath = join(__dirname, '..', 'bin', 'hawat.js');
 const packageRoot = join(__dirname, '..');
 
 // Test directory setup
-const TEST_BASE = join(tmpdir(), 'muaddib-e2e-test');
-const GLOBAL_MUADDIB_DIR = join(homedir(), '.muaddib');
+const TEST_BASE = join(tmpdir(), 'hawat-e2e-test');
+const GLOBAL_HAWAT_DIR = join(homedir(), '.hawat');
 let testDir;
 
 /**
@@ -40,7 +40,7 @@ function createTestDir() {
 }
 
 /**
- * Execute the muaddib CLI and capture output
+ * Execute the hawat CLI and capture output
  * @param {string[]} args - Command line arguments
  * @param {object} options - Spawn options
  * @returns {Promise<{code: number, stdout: string, stderr: string}>}
@@ -119,7 +119,7 @@ describe('End-to-End CLI Tests', () => {
       const result = await runCli(['--help']);
 
       expect(result.code).toBe(0);
-      expect(result.stdout).toContain('Muad\'Dib');
+      expect(result.stdout).toContain('Hawat');
       expect(result.stdout).toContain('init');
       expect(result.stdout).toContain('install');
       expect(result.stdout).toContain('doctor');
@@ -154,7 +154,7 @@ describe('End-to-End CLI Tests', () => {
       await runCli(['install', '--force']);
 
       // Check that global templates directory exists and has .hbs files
-      const templatesDir = join(GLOBAL_MUADDIB_DIR, 'templates');
+      const templatesDir = join(GLOBAL_HAWAT_DIR, 'templates');
       const exists = await fs.pathExists(templatesDir);
       expect(exists).toBe(true);
 
@@ -167,7 +167,7 @@ describe('End-to-End CLI Tests', () => {
       await runCli(['install', '--force']);
 
       // Check that global scripts directory exists
-      const scriptsDir = join(GLOBAL_MUADDIB_DIR, 'scripts');
+      const scriptsDir = join(GLOBAL_HAWAT_DIR, 'scripts');
       if (await fs.pathExists(scriptsDir)) {
         const files = await fs.readdir(scriptsDir);
         const shFiles = files.filter(f => f.endsWith('.sh'));
@@ -363,7 +363,7 @@ describe('End-to-End CLI Tests', () => {
       expect(() => JSON.parse(settingsContent)).not.toThrow();
 
       // Step 5: Verify global scripts are executable (if they exist)
-      const scriptsDir = join(GLOBAL_MUADDIB_DIR, 'scripts');
+      const scriptsDir = join(GLOBAL_HAWAT_DIR, 'scripts');
       if (await fs.pathExists(scriptsDir)) {
         const shFiles = (await fs.readdir(scriptsDir)).filter(f => f.endsWith('.sh'));
         for (const shFile of shFiles) {

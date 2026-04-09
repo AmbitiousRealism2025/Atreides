@@ -1,6 +1,6 @@
 ## Skill Composition Patterns
 
-Muad'Dib skills can be composed (chained) to accomplish complex workflows.
+Hawat skills can be composed (chained) to accomplish complex workflows.
 Understanding when and how to chain skills is key to effective orchestration.
 
 ### Composition Strategies
@@ -10,11 +10,11 @@ Understanding when and how to chain skills is key to effective orchestration.
 Run skills one after another, passing context forward:
 
 ```
-muaddib-explore → gather context
+hawat-explore → gather context
        ↓
-muaddib-refactor → apply changes
+hawat-refactor → apply changes
        ↓
-muaddib-quality-gate → verify results
+hawat-quality-gate → verify results
 ```
 
 **When to use**: Multi-phase workflows where each phase depends on the previous.
@@ -24,11 +24,11 @@ muaddib-quality-gate → verify results
 Run multiple forked skills simultaneously:
 
 ```
-┌─ muaddib-parallel-explore (search 1)
+┌─ hawat-parallel-explore (search 1)
 │
-├─ muaddib-parallel-explore (search 2)
+├─ hawat-parallel-explore (search 2)
 │
-└─ muaddib-parallel-explore (search 3)
+└─ hawat-parallel-explore (search 3)
          ↓
     Consolidate results in main context
 ```
@@ -40,13 +40,13 @@ Run multiple forked skills simultaneously:
 A skill invokes another skill for sub-tasks:
 
 ```
-muaddib-incremental-refactor
+hawat-incremental-refactor
     │
     ├─ (for each file)
     │     ├─ Apply change
-    │     └─ muaddib-tdd → verify with tests
+    │     └─ hawat-tdd → verify with tests
     │
-    └─ muaddib-quality-gate → final verification
+    └─ hawat-quality-gate → final verification
 ```
 
 **When to use**: Complex operations with embedded verification steps.
@@ -56,7 +56,7 @@ muaddib-incremental-refactor
 #### Pattern 1: Explore-Plan-Execute
 
 ```
-1. muaddib-explore (forked)
+1. hawat-explore (forked)
    → Understand codebase structure
    → Return summary to main
 
@@ -64,7 +64,7 @@ muaddib-incremental-refactor
    → Use exploration results
    → Define scope
 
-3. muaddib-incremental-refactor (forked)
+3. hawat-incremental-refactor (forked)
    → Apply planned changes
    → Verify each step
 ```
@@ -72,16 +72,16 @@ muaddib-incremental-refactor
 #### Pattern 2: TDD Feature Development
 
 ```
-1. muaddib-explore (forked)
+1. hawat-explore (forked)
    → Find existing patterns
    → Identify test locations
 
-2. muaddib-tdd (forked)
+2. hawat-tdd (forked)
    → Write failing test
    → Implement feature
    → Verify green
 
-3. muaddib-doc-sync (main)
+3. hawat-doc-sync (main)
    → Update documentation
    → Sync README
 ```
@@ -89,15 +89,15 @@ muaddib-incremental-refactor
 #### Pattern 3: Safe Refactoring
 
 ```
-1. muaddib-checkpoint (main)
+1. hawat-checkpoint (main)
    → Save current state
    → Create recovery point
 
-2. muaddib-refactor (forked)
+2. hawat-refactor (forked)
    → Apply ast-grep patterns
    → Structural changes
 
-3. muaddib-quality-gate (main)
+3. hawat-quality-gate (main)
    → Verify all checks pass
    → If fail, restore from checkpoint
 ```
@@ -105,7 +105,7 @@ muaddib-incremental-refactor
 #### Pattern 4: Multi-Angle Investigation
 
 ```
-1. muaddib-parallel-explore (forked) × 3
+1. hawat-parallel-explore (forked) × 3
    → Angle 1: Search for patterns
    → Angle 2: Check dependencies
    → Angle 3: Review tests
@@ -114,7 +114,7 @@ muaddib-incremental-refactor
    → Merge findings
    → Identify gaps
 
-3. muaddib-lsp (forked)
+3. hawat-lsp (forked)
    → Semantic analysis
    → Find references
 ```
@@ -155,22 +155,22 @@ Is this a simple, single-file change?
 └─ No ↓
 
 Do I need to understand the codebase first?
-├─ Yes → muaddib-explore or muaddib-parallel-explore
+├─ Yes → hawat-explore or hawat-parallel-explore
 └─ No ↓
 
 Am I making risky changes?
-├─ Yes → muaddib-checkpoint first
+├─ Yes → hawat-checkpoint first
 └─ No ↓
 
 Am I changing structure across files?
-├─ Yes → muaddib-refactor or muaddib-incremental-refactor
+├─ Yes → hawat-refactor or hawat-incremental-refactor
 └─ No ↓
 
 Am I adding new functionality?
-├─ Yes → muaddib-tdd
+├─ Yes → hawat-tdd
 └─ No ↓
 
 Am I done with changes?
-├─ Yes → muaddib-quality-gate
+├─ Yes → hawat-quality-gate
 └─ No → Continue working
 ```

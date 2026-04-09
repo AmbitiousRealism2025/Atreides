@@ -6,9 +6,9 @@
 
 ## What is Atreides?
 
-**Atreides** is an orchestration framework for [Claude Code](https://claude.ai/code) that transforms ad-hoc AI-assisted coding into structured, methodical development. At its core is **Muad'Dib**—an orchestration agent distributed as the `muaddib-claude` NPM package.
+**Atreides** is an orchestration framework for [Claude Code](https://claude.ai/code) that transforms ad-hoc AI-assisted coding into structured, methodical development. At its core is **Hawat**—an orchestration agent distributed as the `hawat` NPM package.
 
-Instead of prompting Claude and hoping for the best, Muad'Dib provides a systematic methodology that knows when to explore, when to implement, and when to stop and recover from errors—automatically.
+Instead of prompting Claude and hoping for the best, Hawat provides a systematic methodology that knows when to explore, when to implement, and when to stop and recover from errors—automatically.
 
 ---
 
@@ -28,7 +28,7 @@ AI-assisted development often falls short in predictable ways:
 
 ## How Atreides Solves This
 
-Muad'Dib introduces **orchestrated workflows** that guide every interaction:
+Hawat introduces **orchestrated workflows** that guide every interaction:
 
 ### 1. Intent Classification
 Not every request deserves the same treatment. Asking "what does this do?" shouldn't trigger the same workflow as "refactor the auth system."
@@ -95,7 +95,7 @@ Skills marked with **forked** use Claude Code 2.1's isolated context:
 
 ## Key Capabilities
 
-- **11 Muad'Dib Skills** — Specialized workflows for orchestration, exploration, validation, LSP operations, refactoring, TDD, and more
+- **11 Hawat Skills** — Specialized workflows for orchestration, exploration, validation, LSP operations, refactoring, TDD, and more
 - **5 Hook Types** — PreToolUse, PostToolUse, SessionStart, Stop, PreCompact
 - **Wildcard Permissions** — Fine-grained control with patterns like `Bash(npm *)`
 - **Context Preservation** — Session state persists across conversations and compaction
@@ -106,7 +106,7 @@ Skills marked with **forked** use Claude Code 2.1's isolated context:
 
 ## Before & After
 
-### Without Muad'Dib
+### Without Hawat
 ```
 User: "Refactor the auth module"
 Claude: *immediately starts editing files*
@@ -115,16 +115,16 @@ Claude: *burns context re-reading files*
 Claude: "Done!" *tests failing, 3 todos incomplete*
 ```
 
-### With Muad'Dib
+### With Hawat
 ```
 User: "Refactor the auth module"
-Muad'Dib: [Phase 0] Open-ended task → full workflow
-Muad'Dib: [Phase 1] DISCIPLINED codebase → follow patterns exactly
-Muad'Dib: [Phase 2A] Launching parallel exploration agents...
-Muad'Dib: [Phase 2B] TodoWrite: 5 tasks tracked
-Muad'Dib: [Strike 2] Edit failed, trying alternative approach
-Muad'Dib: [Phase 3] All tests passing, todos complete
-Muad'Dib: "Refactoring complete. Summary: ..."
+Hawat: [Phase 0] Open-ended task → full workflow
+Hawat: [Phase 1] DISCIPLINED codebase → follow patterns exactly
+Hawat: [Phase 2A] Launching parallel exploration agents...
+Hawat: [Phase 2B] TodoWrite: 5 tasks tracked
+Hawat: [Strike 2] Edit failed, trying alternative approach
+Hawat: [Phase 3] All tests passing, todos complete
+Hawat: "Refactoring complete. Summary: ..."
 ```
 
 ---
@@ -133,14 +133,14 @@ Muad'Dib: "Refactoring complete. Summary: ..."
 
 ```bash
 # Install globally
-npm install -g muaddib-claude
+npm install -g hawat
 
 # Set up global components
-muaddib install
+hawat install
 
 # Initialize in your project
 cd your-project
-muaddib init
+hawat init
 ```
 
 See the [README](../README.md) for detailed installation and configuration options.
@@ -163,7 +163,7 @@ See the [README](../README.md) for detailed installation and configuration optio
 
 | | |
 |--|--|
-| **Package** | `muaddib-claude` |
+| **Package** | `hawat` |
 | **Version** | 1.0.3 |
 | **License** | MIT |
 | **Node.js** | 18+ |
