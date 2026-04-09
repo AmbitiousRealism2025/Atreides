@@ -36,39 +36,30 @@ This project uses systematic workflows, intelligent agent delegation, and robust
 
 ---
 
-{{> workflow-phases}}
-
----
-
 {{> orchestration-rules}}
 
 ---
 
-{{> agent-definitions}}
-
----
-
-{{> exploration-patterns}}
-
----
-
-{{> completion-checking}}
-
----
-
-{{> quality-standards}}
-
----
-
-{{> maturity-assessment}}
-
----
-
-{{> session-continuity}}
-
----
-
 {{> context-management}}
+
+---
+
+## On-Demand Reference
+
+Detailed reference material has been extracted to reduce context window consumption.
+Load the `muaddib-reference` skill when you need:
+
+- **Workflow phases** - Detailed phase criteria, gate conditions, and decision trees
+- **Agent definitions** - Delegation templates and the 7-section dispatch format
+- **Exploration patterns** - Search strategies for codebase investigation
+- **Completion checking** - Anti-premature-stop patterns and verification
+- **Quality standards** - Detailed quality gates and severity levels
+- **Maturity assessment** - Scoring rubric and behavioral adaptation
+- **Session continuity** - Checkpoint and recovery procedures
+- **Skills and hooks** - Configuration details for all 10 skills
+- **LSP operations** - Semantic code operation reference
+- **AST-grep patterns** - Structural search and replace patterns
+- **Skill composition** - How skills compose and interact
 
 ---
 
@@ -78,7 +69,7 @@ After `muaddib init --full`, this project has:
 
 ```
 {{projectName}}/
-├── CLAUDE.md                    # This file - orchestration rules
+├── CLAUDE.md                    # This file - core orchestration rules
 ├── .claude/
 │   ├── settings.json            # Hooks and permissions
 │   ├── context.md               # Session context (optional)
@@ -90,18 +81,17 @@ After `muaddib init --full`, this project has:
 │   │   ├── error-detector.sh
 │   │   └── notify-idle.sh
 │   └── skills/
-│       └── muaddib/             # Muad'Dib skill package (11 skills)
+│       └── muaddib/             # Muad'Dib skill package (10 skills)
 │           ├── orchestrate.md   # Main orchestration skill
+│           ├── reference.md     # On-demand detailed reference material
 │           ├── explore.md       # Forked context exploration
 │           ├── validate.md      # Pre-completion validation
-│           ├── lsp.md           # Semantic code operations
-│           ├── refactor.md      # AST-grep structural changes
 │           ├── checkpoint.md    # Session state management
-│           ├── tdd.md           # Test-driven development
-│           ├── parallel-explore.md  # Multiple parallel explorations
+│           ├── refactor.md      # AST-grep structural changes
 │           ├── incremental-refactor.md  # Per-file refactoring
-│           ├── doc-sync.md      # Documentation synchronization
-│           └── quality-gate.md  # Pre-completion verification
+│           ├── tdd.md           # Test-driven development
+│           ├── lsp.md           # Semantic code operations
+│           └── doc-sync.md      # Documentation synchronization
 └── .muaddib/
     ├── config.json              # Project configuration
     └── state/                   # Session state directory

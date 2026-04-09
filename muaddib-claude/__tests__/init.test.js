@@ -50,10 +50,11 @@ describe('Init Command - Template Rendering', () => {
       const templateData = { ...getDefaultData(), ...baseConfig };
       const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
+      // Core sections are always included
       expect(result).toContain('## Intent Classification');
-      expect(result).toContain('## Agent Delegation');
-      expect(result).toContain('3-Strikes'); // Error recovery section
-      expect(result).toContain('## Quality'); // Quality section
+      expect(result).toContain('3-Strikes'); // Error recovery in orchestration-rules
+      // Reference content is linked but not inlined
+      expect(result).toContain('muaddib-reference');
     });
   });
 
@@ -301,8 +302,8 @@ describe('Init Command - Template Rendering', () => {
         const templateData = { ...getDefaultData(), ...minimalConfig };
         const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
-        // Should still contain the section header but marked as disabled or minimal
-        expect(result).toContain('Agent Delegation');
+        // Minimal mode still renders core CLAUDE.md
+        expect(result).toContain('Muad\'Dib Orchestration');
         // Verify minimal orchestration level is reflected
         expect(templateData.orchestrationLevel).toBe('minimal');
       });
@@ -357,10 +358,11 @@ describe('Init Command - Template Rendering', () => {
         const templateData = { ...getDefaultData(), ...fullConfig };
         const result = await renderNamedTemplate('CLAUDE.md', templateData);
 
-        // Should contain agent delegation patterns
-        expect(result).toContain('Agent Delegation');
-        expect(result).toContain('Task');
-        expect(result).toContain('subagent_type');
+        // Core sections present, reference material linked
+        expect(result).toContain("Muad'Dib Orchestration");
+        expect(result).toContain('muaddib-reference');
+        // Full mode config
+        expect(templateData.useAgentDelegation).toBe(true);
       });
 
       it('should normalize both flags together for full mode', () => {
