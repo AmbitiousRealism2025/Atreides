@@ -12,6 +12,7 @@ import {
   GLOBAL_MUADDIB_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_SKILLS_DIR,
+  PROVIDER_CONFIG,
   getProjectPaths
 } from '../utils/paths.js';
 import {
@@ -117,7 +118,8 @@ async function runInit(options) {
   const templateData = {
     ...getDefaultData(),
     ...config,
-    ...getDefaultProjectConfig(config)
+    ...getDefaultProjectConfig(config),
+    configDirName: PROVIDER_CONFIG.configDirName
   };
 
   // Determine what to create based on orchestration level
