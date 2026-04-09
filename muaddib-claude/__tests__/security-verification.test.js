@@ -9,9 +9,13 @@ import { deepMerge } from '../src/lib/config-merger.js';
 import { render, sanitizeTemplateData } from '../src/lib/template-engine.js';
 import { copyDir, ensureDir, remove } from '../src/lib/file-manager.js';
 import { execSync } from 'child_process';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
 import fs from 'fs-extra';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 describe('Security Verification - Manual Tests', () => {
 
@@ -333,6 +337,17 @@ describe('Security Verification - Manual Tests', () => {
 
       // Verify printf is used instead of echo for variable output
       expect(scriptContent).toContain("printf '%s'");
+    });
+  });
+
+  describe('standalone manual-security-test.mjs integration', () => {
+    it('manual-security-test.mjs should pass all cases', () => {
+      const scriptPath = join(__dirname, 'manual-security-test.mjs');
+      const result = execSync(`node "${scriptPath}"`, {
+        timeout: 30000,
+        encoding: 'utf8'
+      });
+      expect(result).toContain('ALL SECURITY TESTS PASSED');
     });
   });
 });

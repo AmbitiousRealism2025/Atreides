@@ -743,4 +743,16 @@ describe('Shell Scripts Integration', () => {
       expect(await fs.pathExists(errorLog)).toBe(true);
     });
   });
+
+  describe('standalone shell-injection.test.sh integration', () => {
+    it('shell-injection.test.sh should pass all cases', () => {
+      const scriptPath = join(PACKAGE_ROOT, '__tests__', 'shell-injection.test.sh');
+      const result = execSync(`bash "${scriptPath}"`, {
+        cwd: PACKAGE_ROOT,
+        timeout: 30000,
+        encoding: 'utf8'
+      });
+      expect(result).toContain('All security tests passed');
+    });
+  });
 });

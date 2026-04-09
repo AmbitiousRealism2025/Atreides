@@ -22,6 +22,7 @@ import {
   writeJson,
   copyFile,
   copyDir,
+  remove,
   isSymlink,
   readSymlink,
   makeExecutable,
@@ -208,6 +209,28 @@ describe('File Manager', () => {
       await expect(copyDir(srcDir, '../outside-dir', { baseDir: testDir }))
         .rejects
         .toThrow(/Path traversal attempt detected/);
+    });
+
+    it('remove should block traversal attempts when baseDir is provided', async () => {
+      const innerDir = join(testDir, 'inner');
+      await fs.ensureDir(innerDir);
+      await fs.writeFile(join(innerDir, 'safe.txt'), 'content');
+
+      // Should work for paths within baseDir
+      await remove('inner/safe.txt', { baseDir: testDir });
+      await expect(exists(join(testDir, 'inner', 'safe.txt'))).resolves.toBe(false);
+
+      // Should block traversal outside baseDir
+      await expect(remove('../outside.txt', { baseDir: testDir }))
+        .rejects
+        .toThrow(/Path traversal attempt detected/);
+    });
+
+    it('remove should work without baseDir for backward compatibility', async () => {
+      const tmpFile = join(testDir, 'no-validation.txt');
+      await fs.writeFile(tmpFile, 'content');
+      await remove(tmpFile);
+      await expect(exists(tmpFile)).resolves.toBe(false);
     });
   });
 

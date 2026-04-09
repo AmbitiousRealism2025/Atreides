@@ -170,7 +170,7 @@ async function runDoctor(options) {
     }
 
     // Check lib/core
-    const libExists = await exists(join(GLOBAL_LIB_DIR, 'core'));
+    const libExists = await exists(join(GLOBAL_LIB_DIR, 'README.md'));
     if (libExists) {
       logger.success('  Core library: OK');
     } else {
