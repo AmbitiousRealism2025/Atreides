@@ -1872,10 +1872,8 @@ Muad'Dib provides 11 specialized skills that can be invoked with `/muaddib-<skil
 | `muaddib-refactor` | **forked** | AST-grep structural code transformations |
 | `muaddib-checkpoint` | main | Session state checkpointing and recovery |
 | `muaddib-tdd` | **forked** | Test-driven development workflow |
-| `muaddib-parallel-explore` | **forked** | Multiple parallel exploration queries |
 | `muaddib-incremental-refactor` | **forked** | Per-file refactoring with verification |
 | `muaddib-doc-sync` | main | Documentation synchronization with code |
-| `muaddib-quality-gate` | main | Pre-completion quality verification |
 
 ### Forked Context (Key Feature)
 
@@ -2481,7 +2479,7 @@ muaddib-explore → gather context
        ↓
 muaddib-refactor → apply changes
        ↓
-muaddib-quality-gate → verify results
+muaddib-validate → verify results
 ```
 
 **When to use**: Multi-phase workflows where each phase depends on the previous.
@@ -2491,11 +2489,11 @@ muaddib-quality-gate → verify results
 Run multiple forked skills simultaneously:
 
 ```
-┌─ muaddib-parallel-explore (search 1)
+┌─ muaddib-explore (parallel mode) (search 1)
 │
-├─ muaddib-parallel-explore (search 2)
+├─ muaddib-explore (parallel mode) (search 2)
 │
-└─ muaddib-parallel-explore (search 3)
+└─ muaddib-explore (parallel mode) (search 3)
          ↓
     Consolidate results in main context
 ```
@@ -2513,7 +2511,7 @@ muaddib-incremental-refactor
     │     ├─ Apply change
     │     └─ muaddib-tdd → verify with tests
     │
-    └─ muaddib-quality-gate → final verification
+    └─ muaddib-validate → final verification
 ```
 
 **When to use**: Complex operations with embedded verification steps.
@@ -2564,7 +2562,7 @@ muaddib-incremental-refactor
    → Apply ast-grep patterns
    → Structural changes
 
-3. muaddib-quality-gate (main)
+3. muaddib-validate (main)
    → Verify all checks pass
    → If fail, restore from checkpoint
 ```
@@ -2572,7 +2570,7 @@ muaddib-incremental-refactor
 #### Pattern 4: Multi-Angle Investigation
 
 ```
-1. muaddib-parallel-explore (forked) × 3
+1. muaddib-explore (parallel mode) (forked) × 3
    → Angle 1: Search for patterns
    → Angle 2: Check dependencies
    → Angle 3: Review tests
@@ -2622,7 +2620,7 @@ Is this a simple, single-file change?
 └─ No ↓
 
 Do I need to understand the codebase first?
-├─ Yes → muaddib-explore or muaddib-parallel-explore
+├─ Yes → muaddib-explore or muaddib-explore (parallel mode)
 └─ No ↓
 
 Am I making risky changes?
@@ -2638,7 +2636,7 @@ Am I adding new functionality?
 └─ No ↓
 
 Am I done with changes?
-├─ Yes → muaddib-quality-gate
+├─ Yes → muaddib-validate
 └─ No → Continue working
 ```
 

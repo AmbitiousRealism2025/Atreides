@@ -279,6 +279,7 @@ async function updateProject(options) {
   const templateData = {
     ...getDefaultData(),
     ...projectConfig,
+    configDirName: PROVIDER_CONFIG.configDirName,
     updated: new Date().toISOString()
   };
 
