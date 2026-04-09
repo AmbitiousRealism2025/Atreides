@@ -2,6 +2,8 @@
  * Path constants and utilities for Muad'Dib CLI
  *
  * Centralizes all path handling for consistent cross-platform behavior.
+ * Provider-specific paths (Claude Code, Codex, etc.) are configurable
+ * via PROVIDER_CONFIG so the codebase can be adapted for different engines.
  */
 
 import { homedir } from 'os';
@@ -21,6 +23,30 @@ export const PACKAGE_ROOT = resolve(__dirname, '..', '..');
  * User's home directory
  */
 export const HOME_DIR = homedir();
+
+/**
+ * Provider configuration - defaults to Claude Code.
+ * Override individual fields to adapt for different engines (Codex, Gemini, etc.).
+ * Do NOT build a full provider abstraction layer here. Just configurable constants.
+ */
+export const PROVIDER_CONFIG = {
+  /** Config directory name (e.g. '.claude', '.codex') */
+  configDirName: '.claude',
+  /** Main instruction filename (e.g. 'CLAUDE.md', 'AGENTS.md') */
+  instructionFile: 'CLAUDE.md',
+  /** Settings filename inside configDir */
+  settingsFile: 'settings.json',
+  /** Context filename inside configDir */
+  contextFile: 'context.md',
+  /** Critical context filename inside configDir */
+  criticalContextFile: 'critical-context.md',
+  /** Checkpoint filename inside configDir */
+  checkpointFile: 'checkpoint.md',
+  /** Skills subdirectory inside configDir */
+  skillsDirName: 'skills',
+  /** State directory inside .muaddib */
+  stateDirName: 'state',
+};
 
 /**
  * Global muaddib installation directory
@@ -53,14 +79,21 @@ export const GLOBAL_SCRIPTS_DIR = join(GLOBAL_MUADDIB_DIR, 'scripts');
 export const GLOBAL_SKILLS_DIR = join(GLOBAL_MUADDIB_DIR, 'skills');
 
 /**
- * Claude config directory in user's home
+ * Provider config directory in user's home
+ * (e.g. ~/.claude, ~/.codex)
  */
-export const CLAUDE_CONFIG_DIR = join(HOME_DIR, '.claude');
+export const PROVIDER_CONFIG_DIR = join(HOME_DIR, PROVIDER_CONFIG.configDirName);
 
 /**
- * Claude skills directory (for symlinks)
+ * Provider skills directory (for symlinks)
  */
-export const CLAUDE_SKILLS_DIR = join(CLAUDE_CONFIG_DIR, 'skills');
+export const PROVIDER_SKILLS_DIR = join(PROVIDER_CONFIG_DIR, PROVIDER_CONFIG.skillsDirName);
+
+// Legacy aliases for backward compatibility with existing code
+/** @deprecated Use PROVIDER_CONFIG_DIR */
+export const CLAUDE_CONFIG_DIR = PROVIDER_CONFIG_DIR;
+/** @deprecated Use PROVIDER_SKILLS_DIR */
+export const CLAUDE_SKILLS_DIR = PROVIDER_SKILLS_DIR;
 
 /**
  * Package templates directory (source)
@@ -88,17 +121,18 @@ export const PACKAGE_SKILLS_DIR = join(PACKAGE_ROOT, 'lib', 'skills');
  * @returns {object} Object containing project-specific paths
  */
 export function getProjectPaths(projectDir = process.cwd()) {
+  const cfg = PROVIDER_CONFIG;
   return {
     root: projectDir,
-    claudeDir: join(projectDir, '.claude'),
+    providerDir: join(projectDir, cfg.configDirName),
     muaddibDir: join(projectDir, '.muaddib'),
-    claudeMd: join(projectDir, 'CLAUDE.md'),
-    settingsJson: join(projectDir, '.claude', 'settings.json'),
-    contextMd: join(projectDir, '.claude', 'context.md'),
-    criticalContextMd: join(projectDir, '.claude', 'critical-context.md'),
-    checkpointMd: join(projectDir, '.claude', 'checkpoint.md'),
+    claudeMd: join(projectDir, cfg.instructionFile),
+    settingsJson: join(projectDir, cfg.configDirName, cfg.settingsFile),
+    contextMd: join(projectDir, cfg.configDirName, cfg.contextFile),
+    criticalContextMd: join(projectDir, cfg.configDirName, cfg.criticalContextFile),
+    checkpointMd: join(projectDir, cfg.configDirName, cfg.checkpointFile),
     projectConfig: join(projectDir, '.muaddib', 'config.json'),
-    stateDir: join(projectDir, '.muaddib', 'state')
+    stateDir: join(projectDir, '.muaddib', cfg.stateDirName)
   };
 }
 
@@ -120,7 +154,7 @@ export function isGlobalPath(path) {
 export function isProjectPath(path, projectDir = process.cwd()) {
   const paths = getProjectPaths(projectDir);
   const resolved = resolve(path);
-  return resolved.startsWith(paths.muaddibDir) || resolved.startsWith(paths.claudeDir);
+  return resolved.startsWith(paths.muaddibDir) || resolved.startsWith(paths.providerDir);
 }
 
 /**
@@ -147,12 +181,15 @@ export default {
   GLOBAL_TEMPLATES_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_SKILLS_DIR,
+  PROVIDER_CONFIG_DIR,
+  PROVIDER_SKILLS_DIR,
   CLAUDE_CONFIG_DIR,
   CLAUDE_SKILLS_DIR,
   PACKAGE_TEMPLATES_DIR,
   PACKAGE_SCRIPTS_DIR,
   PACKAGE_LIB_CORE_DIR,
   PACKAGE_SKILLS_DIR,
+  PROVIDER_CONFIG,
   getProjectPaths,
   isGlobalPath,
   isProjectPath,

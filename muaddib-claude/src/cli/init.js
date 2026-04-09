@@ -12,6 +12,7 @@ import {
   GLOBAL_MUADDIB_DIR,
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_SKILLS_DIR,
+  PROVIDER_CONFIG,
   getProjectPaths
 } from '../utils/paths.js';
 import {
@@ -68,8 +69,8 @@ async function runInit(options) {
 
   // Check for existing files
   const existingFiles = [];
-  if (await exists(paths.claudeMd)) existingFiles.push('CLAUDE.md');
-  if (await exists(paths.claudeDir)) existingFiles.push('.claude/');
+  if (await exists(paths.claudeMd)) existingFiles.push(PROVIDER_CONFIG.instructionFile);
+  if (await exists(paths.providerDir)) existingFiles.push(PROVIDER_CONFIG.configDirName + '/');
   if (await exists(paths.muaddibDir)) existingFiles.push('.muaddib/');
 
   if (existingFiles.length > 0 && !options.force) {
@@ -114,10 +115,13 @@ async function runInit(options) {
   }
 
   // Add template defaults
+  const cfg = PROVIDER_CONFIG;
+  const cfgDir = cfg.configDirName;  // e.g. '.claude'
   const templateData = {
     ...getDefaultData(),
     ...config,
-    ...getDefaultProjectConfig(config)
+    ...getDefaultProjectConfig(config),
+    configDirName: PROVIDER_CONFIG.configDirName
   };
 
   // Determine what to create based on orchestration level
@@ -128,7 +132,7 @@ async function runInit(options) {
 
   // Only create .claude directory if not minimal mode
   if (!isMinimal) {
-    await ensureDir(paths.claudeDir);
+    await ensureDir(paths.providerDir);
   }
 
   // Create CLAUDE.md (always)
@@ -157,35 +161,35 @@ async function runInit(options) {
         throw new Error(`settings.json template rendered invalid JSON: ${validation.error}`);
       }
       await writeFile(paths.settingsJson, settings, { backup: !options.force, baseDir });
-      logger.success('Created: .claude/settings.json');
+      logger.success(`Created: ${cfgDir}/settings.json`);
     } catch (error) {
       logger.warn(`Could not create settings.json: ${error.message}`);
       const basicSettings = createBasicSettings(config);
       await writeFile(paths.settingsJson, JSON.stringify(basicSettings, null, 2), { backup: !options.force, baseDir });
-      logger.success('Created: .claude/settings.json (basic)');
+      logger.success(`Created: ${cfgDir}/settings.json (basic)`);
     }
 
     // Create context.md
     try {
       const context = await renderNamedTemplate('context.md', templateData);
       await writeFile(paths.contextMd, context, { backup: !options.force, baseDir });
-      logger.success('Created: .claude/context.md');
+      logger.success(`Created: ${cfgDir}/context.md`);
     } catch (error) {
       logger.warn(`Could not create context.md: ${error.message}`);
       const basicContext = createBasicContext(config);
       await writeFile(paths.contextMd, basicContext, { backup: !options.force, baseDir });
-      logger.success('Created: .claude/context.md (basic)');
+      logger.success(`Created: ${cfgDir}/context.md (basic)`);
     }
 
     // Create critical-context.md
     try {
       const criticalContext = await renderNamedTemplate('critical-context.md', templateData);
       await writeFile(paths.criticalContextMd, criticalContext, { backup: !options.force, baseDir });
-      logger.success('Created: .claude/critical-context.md');
+      logger.success(`Created: ${cfgDir}/critical-context.md`);
     } catch (error) {
       const basicCritical = createBasicCriticalContext();
       await writeFile(paths.criticalContextMd, basicCritical, { backup: !options.force, baseDir });
-      logger.success('Created: .claude/critical-context.md (basic)');
+      logger.success(`Created: ${cfgDir}/critical-context.md (basic)`);
     }
 
     // Create project config
@@ -202,8 +206,8 @@ async function runInit(options) {
 
   // Copy scripts/skills from global install into the project
   if (config.useHooks || isFull) {
-    const projectScriptsDir = `${paths.claudeDir}/scripts`;
-    const projectSkillsDir = `${paths.claudeDir}/skills`;
+    const projectScriptsDir = `${paths.providerDir}/scripts`;
+    const projectSkillsDir = `${paths.providerDir}/skills`;
 
     const syncResult = await syncPackageAssets({
       templates: false,
@@ -223,10 +227,10 @@ async function runInit(options) {
     });
 
     if (syncResult.synced.some(item => item.startsWith('scripts:'))) {
-      logger.success('Copied: .claude/scripts/');
+      logger.success(`Copied: ${cfgDir}/scripts/`);
     }
     if (syncResult.synced.some(item => item.startsWith('skills:'))) {
-      logger.success('Copied: .claude/skills/');
+      logger.success(`Copied: ${cfgDir}/skills/`);
     }
 
     syncResult.skipped.forEach(item => logger.warn(item));
@@ -239,15 +243,15 @@ async function runInit(options) {
   console.log();
   logger.info('Files created:');
   logger.list([
-    'CLAUDE.md',
+    cfg.instructionFile,
     ...(isMinimal ? [] : [
-      '.claude/settings.json',
-      '.claude/context.md',
-      '.claude/critical-context.md',
+      `${cfgDir}/settings.json`,
+      `${cfgDir}/context.md`,
+      `${cfgDir}/critical-context.md`,
       '.muaddib/config.json'
     ]),
-    ...(config.useHooks ? ['.claude/scripts/'] : []),
-    ...(isFull ? ['.claude/skills/muaddib/'] : [])
+    ...(config.useHooks ? [`${cfgDir}/scripts/`] : []),
+    ...(isFull ? [`${cfgDir}/skills/muaddib/`] : [])
   ]);
   console.log();
   logger.info("You're all set! Claude Code will now use Muad'Dib orchestration.");

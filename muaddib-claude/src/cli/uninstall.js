@@ -11,6 +11,7 @@ import { confirm } from '../utils/prompts.js';
 import {
   GLOBAL_MUADDIB_DIR,
   CLAUDE_SKILLS_DIR,
+  PROVIDER_CONFIG,
   getProjectPaths
 } from '../utils/paths.js';
 import {
@@ -28,7 +29,7 @@ export function uninstallCommand() {
   cmd
     .description("Uninstall Muad'Dib components")
     .option('-g, --global', 'Uninstall global components (default)')
-    .option('-p, --project', 'Also remove project files (.claude/, .muaddib/)')
+    .option('-p, --project', `Also remove project files (${PROVIDER_CONFIG.configDirName}/, .muaddib/)`)
     .option('-f, --force', 'Skip confirmation prompts')
     .action(async (options) => {
       try {
@@ -54,7 +55,7 @@ async function runUninstall(options) {
   const skillLink = join(CLAUDE_SKILLS_DIR, 'muaddib');
   const hasSkillLink = await exists(skillLink);
   const paths = getProjectPaths();
-  const hasProject = await exists(paths.claudeDir) || await exists(paths.muaddibDir);
+  const hasProject = await exists(paths.providerDir) || await exists(paths.muaddibDir);
 
   if (!hasGlobal && !hasSkillLink && (!options.project || !hasProject)) {
     logger.info("Muad'Dib is not installed.");
@@ -73,8 +74,8 @@ async function runUninstall(options) {
     logger.dim(`  - ${skillLink} (skill symlink)`);
   }
   if (options.project && hasProject) {
-    if (await exists(paths.claudeDir)) {
-      logger.dim(`  - ${paths.claudeDir}/ (project Claude settings)`);
+    if (await exists(paths.providerDir)) {
+      logger.dim(`  - ${paths.providerDir}/ (project settings)`);
     }
     if (await exists(paths.muaddibDir)) {
       logger.dim(`  - ${paths.muaddibDir}/ (project config)`);
@@ -121,12 +122,12 @@ async function runUninstall(options) {
 
   // Remove project files if requested
   if (options.project && hasProject) {
-    if (await exists(paths.claudeDir)) {
+    if (await exists(paths.providerDir)) {
       try {
-        await remove(paths.claudeDir);
-        logger.success('Removed: .claude/');
+        await remove(paths.providerDir);
+        logger.success(`Removed: ${PROVIDER_CONFIG.configDirName}/`);
       } catch (error) {
-        logger.warn(`Could not remove .claude/: ${error.message}`);
+        logger.warn(`Could not remove ${PROVIDER_CONFIG.configDirName}/: ${error.message}`);
       }
     }
 

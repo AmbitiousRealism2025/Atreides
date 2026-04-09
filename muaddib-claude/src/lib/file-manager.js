@@ -259,12 +259,16 @@ export async function copyDir(src, dest, options = {}) {
 
 /**
  * Remove a file or directory
- * @param {string} path - Path to remove
+ * @param {string} targetPath - Path to remove
+ * @param {object} [options] - Options
+ * @param {string} [options.baseDir] - Allowed base directory for path validation
  * @returns {Promise<void>}
  */
-export async function remove(path) {
-  await fs.remove(path);
-  debug(`Removed: ${path}`);
+export async function remove(targetPath, options = {}) {
+  const { baseDir } = options;
+  const safePath = baseDir ? validatePath(targetPath, baseDir) : targetPath;
+  await fs.remove(safePath);
+  debug(`Removed: ${safePath}`);
 }
 
 /**

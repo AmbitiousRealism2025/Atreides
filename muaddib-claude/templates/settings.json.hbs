@@ -1,3 +1,5 @@
+{{!-- Settings template. Paths reference the config directory set in PROVIDER_CONFIG.
+    Default: .claude (Claude Code). Override PROVIDER_CONFIG for other engines. --}}
 {
   "hooks": {
 {{#if useHooks}}
@@ -5,13 +7,13 @@
       {
         "matcher": "Bash",
         "hooks": [
-          {"type": "command", "command": ".claude/scripts/validate-bash-command.sh \"$COMMAND\""}
+          {"type": "command", "command": "{{configDirName}}/scripts/validate-bash-command.sh \"$COMMAND\""}
         ]
       },
       {
         "matcher": "Edit|Write",
         "hooks": [
-          {"type": "command", "command": ".claude/scripts/pre-edit-check.sh \"$FILE\""}
+          {"type": "command", "command": "{{configDirName}}/scripts/pre-edit-check.sh \"$FILE\""}
         ]
       }
     ],
@@ -44,24 +46,24 @@
 {{/if-eq}}
 {{/if-eq}}
 {{/if-eq}}
-          {"type": "command", "command": ".claude/scripts/post-edit-log.sh \"$FILE\""}
+          {"type": "command", "command": "{{configDirName}}/scripts/post-edit-log.sh \"$FILE\""}
         ]
       },
       {
         "matcher": "*",
         "hooks": [
-          {"type": "command", "command": ".claude/scripts/error-detector.sh \"$TOOL_NAME\" \"$EXIT_CODE\""}
+          {"type": "command", "command": "{{configDirName}}/scripts/error-detector.sh \"$TOOL_NAME\" \"$EXIT_CODE\""}
         ]
       }
     ],
     "SessionStart": [
-      {"type": "command", "command": "cat .claude/context.md 2>/dev/null || true"}
+      {"type": "command", "command": "cat {{configDirName}}/context.md 2>/dev/null || true"}
     ],
     "Stop": [
-      {"type": "command", "command": ".claude/scripts/notify-idle.sh"}
+      {"type": "command", "command": "{{configDirName}}/scripts/notify-idle.sh"}
     ],
     "PreCompact": [
-      {"type": "command", "command": "cat .claude/critical-context.md 2>/dev/null || true"}
+      {"type": "command", "command": "cat {{configDirName}}/critical-context.md 2>/dev/null || true"}
     ]
 {{/if}}
   },

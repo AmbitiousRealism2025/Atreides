@@ -14,6 +14,7 @@ import { dirname, join } from 'path';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { installCommand } from './install.js';
+import { uninstallCommand } from './uninstall.js';
 import { updateCommand } from './update.js';
 
 // Get package version
@@ -52,6 +53,7 @@ export async function run() {
   program.addCommand(doctorCommand());
   program.addCommand(initCommand());
   program.addCommand(installCommand());
+  program.addCommand(uninstallCommand());
   program.addCommand(updateCommand());
 
   // Custom help formatting

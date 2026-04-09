@@ -14,6 +14,7 @@ import {
   GLOBAL_LIB_DIR,
   GLOBAL_SKILLS_DIR,
   CLAUDE_SKILLS_DIR,
+  PROVIDER_CONFIG,
   getProjectPaths
 } from '../utils/paths.js';
 import {
@@ -170,7 +171,7 @@ async function runDoctor(options) {
     }
 
     // Check lib/core
-    const libExists = await exists(join(GLOBAL_LIB_DIR, 'core'));
+    const libExists = await exists(join(GLOBAL_LIB_DIR, 'README.md'));
     if (libExists) {
       logger.success('  Core library: OK');
     } else {
@@ -212,7 +213,7 @@ async function runDoctor(options) {
   // ══════════════════════════════════════════════════════════════
 
   const paths = getProjectPaths();
-  const hasProject = await exists(paths.claudeMd) || await exists(paths.claudeDir);
+  const hasProject = await exists(paths.claudeMd) || await exists(paths.providerDir);
 
   if (hasProject) {
     console.log();
@@ -229,13 +230,13 @@ async function runDoctor(options) {
       });
     }
 
-    // Check .claude directory
-    if (await exists(paths.claudeDir)) {
-      logger.success('  .claude directory: OK');
+    // Check provider directory
+    if (await exists(paths.providerDir)) {
+      logger.success(`  ${PROVIDER_CONFIG.configDirName} directory: OK`);
     } else {
-      logger.error('  .claude directory: Not found');
+      logger.error(`  ${PROVIDER_CONFIG.configDirName} directory: Not found`);
       issues.push({
-        name: '.claude directory missing',
+        name: `${PROVIDER_CONFIG.configDirName} directory missing`,
         fix: 'Run: muaddib init'
       });
     }
