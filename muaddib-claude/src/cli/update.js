@@ -18,6 +18,7 @@ import {
   PACKAGE_SCRIPTS_DIR,
   PACKAGE_LIB_CORE_DIR,
   PACKAGE_SKILLS_DIR,
+  PROVIDER_CONFIG,
   getProjectPaths
 } from '../utils/paths.js';
 import {
@@ -247,7 +248,7 @@ async function updateProject(options) {
 
   logger.title("Muad'Dib Project Update");
 
-  if (!await exists(paths.claudeDir)) {
+  if (!await exists(paths.providerDir)) {
     logger.error("No Muad'Dib project found in current directory.");
     logger.info('Run: muaddib init');
     process.exit(1);
@@ -297,7 +298,7 @@ async function updateProject(options) {
         backup: options.backup !== false,
         baseDir
       });
-      logger.success('Updated: .claude/settings.json');
+      logger.success(`Updated: ${PROVIDER_CONFIG.configDirName}/settings.json`);
     } catch (error) {
       logger.warn(`Could not update settings.json: ${error.message}`);
     }
@@ -306,7 +307,7 @@ async function updateProject(options) {
   // Update context.md if empty or minimal
   if (await exists(paths.contextMd)) {
     // Don't overwrite user's context
-    logger.dim('Skipped: .claude/context.md (preserving user content)');
+    logger.dim(`Skipped: ${PROVIDER_CONFIG.configDirName}/context.md (preserving user content)`);
   }
 
   // Update project config version

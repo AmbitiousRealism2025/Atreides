@@ -229,7 +229,7 @@ describe('Path Configuration', () => {
     const paths = getProjectPaths(testDir);
 
     expect(paths.root).toBe(testDir);
-    expect(paths.claudeDir).toBe('/test/project/.claude');
+    expect(paths.providerDir).toBe('/test/project/.claude');
     expect(paths.muaddibDir).toBe('/test/project/.muaddib');
     expect(paths.claudeMd).toBe('/test/project/CLAUDE.md');
     expect(paths.settingsJson).toBe('/test/project/.claude/settings.json');
@@ -598,7 +598,7 @@ describe('Update Command - Configuration', () => {
     const { getProjectPaths } = await import('../src/utils/paths.js');
     const paths = getProjectPaths('/test/project');
 
-    expect(paths.claudeDir).toBe('/test/project/.claude');
+    expect(paths.providerDir).toBe('/test/project/.claude');
   });
 });
 
@@ -630,7 +630,7 @@ describe('Doctor Command - Health Check Categories', () => {
 
     // Doctor should check these project components
     expect(paths.claudeMd).toBeDefined();
-    expect(paths.claudeDir).toBeDefined();
+    expect(paths.providerDir).toBeDefined();
     expect(paths.settingsJson).toBeDefined();
     expect(paths.contextMd).toBeDefined();
     expect(paths.muaddibDir).toBeDefined();
@@ -858,7 +858,7 @@ describe('Cross-Command Integration', () => {
     const paths = getProjectPaths();
 
     // Both commands check these project paths
-    expect(paths.claudeDir).toBeDefined();
+    expect(paths.providerDir).toBeDefined();
     expect(paths.settingsJson).toBeDefined();
     expect(paths.projectConfig).toBeDefined();
   });

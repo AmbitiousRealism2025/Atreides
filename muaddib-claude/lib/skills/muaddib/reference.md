@@ -17,6 +17,21 @@ context window consumption. Load when you need detailed phase criteria, delegati
 templates, completion checks, quality standards, maturity scoring, session continuity,
 skill configuration, LSP operations, AST-grep patterns, or skill composition guidelines.
 
+## Table of Contents
+
+1. [Workflow Phases](#workflow-phases) — Phase criteria, gate conditions, decision trees
+2. [Agent Definitions](#agent-definitions) — Delegation templates, 7-section dispatch format
+3. [Exploration Patterns](#exploration-patterns) — Search strategies for codebase investigation
+4. [Completion Checking](#completion-checking) — Anti-premature-stop patterns and verification
+5. [Quality Standards](#quality-standards) — Quality gates and severity levels
+6. [Maturity Assessment](#maturity-assessment) — Scoring rubric and behavioral adaptation
+7. [Session Continuity](#session-continuity) — Checkpoint and recovery procedures
+8. [Skills and Hooks](#skills-and-hooks) — Configuration details for all skills
+9. [LSP Operations](#lsp-operations) — Semantic code operation reference
+10. [AST-grep Patterns](#ast-grep-patterns) — Structural search and replace patterns
+11. [Checkpoint System](#checkpoint-system) — Session state checkpointing
+12. [Skill Composition](#skill-composition) — How skills compose and interact
+
 ---
 
 

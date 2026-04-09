@@ -11,6 +11,7 @@ import {
   GLOBAL_SCRIPTS_DIR,
   GLOBAL_SKILLS_DIR,
   CLAUDE_SKILLS_DIR,
+  PROVIDER_CONFIG,
   getProjectPaths
 } from '../utils/paths.js';
 import { join } from 'path';
@@ -137,8 +138,8 @@ export async function validateProjectInit(projectDir) {
   }
 
   // Check .claude directory
-  if (!await exists(paths.claudeDir)) {
-    errors.push('.claude directory not found');
+  if (!await exists(paths.providerDir)) {
+    errors.push(`${PROVIDER_CONFIG.configDirName} directory not found`);
     details.components.claudeDir = false;
   } else {
     details.components.claudeDir = true;

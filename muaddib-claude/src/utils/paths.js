@@ -124,7 +124,7 @@ export function getProjectPaths(projectDir = process.cwd()) {
   const cfg = PROVIDER_CONFIG;
   return {
     root: projectDir,
-    claudeDir: join(projectDir, cfg.configDirName),
+    providerDir: join(projectDir, cfg.configDirName),
     muaddibDir: join(projectDir, '.muaddib'),
     claudeMd: join(projectDir, cfg.instructionFile),
     settingsJson: join(projectDir, cfg.configDirName, cfg.settingsFile),
@@ -154,7 +154,7 @@ export function isGlobalPath(path) {
 export function isProjectPath(path, projectDir = process.cwd()) {
   const paths = getProjectPaths(projectDir);
   const resolved = resolve(path);
-  return resolved.startsWith(paths.muaddibDir) || resolved.startsWith(paths.claudeDir);
+  return resolved.startsWith(paths.muaddibDir) || resolved.startsWith(paths.providerDir);
 }
 
 /**
